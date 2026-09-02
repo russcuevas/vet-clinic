@@ -8,6 +8,7 @@ use App\Models\IncentiveRule;
 use App\Models\EmployeeIncentive;
 use App\Models\GroomingRecord;
 use App\Models\MedicalRecord;
+use App\Models\DtrRecord;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -191,9 +192,16 @@ class IncentiveController extends Controller
             $rule = IncentiveRule::where('role_name', 'like', '%janitor%')->first();
             $suggestedRate = $rule ? $rule->default_rate : 35.00;
             $basis = 'fixed_per_unit';
-            // Default count e.g. 26 days or pet count
-            $count = 30;
-            $tier = "Daily Boarding Rate";
+
+            // Dynamically pulled from DTR: number of active duty days maintaining clinic kennels/boarding
+            $dtrDays = DtrRecord::where('employee_id', $employee->id)
+                ->whereMonth('record_date', $month)
+                ->whereYear('record_date', $year)
+                ->whereIn('status', ['present', 'late'])
+                ->count();
+
+            $count = $dtrDays > 0 ? $dtrDays : 26;
+            $tier = "DTR Kennel Duty: {$count} days worked";
         } else {
             $rule = IncentiveRule::where('role_name', 'like', "%{$position}%")->first();
             if ($rule) {

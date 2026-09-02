@@ -197,7 +197,7 @@
         </div>
         <div class="card-body" style="padding: 0;">
             <div class="table-responsive">
-                <table class="data-table">
+                <table class="data-table" id="incentives-table">
                     <thead>
                         <tr>
                             <th>Date Earned</th>
@@ -212,7 +212,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($incentives as $inc)
+                        @foreach($incentives as $inc)
                             <tr>
                                 <td>{{ $inc->date_earned->format('M d, Y') }}</td>
                                 <td><strong style="color: var(--white);">{{ $inc->employee->full_name }}</strong></td>
@@ -247,13 +247,7 @@
                                     </form>
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
-                                    No incentives recorded for this period. Click "+ Award / Record Incentive" above to add.
-                                </td>
-                            </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>

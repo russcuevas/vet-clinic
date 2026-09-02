@@ -47,6 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
     $.fn.dataTable.ext.errMode = 'none';
     $('.data-table').each(function() {
       const $table = $(this);
+      
+      // If table only has an empty row with colspan, empty it so DataTables handles zeroRecords cleanly without _DT_CellIndex errors
+      if ($table.find('tbody tr td[colspan]').length) {
+        $table.find('tbody').empty();
+      }
+
       if (!$.fn.DataTable.isDataTable(this)) {
         const dt = $table.DataTable({
           responsive: false,

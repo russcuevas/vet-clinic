@@ -51,7 +51,7 @@
 
         .login-card-container {
             width: 100%;
-            max-width: 490px;
+            max-width: 440px;
             position: relative;
             z-index: 10;
         }
@@ -62,7 +62,7 @@
             border-radius: var(--radius-xl);
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(212, 175, 55, 0.12);
             backdrop-filter: blur(16px);
-            padding: 2.5rem 2.25rem;
+            padding: 2.75rem 2.25rem;
         }
 
         .login-header {
@@ -93,56 +93,6 @@
             color: var(--text-secondary);
             margin-top: 0.35rem;
         }
-
-        .demo-roles-container {
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--black-border);
-        }
-
-        .demo-roles-title {
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--gold-primary);
-            text-align: center;
-            margin-bottom: 0.85rem;
-        }
-
-        .demo-buttons-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.65rem;
-        }
-
-        .btn-demo-role {
-            padding: 0.55rem 0.65rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--navy-dark);
-            border: 1px solid var(--navy-border);
-            color: var(--text-secondary);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.15rem;
-        }
-
-        .btn-demo-role strong {
-            color: var(--white);
-            font-size: 0.8rem;
-        }
-
-        .btn-demo-role:hover {
-            border-color: var(--gold-primary);
-            color: var(--gold-light);
-            background: var(--navy-surface);
-            transform: translateY(-1px);
-        }
     </style>
 </head>
 <body>
@@ -160,7 +110,7 @@
             <form action="{{ route('login.post') }}" method="POST">
                 @csrf
 
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 1.25rem;">
                     <label class="form-label" for="email">Email Address <span class="req">*</span></label>
                     <input 
                         type="email" 
@@ -168,13 +118,13 @@
                         id="email" 
                         class="form-control" 
                         placeholder="e.g. staff@sanmodesto.com" 
-                        value="{{ old('email', 'admin@sanmodesto.com') }}" 
+                        value="{{ old('email') }}" 
                         required 
                         autofocus
                     >
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 1.75rem;">
                     <label class="form-label" for="password">Password <span class="req">*</span></label>
                     <input 
                         type="password" 
@@ -182,46 +132,17 @@
                         id="password" 
                         class="form-control" 
                         placeholder="••••••••" 
-                        value="password"
                         required
                     >
                 </div>
 
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
-                        <input type="checkbox" name="remember" style="accent-color: var(--gold-primary);">
-                        <span>Remember credentials</span>
-                    </label>
-                </div>
-
-                <button type="submit" class="btn btn-gold" style="width: 100%; padding: 0.75rem; font-size: 0.95rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                <button type="submit" class="btn btn-gold" style="width: 100%; padding: 0.8rem; font-size: 0.95rem; font-weight: 700;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
                     <span>Sign In to System</span>
                 </button>
             </form>
-
-            <!-- Quick 1-Click Role Switchers for testing -->
-            <div class="demo-roles-container">
-                <div class="demo-roles-title">⚡ Quick 1-Click Role Login</div>
-                <div class="demo-buttons-grid">
-                    <button type="button" class="btn-demo-role" onclick="fillCredentials('admin@sanmodesto.com', 'Admin Portal')">
-                        <strong>Admin</strong>
-                        <span>Full Control</span>
-                    </button>
-                    <button type="button" class="btn-demo-role" onclick="fillCredentials('cashier@sanmodesto.com', 'Cashier Portal')">
-                        <strong>Cashier</strong>
-                        <span>Billing & POS</span>
-                    </button>
-                    <button type="button" class="btn-demo-role" onclick="fillCredentials('vet@sanmodesto.com', 'Veterinarian Portal')">
-                        <strong>Veterinarian</strong>
-                        <span>Medical & Rx</span>
-                    </button>
-                    <button type="button" class="btn-demo-role" onclick="fillCredentials('manager@sanmodesto.com', 'Manager Portal')">
-                        <strong>Manager</strong>
-                        <span>Sales Reports</span>
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -237,12 +158,5 @@
     <div class="toast-container"></div>
 
     <script src="{{ asset('js/toast.js') }}"></script>
-    <script>
-        function fillCredentials(email, roleName) {
-            document.getElementById('email').value = email;
-            document.getElementById('password').value = 'password';
-            window.Toast.show('info', 'Role Selected', `Credentials for ${roleName} loaded. Click Sign In to enter!`);
-        }
-    </script>
 </body>
 </html>

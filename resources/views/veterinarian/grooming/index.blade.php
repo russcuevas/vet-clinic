@@ -48,6 +48,7 @@
                             <th>Pet & Owner Details</th>
                             <th>Vitals (Weight / Temp / Score)</th>
                             <th>Style [text type]</th>
+                            <th>Attending Groomer</th>
                             <th>Groomer Observation Notes</th>
                             <th>Price</th>
                             <th>Status</th>
@@ -74,6 +75,14 @@
                                 <td>
                                     <strong style="color: var(--white);">{{ $groom->style }}</strong>
                                 </td>
+                                <td>
+                                    @if($groom->groomer)
+                                        <div style="font-weight: 700; color: #10b981; font-size: 0.82rem;">✂️ {{ $groom->groomer->full_name }}</div>
+                                        <div style="font-size: 0.68rem; color: var(--text-muted);">{{ $groom->groomer->position }}</div>
+                                    @else
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Unassigned</span>
+                                    @endif
+                                </td>
                                 <td style="max-width: 250px;">
                                     <div style="font-size: 0.8rem; color: var(--text-secondary);">
                                         {{ $groom->groomer_observation_notes ?? 'No observation notes' }}
@@ -93,6 +102,7 @@
                                         <button type="button" class="btn btn-navy btn-sm"
                                             data-modal-target="modal-edit-grooming"
                                             data-action-url="{{ route('vet.grooming.update', $groom->id) }}"
+                                            data-field-groomer_id="{{ $groom->groomer_id }}"
                                             data-field-body_weight="{{ $groom->body_weight }}"
                                             data-field-temperature="{{ $groom->temperature }}"
                                             data-field-body_score="{{ $groom->body_score }}"
@@ -160,6 +170,18 @@
                         <input type="text" name="style" class="form-control" placeholder="e.g. Puppy Cut, Teddy Bear Cut, Full Summer Shave, Bath & Blowdry" required>
                     </div>
 
+                    <!-- Attending Groomer Selection -->
+                    <div class="form-group">
+                        <label class="form-label">Attending Pet Groomer (Assigned Staff)</label>
+                        <select name="groomer_id" class="form-select">
+                            <option value="">-- Select Attending Groomer (Optional) --</option>
+                            @foreach($groomers as $groomer)
+                                <option value="{{ $groomer->id }}">{{ $groomer->full_name }} ({{ $groomer->position }})</option>
+                            @endforeach
+                        </select>
+                        <span style="font-size: 0.72rem; color: var(--text-muted);">Assigning the groomer automatically links their pet grooming commission & incentives.</span>
+                    </div>
+
                     <!-- Flowchart Field: Groomer observation Notes [text type] -->
                     <div class="form-group">
                         <label class="form-label">Groomer Observation Notes [text type]</label>
@@ -214,6 +236,16 @@
                     <div class="form-group">
                         <label class="form-label">Style [text type] <span class="req">*</span></label>
                         <input type="text" name="style" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Attending Pet Groomer (Assigned Staff)</label>
+                        <select name="groomer_id" class="form-select">
+                            <option value="">-- None / Unassigned --</option>
+                            @foreach($groomers as $groomer)
+                                <option value="{{ $groomer->id }}">{{ $groomer->full_name }} ({{ $groomer->position }})</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="form-group">
