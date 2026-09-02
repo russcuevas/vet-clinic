@@ -13,6 +13,7 @@ class GroomingRecord extends Model
         'grooming_code',
         'owner_id',
         'pet_id',
+        'groomer_id',
         'body_weight',
         'temperature',
         'body_score',
@@ -43,6 +44,11 @@ class GroomingRecord extends Model
     public function pet()
     {
         return $this->belongsTo(Pet::class);
+    }
+
+    public function groomer()
+    {
+        return $this->belongsTo(Employee::class, 'groomer_id');
     }
 
     public function bill()

@@ -34,8 +34,15 @@ class GroomingController extends Controller
         $records = $query->latest()->get();
         $owners = Owner::with('pets')->where('status', 'active')->get();
         $generatedCode = GroomingRecord::generateGroomingCode();
+        // Strictly only Groomers appear in Grooming module
+        $groomers = \App\Models\Employee::where('status', 'active')
+            ->where(function ($q) {
+                $q->where('position', 'LIKE', '%groom%')
+                  ->orWhere('department', 'LIKE', '%groom%');
+            })
+            ->get();
 
-        return view('admin.grooming.index', compact('records', 'owners', 'generatedCode'));
+        return view('admin.grooming.index', compact('records', 'owners', 'generatedCode', 'groomers'));
     }
 
     public function store(Request $request)
@@ -89,6 +96,7 @@ class GroomingController extends Controller
         }
 
         $validated = $request->validate([
+            'groomer_id' => 'nullable|exists:employees,id',
             'body_weight' => 'nullable|string|max:50',
             'temperature' => 'nullable|string|max:50',
             'body_score' => 'nullable|string|max:100',
@@ -103,6 +111,7 @@ class GroomingController extends Controller
             'grooming_code' => $code,
             'owner_id' => $ownerId,
             'pet_id' => $petId,
+            'groomer_id' => $validated['groomer_id'] ?? null,
             'body_weight' => $validated['body_weight'] ?? null,
             'temperature' => $validated['temperature'] ?? null,
             'body_score' => $validated['body_score'] ?? null,

@@ -52,104 +52,197 @@
             </div>
 
             <!-- Role Badge -->
+            <!-- Role Badge & Admin Portal Switcher -->
             @auth
                 <div class="sidebar-role-badge">
                     <span class="role-badge-title">Portal Role</span>
                     <span class="role-badge-val">{{ auth()->user()->role }}</span>
                 </div>
+
+                @if (auth()->user()->role === 'admin')
+                    @php
+                        $isPayrollPortal = request()->routeIs('admin.payroll.*');
+                    @endphp
+                    <!-- Admin Mode Switcher -->
+                    <div style="padding: 0.5rem 1rem; margin-bottom: 0.5rem;">
+                        <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 9999px; padding: 3px; display: flex; gap: 3px;">
+                            <a href="{{ route('admin.dashboard') }}"
+                               style="flex: 1; text-align: center; font-size: 0.72rem; font-weight: 700; padding: 6px 6px; border-radius: 9999px; text-decoration: none; transition: all 0.2s; {{ !$isPayrollPortal ? 'background: #d4af37; color: #111; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.4);' : 'color: rgba(255, 255, 255, 0.7);' }}">
+                                🐾 Clinic
+                            </a>
+                            <a href="{{ route('admin.payroll.dashboard') }}"
+                               style="flex: 1; text-align: center; font-size: 0.72rem; font-weight: 700; padding: 6px 6px; border-radius: 9999px; text-decoration: none; transition: all 0.2s; {{ $isPayrollPortal ? 'background: #2563eb; color: #fff; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);' : 'color: rgba(255, 255, 255, 0.7);' }}">
+                                💼 Payroll
+                            </a>
+                        </div>
+                    </div>
+                @endif
             @endauth
 
             <!-- Navigation Links Based on Role -->
             <nav class="sidebar-nav">
                 @auth
                     @if (auth()->user()->role === 'admin')
-                        <!-- Admin Navigation (Full Clinic Access) -->
-                        <div class="nav-section-title">Core Management</div>
-                        <a href="{{ route('admin.dashboard') }}"
-                            class="nav-link-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            <span>Dashboard</span>
-                        </a>
-                        <a href="{{ route('admin.clients.index') }}"
-                            class="nav-link-item {{ request()->routeIs('admin.clients.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                            <span>Clients & Pets</span>
-                        </a>
+                        @if (request()->routeIs('admin.payroll.*'))
+                            <!-- Payroll Portal Navigation (Admin Only) -->
+                            <div class="nav-section-title">Payroll Command</div>
+                            <a href="{{ route('admin.payroll.dashboard') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.payroll.dashboard') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span>Payroll Dashboard</span>
+                            </a>
+                            <a href="{{ route('admin.payroll.employees.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.payroll.employees.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                <span>Employee Database</span>
+                            </a>
+                            <a href="{{ route('admin.payroll.dtr.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.payroll.dtr.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Timekeeping (DTR)</span>
+                            </a>
 
-                        <div class="nav-section-title">Clinic Services</div>
-                        <a href="{{ route('admin.veterinary.index') }}"
-                            class="nav-link-item {{ request()->routeIs('admin.veterinary.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span>Veterinary Services</span>
-                        </a>
-                        <a href="{{ route('admin.grooming.index') }}"
-                            class="nav-link-item {{ request()->routeIs('admin.grooming.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L10.758 7.758a3 3 0 014.242 4.242z" />
-                            </svg>
-                            <span>Grooming</span>
-                        </a>
-                        <a href="{{ route('admin.supplies.index') }}"
-                            class="nav-link-item {{ request()->routeIs('admin.supplies.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                            </svg>
-                            <span>Pet Supplies POS</span>
-                        </a>
+                            <div class="nav-section-title">Leaves & Deductions</div>
+                            <a href="{{ route('admin.payroll.leaves.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.payroll.leaves.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>Leave Applications</span>
+                            </a>
+                            <a href="{{ route('admin.payroll.deductions.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.payroll.deductions.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Financial & Deductions</span>
+                            </a>
+                            <a href="{{ route('admin.payroll.incentives.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.payroll.incentives.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                                <span>Role Incentives</span>
+                            </a>
 
-                        <div class="nav-section-title">Finance & Stock</div>
-                        <a href="{{ route('admin.inventory.index') }}"
-                            class="nav-link-item {{ request()->routeIs('admin.inventory.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                            <span>Inventory</span>
-                        </a>
-                        <a href="{{ route('admin.billing.index') }}"
-                            class="nav-link-item {{ request()->routeIs('admin.billing.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                            <span>Billing Database</span>
-                        </a>
-                        <a href="{{ route('admin.reports.sales') }}"
-                            class="nav-link-item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                            <span>Sales Reports</span>
-                        </a>
-                        <a href="{{ route('admin.users.index') }}"
-                            class="nav-link-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            <span>Staff Accounts</span>
-                        </a>
+                            <div class="nav-section-title">Payroll Processing</div>
+                            <a href="{{ route('admin.payroll.periods.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.payroll.periods.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                <span>15 & 30-Day Payroll</span>
+                            </a>
+                            <a href="{{ route('admin.payroll.annual') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.payroll.annual') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>Annual Records</span>
+                            </a>
+                        @else
+                            <!-- Admin Navigation (Full Clinic Access) -->
+                            <div class="nav-section-title">Core Management</div>
+                            <a href="{{ route('admin.dashboard') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="{{ route('admin.clients.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.clients.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                <span>Clients & Pets</span>
+                            </a>
+
+                            <div class="nav-section-title">Clinic Services</div>
+                            <a href="{{ route('admin.veterinary.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.veterinary.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>Veterinary Services</span>
+                            </a>
+                            <a href="{{ route('admin.grooming.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.grooming.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L10.758 7.758a3 3 0 014.242 4.242z" />
+                                </svg>
+                                <span>Grooming</span>
+                            </a>
+                            <a href="{{ route('admin.supplies.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.supplies.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                </svg>
+                                <span>Pet Supplies POS</span>
+                            </a>
+
+                            <div class="nav-section-title">Finance & Stock</div>
+                            <a href="{{ route('admin.inventory.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.inventory.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                                <span>Inventory</span>
+                            </a>
+                            <a href="{{ route('admin.billing.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.billing.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                <span>Billing Database</span>
+                            </a>
+                            <a href="{{ route('admin.reports.sales') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span>Sales Reports</span>
+                            </a>
+                            <a href="{{ route('admin.users.index') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                <span>Staff Accounts</span>
+                            </a>
+                        @endif
                     @elseif(auth()->user()->role === 'cashier')
                         <!-- Cashier Navigation -->
                         <div class="nav-section-title">Cashier Desk</div>
@@ -289,7 +382,23 @@
                     </div>
                 </div>
 
-                <div class="topbar-right">
+                <div class="topbar-right" style="display: flex; align-items: center; gap: 0.75rem;">
+                    @auth
+                        @if (auth()->user()->role === 'admin')
+                            @if (request()->routeIs('admin.payroll.*'))
+                                <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-gold"
+                                    style="border-radius: 9999px; text-decoration: none; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 0.35rem 0.85rem;">
+                                    <span>🐾 Switch to Vet Clinic</span>
+                                </a>
+                            @else
+                                <a href="{{ route('admin.payroll.dashboard') }}" class="btn btn-sm"
+                                    style="background: #1d4ed8; color: #fff; border: 1px solid #3b82f6; border-radius: 9999px; text-decoration: none; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 0.35rem 0.85rem; box-shadow: 0 2px 6px rgba(29, 78, 216, 0.3);">
+                                    <span>💼 Switch to Payroll</span>
+                                </a>
+                            @endif
+                        @endif
+                    @endauth
+
                     <!-- Quick action buttons or date badge -->
                     <div class="badge badge-gold" style="font-weight: 600;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none"

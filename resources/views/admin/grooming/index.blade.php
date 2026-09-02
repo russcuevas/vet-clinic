@@ -48,6 +48,7 @@
                             <th>Pet & Owner Details</th>
                             <th>Vitals (Weight / Temp / Score)</th>
                             <th>Style [text type]</th>
+                            <th>Attending Groomer</th>
                             <th>Groomer Observation Notes</th>
                             <th>Price</th>
                             <th>Status</th>
@@ -73,6 +74,13 @@
                                 </td>
                                 <td>
                                     <strong style="color: var(--white);">{{ $groom->style }}</strong>
+                                </td>
+                                <td>
+                                    @if($groom->groomer)
+                                        <span class="badge badge-gold" style="font-size: 0.75rem;">✂️ {{ $groom->groomer->full_name }}</span>
+                                    @else
+                                        <span style="color: var(--text-muted); font-size: 0.75rem;">Unassigned</span>
+                                    @endif
                                 </td>
                                 <td style="max-width: 250px;">
                                     <div style="font-size: 0.8rem; color: var(--text-secondary);">
@@ -152,6 +160,20 @@
                             <label class="form-label">Body Score</label>
                             <input type="text" name="body_score" class="form-control" placeholder="e.g. 3/5 Ideal">
                         </div>
+                    </div>
+
+                    <!-- Attending Groomer (Linked to Payroll Incentives) -->
+                    <div class="form-group">
+                        <label class="form-label">Attending Groomer</label>
+                        <select name="groomer_id" class="form-control">
+                            <option value="">-- Unassigned (General Grooming) --</option>
+                            @foreach($groomers as $groomer)
+                                <option value="{{ $groomer->id }}" {{ str_contains(strtolower($groomer->position), 'groom') ? 'selected' : '' }}>
+                                    {{ $groomer->full_name }} ({{ $groomer->position }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <span style="font-size: 0.72rem; color: var(--gold-light);">Credited to Groomer's monthly incentive calculation count.</span>
                     </div>
 
                     <!-- Flowchart Field: Style [text type] -->
