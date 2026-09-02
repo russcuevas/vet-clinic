@@ -1,0 +1,190 @@
+/* ==========================================================================
+   San Modesto Vet Clinic - Modal Architecture
+   Smooth Open/Close animations, Gold Accents, Clean Form Containers
+   ========================================================================== */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 13, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  padding: 1.25rem;
+}
+
+.modal-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-dialog {
+  background: var(--black-card);
+  border: 1px solid var(--gold-border);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.15);
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.94) translateY(10px);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.modal-backdrop.active .modal-dialog {
+  transform: scale(1) translateY(0);
+}
+
+.modal-dialog.modal-lg {
+  max-width: 820px;
+}
+
+.modal-dialog.modal-sm {
+  max-width: 440px;
+}
+
+/* Modal Header */
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--black-border);
+  background: linear-gradient(90deg, var(--navy-surface) 0%, var(--black-card) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.modal-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--gold-gradient);
+  opacity: 0.5;
+}
+
+.modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modal-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid var(--gold-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-primary);
+}
+
+.modal-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.modal-close-btn:hover {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Ensure forms inside modal dialog flex properly and enable scrolling */
+.modal-dialog form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Scrollable Modal Body */
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(90vh - 135px);
+}
+
+/* Custom Gold & Obsidian Scrollbar for Modal Body */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(6, 11, 18, 0.6);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: var(--gold-border);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-primary);
+}
+
+/* Modal Footer */
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--black-border);
+  background: rgba(6, 13, 23, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Danger / Delete Modal Special Accent */
+.modal-dialog.modal-danger {
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(239, 68, 68, 0.15);
+}
+
+.modal-dialog.modal-danger .modal-header {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.15) 0%, var(--black-card) 100%);
+}
+
+.modal-dialog.modal-danger .modal-header::after {
+  background: var(--danger);
+}
+
+.modal-dialog.modal-danger .modal-icon {
+  background: var(--danger-bg);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--danger);
+}

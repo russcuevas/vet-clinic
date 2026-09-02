@@ -1,0 +1,247 @@
+/* ==========================================================================
+   San Modesto Vet Clinic - Animated Walking Pet Footer Theme
+   ========================================================================== */
+
+/* App Main Footer Container */
+.app-animated-footer {
+    width: 100%;
+    margin-top: auto;
+    background: linear-gradient(180deg, transparent 0%, rgba(6, 10, 18, 0.85) 30%, #040609 100%);
+    border-top: 1px solid rgba(245, 186, 49, 0.15);
+    position: relative;
+    overflow: hidden;
+    z-index: 20;
+    box-sizing: border-box;
+}
+
+/* Walking Track Zone */
+.footer-pet-track {
+    width: 100%;
+    height: 78px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Continuous Ground Line */
+.footer-walking-line {
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(245, 186, 49, 0.1) 15%, 
+        rgba(245, 186, 49, 0.45) 50%, 
+        rgba(245, 186, 49, 0.1) 85%, 
+        transparent 100%
+    );
+    box-shadow: 0 0 10px rgba(245, 186, 49, 0.25);
+}
+
+/* Subtle Paw Prints Trail along the line */
+.footer-walking-line::after {
+    content: '🐾   🐾   🐾   🐾   🐾   🐾   🐾   🐾   🐾   🐾   🐾   🐾';
+    position: absolute;
+    bottom: 4px;
+    left: 0;
+    width: 100%;
+    color: rgba(245, 186, 49, 0.12);
+    font-size: 0.75rem;
+    letter-spacing: 2.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Walking Pet Animated Wrapper */
+.walking-pet-wrapper {
+    position: absolute;
+    bottom: 2px;
+    height: 72px;
+    display: flex;
+    align-items: flex-end;
+    animation: petWalkAcross 24s linear infinite;
+    cursor: pointer;
+    z-index: 5;
+    will-change: left, transform;
+}
+
+.walking-pet-wrapper:hover {
+    animation-play-state: paused;
+}
+
+.walking-pet-gif {
+    height: 68px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* Speech Bubble that appears on hover */
+.pet-speech-bubble {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--navy-dark, #0B192C);
+    color: var(--gold-primary, #F5BA31);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--gold-border, rgba(245, 186, 49, 0.3));
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+}
+
+.walking-pet-wrapper:hover .pet-speech-bubble {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* Keyframes: Smooth Walking Back & Forth */
+@keyframes petWalkAcross {
+    0% {
+        left: -90px;
+        transform: scaleX(1);
+    }
+    48% {
+        left: calc(100% - 90px);
+        transform: scaleX(1);
+    }
+    49.9% {
+        left: calc(100% - 90px);
+        transform: scaleX(1);
+    }
+    50% {
+        left: calc(100% - 90px);
+        transform: scaleX(-1);
+    }
+    98% {
+        left: -90px;
+        transform: scaleX(-1);
+    }
+    99.9% {
+        left: -90px;
+        transform: scaleX(-1);
+    }
+    100% {
+        left: -90px;
+        transform: scaleX(1);
+    }
+}
+
+/* Lower Footer Bar (Information & Copyright) */
+.footer-info-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 2rem;
+    background: rgba(4, 6, 9, 0.92);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 0.78rem;
+    color: var(--text-secondary, #94A3B8);
+}
+
+.footer-brand-title {
+    color: var(--gold-primary, #F5BA31);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.footer-heart {
+    color: #EF4444;
+    display: inline-block;
+    animation: heartPulse 1.8s infinite;
+}
+
+@keyframes heartPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* ==========================================================================
+   Login Page Specific Walking Pet Styling
+   ========================================================================== */
+.login-walking-pet-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 84px;
+    pointer-events: none;
+    z-index: 8;
+    overflow: hidden;
+}
+
+.login-ground-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(245, 186, 49, 0.2) 20%, 
+        rgba(245, 186, 49, 0.55) 50%, 
+        rgba(245, 186, 49, 0.2) 80%, 
+        transparent 100%
+    );
+    box-shadow: 0 0 12px rgba(245, 186, 49, 0.3);
+}
+
+.login-pet-walker {
+    position: absolute;
+    bottom: 2px;
+    height: 70px;
+    animation: petWalkAcross 20s linear infinite;
+    will-change: left, transform;
+}
+
+.login-pet-gif {
+    height: 66px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.75));
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .footer-info-bar {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+        padding: 0.85rem 1rem;
+    }
+    
+    .footer-pet-track {
+        height: 62px;
+    }
+    
+    .walking-pet-wrapper {
+        height: 56px;
+    }
+    
+    .walking-pet-gif {
+        height: 52px;
+    }
+
+    .login-walking-pet-footer {
+        height: 64px;
+    }
+
+    .login-pet-walker {
+        height: 54px;
+    }
+
+    .login-pet-gif {
+        height: 50px;
+    }
+}
