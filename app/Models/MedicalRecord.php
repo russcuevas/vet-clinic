@@ -15,15 +15,25 @@ class MedicalRecord extends Model
         'pet_id',
         'veterinarian_id',
         'service_type', // consultation, follow_up, wellness
+        'visit_date',
         'body_weight',
         'temperature',
         'body_score',
         'history_taking',
         'attached_lab_results',
+        'laboratory_notes',
         'diagnosis',
+        'medication_treatment',
         'veterinarians_notes',
         'service_fee',
+        'follow_up_date',
+        'follow_up_notes',
         'status', // ongoing, completed, billed
+    ];
+
+    protected $casts = [
+        'visit_date' => 'date',
+        'follow_up_date' => 'date',
     ];
 
     public static function generateRecordCode(): string

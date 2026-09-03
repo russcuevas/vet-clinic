@@ -115,7 +115,11 @@
     <div class="form-grid">
         <div class="form-group">
             <label class="form-label">Breed</label>
-            <input type="text" name="breed" class="form-control" placeholder="e.g. Golden Retriever, Shih Tzu, Persian">
+            <input type="text" name="breed" class="form-control" placeholder="e.g. Persian, Shih Tzu, Domestic Shorthair">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Birthdate <span style="color: var(--text-muted); font-size: 0.72rem;">(Optional)</span></label>
+            <input type="date" name="birth_date" class="form-control">
         </div>
         <div class="form-group">
             <label class="form-label">Age</label>

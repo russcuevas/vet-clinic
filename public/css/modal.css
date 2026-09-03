@@ -43,8 +43,16 @@
   transform: scale(1) translateY(0);
 }
 
+.modal-dialog.modal-2xl {
+  max-width: 1140px;
+}
+
+.modal-dialog.modal-xl {
+  max-width: 1020px;
+}
+
 .modal-dialog.modal-lg {
-  max-width: 820px;
+  max-width: 840px;
 }
 
 .modal-dialog.modal-sm {

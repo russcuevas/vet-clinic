@@ -55,6 +55,7 @@ class VeterinaryController extends Controller
                 'species' => 'required|string|max:100',
                 'breed' => 'nullable|string|max:100',
                 'age' => 'nullable|string|max:50',
+                'birth_date' => 'nullable|date',
                 'sex' => 'nullable|string|max:50',
                 'color_markings' => 'nullable|string|max:255',
             ]);
@@ -75,6 +76,7 @@ class VeterinaryController extends Controller
                 'species' => $clientData['species'],
                 'breed' => $clientData['breed'] ?? null,
                 'age' => $clientData['age'] ?? null,
+                'birth_date' => $clientData['birth_date'] ?? null,
                 'sex' => $clientData['sex'] ?? null,
                 'color' => $clientData['color_markings'] ?? null,
                 'status' => 'active',
@@ -92,6 +94,7 @@ class VeterinaryController extends Controller
         }
 
         $validated = $request->validate([
+            'visit_date' => 'nullable|date',
             'veterinarian_id' => 'nullable|exists:users,id',
             'service_type' => 'required|in:consultation,follow_up,wellness',
             'body_weight' => 'nullable|string|max:50',
@@ -99,9 +102,13 @@ class VeterinaryController extends Controller
             'body_score' => 'nullable|string|max:100',
             'history_taking' => 'nullable|string',
             'diagnosis' => 'nullable|string',
+            'medication_treatment' => 'nullable|string',
+            'laboratory_notes' => 'nullable|string',
             'veterinarians_notes' => 'nullable|string',
             'service_fee' => 'required|numeric|min:0',
-            'lab_results' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'follow_up_date' => 'nullable|date',
+            'follow_up_notes' => 'nullable|string',
+            'lab_results' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:10240',
             // Prescription optional fields
             'prescribe_rx' => 'nullable|string',
             'rx_instructions' => 'nullable|string',
@@ -110,7 +117,7 @@ class VeterinaryController extends Controller
         $recordCode = MedicalRecord::generateRecordCode();
         $labPath = null;
 
-        // Store picture in public/uploads/lab_results/
+        // Store file in public/uploads/lab_results/
         if ($request->hasFile('lab_results')) {
             $file = $request->file('lab_results');
             $filename = 'lab_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
@@ -118,7 +125,10 @@ class VeterinaryController extends Controller
             $labPath = 'uploads/lab_results/' . $filename;
         }
 
-        $vetUser = $validated['veterinarian_id'] ? User::find($validated['veterinarian_id']) : auth()->user();
+        $vetUser = !empty($validated['veterinarian_id']) ? User::find($validated['veterinarian_id']) : auth()->user();
+        $visitDate = !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date']) : Carbon::now();
+
+        $isPaid = $request->boolean('is_already_paid');
 
         $record = MedicalRecord::create([
             'record_code' => $recordCode,
@@ -126,15 +136,21 @@ class VeterinaryController extends Controller
             'pet_id' => $petId,
             'veterinarian_id' => $vetUser->id ?? null,
             'service_type' => $validated['service_type'],
+            'visit_date' => $visitDate->format('Y-m-d'),
             'body_weight' => $validated['body_weight'] ?? null,
             'temperature' => $validated['temperature'] ?? null,
             'body_score' => $validated['body_score'] ?? null,
             'history_taking' => $validated['history_taking'] ?? null,
             'attached_lab_results' => $labPath,
+            'laboratory_notes' => $validated['laboratory_notes'] ?? null,
             'diagnosis' => $validated['diagnosis'] ?? null,
+            'medication_treatment' => $validated['medication_treatment'] ?? null,
             'veterinarians_notes' => $validated['veterinarians_notes'] ?? null,
             'service_fee' => $validated['service_fee'],
-            'status' => 'ongoing',
+            'follow_up_date' => $validated['follow_up_date'] ?? null,
+            'follow_up_notes' => $validated['follow_up_notes'] ?? null,
+            'status' => $isPaid ? 'completed' : 'ongoing',
+            'created_at' => $visitDate, // Respect custom visit date in timestamp
         ]);
 
         // Generate Prescription if prescribed
@@ -151,7 +167,7 @@ class VeterinaryController extends Controller
                 'body_weight' => $validated['body_weight'] ?? null,
                 'rx_details' => $validated['prescribe_rx'],
                 'instructions' => $validated['rx_instructions'] ?? null,
-                'date_issued' => Carbon::now()->format('Y-m-d'),
+                'date_issued' => $visitDate->format('Y-m-d'),
             ]);
         }
 
@@ -167,9 +183,16 @@ class VeterinaryController extends Controller
             'service_type' => 'veterinary',
             'subtotal' => $validated['service_fee'],
             'total_amount' => $validated['service_fee'],
-            'payment_status' => 'unpaid',
-            'transaction_date' => Carbon::now(),
-            'notes' => ucfirst($validated['service_type']) . " for record {$recordCode}",
+            'payment_status' => $isPaid ? 'paid' : 'unpaid',
+            'paid_amount' => $isPaid ? $validated['service_fee'] : 0.00,
+            'change_amount' => 0.00,
+            'payment_method' => $isPaid ? 'cash' : null,
+            'paid_at' => $isPaid ? $visitDate : null,
+            'cashier_id' => $isPaid ? auth()->id() : null,
+            'transaction_date' => $visitDate,
+            'notes' => $isPaid 
+                ? "Old/Historical record for {$recordCode} (Auto-marked as Paid)"
+                : ucfirst($validated['service_type']) . " for record {$recordCode} on " . $visitDate->format('M d, Y'),
         ]);
 
         BillItem::create([
@@ -181,21 +204,30 @@ class VeterinaryController extends Controller
             'total_price' => $validated['service_fee'],
         ]);
 
-        return redirect()->back()->with('success', "Veterinary examination saved ({$recordCode}) and sent to Billing queue ({$invoiceNo})!");
+        $msg = $isPaid 
+            ? "Historical record saved ({$recordCode}) and automatically marked as PAID ({$invoiceNo})!"
+            : "Veterinary examination saved ({$recordCode}) and sent to Billing queue ({$invoiceNo})!";
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function update(Request $request, MedicalRecord $record)
     {
         $validated = $request->validate([
+            'visit_date' => 'nullable|date',
             'body_weight' => 'nullable|string|max:50',
             'temperature' => 'nullable|string|max:50',
             'body_score' => 'nullable|string|max:100',
             'history_taking' => 'nullable|string',
             'diagnosis' => 'nullable|string',
+            'medication_treatment' => 'nullable|string',
+            'laboratory_notes' => 'nullable|string',
             'veterinarians_notes' => 'nullable|string',
             'service_fee' => 'required|numeric|min:0',
+            'follow_up_date' => 'nullable|date',
+            'follow_up_notes' => 'nullable|string',
             'status' => 'required|in:ongoing,completed,billed',
-            'lab_results' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'lab_results' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:10240',
         ]);
 
         if ($request->hasFile('lab_results')) {

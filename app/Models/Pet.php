@@ -22,6 +22,10 @@ class Pet extends Model
         'photo',
     ];
 
+    protected $casts = [
+        'birth_date' => 'date',
+    ];
+
     public static function generatePetCode(): string
     {
         $year = date('Y');

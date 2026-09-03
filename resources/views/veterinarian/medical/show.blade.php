@@ -24,7 +24,10 @@
                 <div class="card-header">
                     <div class="card-title-group">
                         <h3 class="card-title">Case {{ $record->record_code }} - {{ ucfirst(str_replace('_', ' ', $record->service_type)) }}</h3>
-                        <span class="card-subtitle">Examined on {{ $record->created_at->format('F d, Y h:i A') }}</span>
+                        <span class="card-subtitle">
+                            📅 Visit Date: <strong>{{ $record->visit_date ? $record->visit_date->format('F d, Y') : $record->created_at->format('F d, Y') }}</strong>
+                            • Encoded on {{ $record->created_at->format('M d, Y h:i A') }}
+                        </span>
                     </div>
                     <span class="badge badge-gold">{{ ucfirst($record->status) }}</span>
                 </div>
@@ -33,11 +36,11 @@
                     <!-- Flowchart: Vitals -->
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; background: var(--navy-dark); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--navy-border); margin-bottom: 1.5rem;">
                         <div>
-                            <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); display: block;">Body Weight</span>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); display: block;">Body Weight (BW)</span>
                             <strong style="font-size: 1.15rem; color: var(--white);">{{ $record->body_weight ?? 'Not taken' }}</strong>
                         </div>
                         <div>
-                            <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); display: block;">Temperature</span>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); display: block;">Temperature (Temp)</span>
                             <strong style="font-size: 1.15rem; color: var(--white);">{{ $record->temperature ?? 'Not taken' }}</strong>
                         </div>
                         <div>
@@ -46,46 +49,96 @@
                         </div>
                     </div>
 
-                    <!-- Flowchart: History Taking {text type} -->
+                    <!-- Purpose / Examination Notes / Complaint -->
                     <div style="margin-bottom: 1.5rem;">
                         <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
-                            History Taking
+                            📝 Purpose / Examination Notes / Complaint
                         </h4>
-                        <div style="background: rgba(11, 25, 44, 0.3); padding: 1rem; border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.6;">
-                            {{ $record->history_taking ?? 'No history recorded.' }}
+                        <div style="background: rgba(11, 25, 44, 0.3); padding: 1rem; border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">
+                            {{ $record->history_taking ?? 'No complaint recorded.' }}
                         </div>
                     </div>
 
-                    <!-- Flowchart: Diagnosis {text type} -->
+                    <!-- Medication / Treatment -->
                     <div style="margin-bottom: 1.5rem;">
                         <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
-                            Clinical Diagnosis
+                            💊 Medication / Treatment
+                        </h4>
+                        <div style="background: rgba(11, 25, 44, 0.3); padding: 1rem; border-radius: var(--radius-sm); color: var(--white); line-height: 1.6; white-space: pre-wrap;">
+                            {{ $record->medication_treatment ?? 'No medications/treatments listed.' }}
+                        </div>
+                    </div>
+
+                    <!-- Laboratory Tests & Procedures -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
+                            🔬 Laboratory & Procedures
+                        </h4>
+                        <div style="background: rgba(11, 25, 44, 0.3); padding: 1rem; border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">
+                            {{ $record->laboratory_notes ?? 'No laboratory tests entered.' }}
+                        </div>
+                    </div>
+
+                    <!-- Follow-up -->
+                    @if($record->follow_up_date || $record->follow_up_notes)
+                    <div style="margin-bottom: 1.5rem; background: rgba(245, 186, 49, 0.06); border: 1px solid var(--gold-border); padding: 1rem; border-radius: var(--radius-sm);">
+                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem;">
+                            🗓️ Follow Up Scheduled
+                        </h4>
+                        <div style="color: var(--white); font-weight: 600;">
+                            Date: {{ $record->follow_up_date ? $record->follow_up_date->format('F d, Y') : 'Date not set' }}
+                        </div>
+                        @if($record->follow_up_notes)
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+                                Purpose: {{ $record->follow_up_notes }}
+                            </div>
+                        @endif
+                    </div>
+                    @endif
+
+                    <!-- Clinical Diagnosis -->
+                    @if($record->diagnosis)
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
+                            Clinical Diagnosis / Assessment
                         </h4>
                         <div style="background: rgba(11, 25, 44, 0.3); padding: 1rem; border-radius: var(--radius-sm); color: var(--white); font-weight: 600; line-height: 1.6;">
-                            {{ $record->diagnosis ?? 'No formal diagnosis entered.' }}
+                            {{ $record->diagnosis }}
                         </div>
                     </div>
+                    @endif
 
-                    <!-- Flowchart: Veterinarians Notes {text type} -->
+                    <!-- Veterinarian's Notes -->
+                    @if($record->veterinarians_notes)
                     <div style="margin-bottom: 1.5rem;">
                         <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
                             Veterinarian's Clinical Notes
                         </h4>
                         <div style="background: rgba(11, 25, 44, 0.3); padding: 1rem; border-radius: var(--radius-sm); color: var(--text-secondary); line-height: 1.6;">
-                            {{ $record->veterinarians_notes ?? 'No notes entered.' }}
+                            {{ $record->veterinarians_notes }}
                         </div>
                     </div>
+                    @endif
 
-                    <!-- Flowchart: Attached Laboratory results {pictures} -->
+                    <!-- Attached Laboratory Results / Documents -->
                     @if($record->attached_lab_results)
                         <div>
                             <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
-                                Attached Laboratory Results
+                                📎 Attached Laboratory / Medical File
                             </h4>
-                            <div style="border: 1px solid var(--black-border); border-radius: var(--radius-sm); overflow: hidden; max-width: 400px;">
-                                <a href="{{ asset($record->attached_lab_results) }}" target="_blank">
-                                    <img src="{{ asset($record->attached_lab_results) }}" alt="Laboratory Result Picture" style="width: 100%; display: block;">
-                                </a>
+                            <div style="border: 1px solid var(--black-border); border-radius: var(--radius-sm); overflow: hidden; max-width: 450px; padding: 0.5rem; background: var(--navy-dark);">
+                                @php
+                                    $extension = pathinfo($record->attached_lab_results, PATHINFO_EXTENSION);
+                                @endphp
+                                @if(in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'webp', 'gif']))
+                                    <a href="{{ asset($record->attached_lab_results) }}" target="_blank">
+                                        <img src="{{ asset($record->attached_lab_results) }}" alt="Laboratory Result" style="width: 100%; border-radius: 4px; display: block;">
+                                    </a>
+                                @else
+                                    <a href="{{ asset($record->attached_lab_results) }}" target="_blank" class="btn btn-gold btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                                        📄 Download / View Attached File ({{ strtoupper($extension) }})
+                                    </a>
+                                @endif
                             </div>
                         </div>
                     @endif
@@ -109,8 +162,12 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem; margin-bottom: 1.25rem;">
                         <div>Species: <strong style="color: var(--white);">{{ $record->pet->species ?? 'N/A' }}</strong></div>
                         <div>Breed: <strong style="color: var(--white);">{{ $record->pet->breed ?? 'N/A' }}</strong></div>
-                        <div>Age: <strong style="color: var(--white);">{{ $record->pet->age ?? 'N/A' }}</strong></div>
                         <div>Sex: <strong style="color: var(--white);">{{ $record->pet->sex ?? 'N/A' }}</strong></div>
+                        <div>Color: <strong style="color: var(--white);">{{ $record->pet->color ?? 'N/A' }}</strong></div>
+                        <div>Age: <strong style="color: var(--white);">{{ $record->pet->age ?? 'N/A' }}</strong></div>
+                        @if($record->pet?->birth_date)
+                            <div>Birthdate: <strong style="color: var(--gold-light);">{{ $record->pet->birth_date->format('M d, Y') }}</strong></div>
+                        @endif
                     </div>
 
                     <hr style="border: 0; border-top: 1px solid var(--black-border); margin: 1rem 0;">
@@ -121,6 +178,9 @@
                         <div style="font-size: 0.8rem; color: var(--gold-light);">Key: {{ $record->owner->client_code ?? '' }}</div>
                         <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $record->owner->contact_number ?? '' }}</div>
                         <div style="font-size: 0.78rem; color: var(--text-muted);">{{ $record->owner->address ?? '' }}</div>
+                        @if($record->owner?->email)
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">✉️ {{ $record->owner->email }}</div>
+                        @endif
                     </div>
                 </div>
             </div>
