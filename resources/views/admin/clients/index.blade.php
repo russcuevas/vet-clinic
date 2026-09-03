@@ -58,44 +58,69 @@
                                 <td>
                                     <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                                         @foreach($owner->pets as $pet)
-                                            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--navy-dark); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--navy-border); max-width: 320px;">
-                                                <div>
-                                                    <span style="color: var(--gold-light); font-weight: 700;">{{ $pet->name }}</span>
-                                                    <span style="font-size: 0.75rem; color: var(--text-muted);">({{ $pet->species }} - {{ $pet->breed }})</span>
-                                                    <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">
-                                                        <span>Sex: <strong style="color: var(--white);">{{ $pet->sex }}</strong></span>
-                                                        @if($pet->color)
-                                                            • <span>Color: <strong style="color: var(--white);">{{ $pet->color }}</strong></span>
-                                                        @endif
+                                            @php
+                                                $latestVisit = $pet->medicalRecords->first();
+                                                $visitCount = $pet->medicalRecords->count();
+                                            @endphp
+                                            <div style="background: var(--navy-dark); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--navy-border); max-width: 380px;">
+                                                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;">
+                                                    <div>
+                                                        <span style="color: var(--gold-light); font-weight: 800; font-size: 0.92rem;">{{ $pet->name }}</span>
+                                                        <span style="font-size: 0.75rem; color: var(--text-muted);">({{ $pet->species }} - {{ $pet->breed }})</span>
+                                                        <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">
+                                                            <span>Sex: <strong style="color: var(--white);">{{ $pet->sex }}</strong></span>
+                                                            @if($pet->color)
+                                                                • <span>Color: <strong style="color: var(--white);">{{ $pet->color }}</strong></span>
+                                                            @endif
+                                                        </div>
+                                                        <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
+                                                            Key: <code style="color: var(--gold-primary);">{{ $pet->pet_code }}</code> 
+                                                            @if($pet->birth_date)
+                                                                | 🎂 {{ $pet->birth_date->format('M d, Y') }}
+                                                            @endif
+                                                            | {{ $pet->age }}
+                                                        </div>
                                                     </div>
-                                                    <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
-                                                        Key: <code style="color: var(--gold-primary);">{{ $pet->pet_code }}</code> 
-                                                        @if($pet->birth_date)
-                                                            | 🎂 {{ $pet->birth_date->format('M d, Y') }}
-                                                        @endif
-                                                        | {{ $pet->age }}
+
+                                                    <div style="display: flex; gap: 0.2rem; align-items: center;">
+                                                        <button type="button" class="btn btn-ghost btn-sm" style="padding: 2px 5px; font-size: 0.8rem;" 
+                                                            data-modal-target="modal-edit-pet"
+                                                            data-action-url="{{ route('admin.pets.update', $pet->id) }}"
+                                                            data-field-name="{{ $pet->name }}"
+                                                            data-field-species="{{ $pet->species }}"
+                                                            data-field-breed="{{ $pet->breed }}"
+                                                            data-field-birth_date="{{ $pet->birth_date ? $pet->birth_date->format('Y-m-d') : '' }}"
+                                                            data-field-age="{{ $pet->age }}"
+                                                            data-field-sex="{{ $pet->sex }}"
+                                                            data-field-color="{{ $pet->color ?? '' }}"
+                                                            title="Edit Pet">
+                                                            ✏️
+                                                        </button>
+                                                        <button type="button" class="btn btn-ghost btn-sm" style="padding: 2px 5px; font-size: 0.8rem; color: var(--danger);" 
+                                                            data-modal-target="modal-delete-pet"
+                                                            data-action-url="{{ route('admin.pets.destroy', $pet->id) }}"
+                                                            data-field-target_name="{{ $pet->name }} ({{ $pet->pet_code }})"
+                                                            title="Delete Pet">
+                                                            🗑️
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <div style="display: flex; gap: 0.2rem; align-items: center;">
-                                                    <button type="button" class="btn btn-ghost btn-sm" style="padding: 2px 5px; font-size: 0.8rem;" 
-                                                        data-modal-target="modal-edit-pet"
-                                                        data-action-url="{{ route('admin.pets.update', $pet->id) }}"
-                                                        data-field-name="{{ $pet->name }}"
-                                                        data-field-species="{{ $pet->species }}"
-                                                        data-field-breed="{{ $pet->breed }}"
-                                                        data-field-birth_date="{{ $pet->birth_date ? $pet->birth_date->format('Y-m-d') : '' }}"
-                                                        data-field-age="{{ $pet->age }}"
-                                                        data-field-sex="{{ $pet->sex }}"
-                                                        data-field-color="{{ $pet->color ?? '' }}"
-                                                        title="Edit Pet">
-                                                        ✏️
-                                                    </button>
-                                                    <button type="button" class="btn btn-ghost btn-sm" style="padding: 2px 5px; font-size: 0.8rem; color: var(--danger);" 
-                                                        data-modal-target="modal-delete-pet"
-                                                        data-action-url="{{ route('admin.pets.destroy', $pet->id) }}"
-                                                        data-field-target_name="{{ $pet->name }} ({{ $pet->pet_code }})"
-                                                        title="Delete Pet">
-                                                        🗑️
+
+                                                <!-- Visit Information & History Button -->
+                                                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                                                    <div>
+                                                        @if($latestVisit)
+                                                            <span class="badge badge-navy" style="font-size: 0.7rem;">
+                                                                🗓️ Last Visit: <strong>{{ $latestVisit->visit_date ? $latestVisit->visit_date->format('m/d/Y') : $latestVisit->created_at->format('m/d/Y') }}</strong>
+                                                            </span>
+                                                        @else
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">No visits yet</span>
+                                                        @endif
+                                                    </div>
+
+                                                    <button type="button" class="btn btn-outline-gold btn-sm" style="padding: 2px 8px; font-size: 0.72rem;"
+                                                        onclick="openAdminPetHistoryModal({{ $pet->id }})">
+                                                        📋 History ({{ $visitCount }})
                                                     </button>
                                                 </div>
                                             </div>
@@ -574,4 +599,153 @@
             </form>
         </div>
     </div>
+    <!-- ==================== MODAL 7: PET MEDICAL HISTORY TIMELINE ==================== -->
+    <div class="modal-backdrop" id="modal-admin-pet-history">
+        <div class="modal-dialog modal-2xl">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-icon">📋</div>
+                    <div>
+                        <h4 class="modal-title" id="admin-history-modal-pet-name">Pet Medical History</h4>
+                        <span style="font-size: 0.75rem; color: var(--gold-light);" id="admin-history-modal-owner-name">Patient Visit Timeline & Records</span>
+                    </div>
+                </div>
+                <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+                <!-- Pet Profile Top Strip -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; background: rgba(11, 25, 44, 0.5); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.25rem;" id="admin-history-modal-pet-details">
+                    <!-- Dynamic details -->
+                </div>
+
+                <!-- Visits Timeline / Records Table -->
+                <div class="table-responsive">
+                    <table class="data-table" style="font-size: 0.84rem;">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 105px;">Visit Date</th>
+                                <th style="min-width: 90px;">Record Code</th>
+                                <th style="min-width: 100px;">Temp / BW</th>
+                                <th style="min-width: 170px;">Purpose / Complaint / History</th>
+                                <th style="min-width: 150px;">Medication / Treatment</th>
+                                <th style="min-width: 130px;">Laboratory</th>
+                                <th style="min-width: 110px;">Follow-Up</th>
+                                <th style="min-width: 100px;">Doctor / Fee</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-history-modal-records-body">
+                            <!-- Dynamic records injected by Javascript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-modal-close>Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Store for Javascript Modal Populating -->
+    <script>
+        const adminPetsData = {
+            @foreach($owners as $owner)
+                @foreach($owner->pets as $pet)
+                    "{{ $pet->id }}": {
+                        name: "{{ addslashes($pet->name) }}",
+                        pet_code: "{{ $pet->pet_code }}",
+                        species: "{{ $pet->species }}",
+                        breed: "{{ addslashes($pet->breed ?? 'N/A') }}",
+                        sex: "{{ $pet->sex ?? 'N/A' }}",
+                        color: "{{ addslashes($pet->color ?? 'N/A') }}",
+                        age: "{{ $pet->age ?? 'N/A' }}",
+                        birth_date: "{{ $pet->birth_date ? $pet->birth_date->format('M d, Y') : 'Not specified' }}",
+                        owner_name: "{{ addslashes($owner->full_name) }}",
+                        owner_code: "{{ $owner->client_code }}",
+                        contact: "{{ $owner->contact_number }}",
+                        records: [
+                            @foreach($pet->medicalRecords as $rec)
+                                {
+                                    id: {{ $rec->id }},
+                                    record_code: "{{ $rec->record_code }}",
+                                    visit_date: "{{ $rec->visit_date ? $rec->visit_date->format('m/d/Y') : $rec->created_at->format('m/d/Y') }}",
+                                    service_type: "{{ ucfirst(str_replace('_', ' ', $rec->service_type)) }}",
+                                    temperature: "{{ addslashes($rec->temperature ?? '—') }}",
+                                    body_weight: "{{ addslashes($rec->body_weight ?? '—') }}",
+                                    history_taking: "{{ addslashes($rec->history_taking ?? '') }}",
+                                    medication_treatment: "{{ addslashes($rec->medication_treatment ?? '') }}",
+                                    laboratory_notes: "{{ addslashes($rec->laboratory_notes ?? '') }}",
+                                    diagnosis: "{{ addslashes($rec->diagnosis ?? '') }}",
+                                    attached_file: "{{ $rec->attached_lab_results ? asset($rec->attached_lab_results) : '' }}",
+                                    follow_up: "{{ $rec->follow_up_date ? $rec->follow_up_date->format('m/d/Y') : '' }}",
+                                    follow_up_notes: "{{ addslashes($rec->follow_up_notes ?? '') }}",
+                                    fee: "₱{{ number_format($rec->service_fee, 2) }}",
+                                    status: "{{ ucfirst($rec->status) }}"
+                                },
+                            @endforeach
+                        ]
+                    },
+                @endforeach
+            @endforeach
+        };
+
+        function openAdminPetHistoryModal(petId) {
+            const pet = adminPetsData[petId];
+            if (!pet) return;
+
+            document.getElementById('admin-history-modal-pet-name').innerHTML = `🐾 ${pet.name} <span style="font-size: 0.8rem; color: var(--gold-light);">(${pet.pet_code})</span>`;
+            document.getElementById('admin-history-modal-owner-name').innerText = `Owner: ${pet.owner_name} (${pet.owner_code}) • Contact: ${pet.contact}`;
+
+            document.getElementById('admin-history-modal-pet-details').innerHTML = `
+                <div><span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Species & Breed</span><div style="font-weight: 700; color: var(--white);">${pet.species} - ${pet.breed}</div></div>
+                <div><span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Sex & Color</span><div style="font-weight: 700; color: var(--white);">${pet.sex} • ${pet.color}</div></div>
+                <div><span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Birthdate & Age</span><div style="font-weight: 700; color: var(--white);">${pet.birth_date} (${pet.age})</div></div>
+                <div><span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Total Encoded Visits</span><div style="font-weight: 800; color: var(--gold-primary); font-size: 1.1rem;">${pet.records.length}</div></div>
+            `;
+
+            const tbody = document.getElementById('admin-history-modal-records-body');
+            if (pet.records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">No clinical examination or visit records found for this pet.</td></tr>`;
+            } else {
+                tbody.innerHTML = pet.records.map(r => `
+                    <tr>
+                        <td>
+                            <strong style="color: var(--gold-primary); font-size: 0.9rem;">📅 ${r.visit_date}</strong>
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">${r.service_type}</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-navy" style="font-size: 0.72rem;">${r.record_code}</span>
+                        </td>
+                        <td>
+                            <div style="font-size: 0.78rem;">🌡️ ${r.temperature}</div>
+                            <div style="font-size: 0.78rem;">⚖️ ${r.body_weight}</div>
+                        </td>
+                        <td>
+                            <div style="color: var(--white); font-size: 0.8rem; line-height: 1.35; white-space: pre-wrap;">${r.history_taking || '<span style="color: var(--text-muted);">—</span>'}</div>
+                            ${r.diagnosis ? `<div style="font-size: 0.74rem; color: var(--gold-light); font-weight: 600; margin-top: 3px;">Dx: ${r.diagnosis}</div>` : ''}
+                        </td>
+                        <td>
+                            <div style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.35; white-space: pre-wrap;">${r.medication_treatment || '<span style="color: var(--text-muted);">—</span>'}</div>
+                        </td>
+                        <td>
+                            <div style="color: var(--text-secondary); font-size: 0.78rem;">${r.laboratory_notes || '<span style="color: var(--text-muted);">—</span>'}</div>
+                            ${r.attached_file ? `<a href="${r.attached_file}" target="_blank" class="badge badge-gold" style="font-size: 0.68rem; text-decoration: none; margin-top: 3px; display: inline-block;">📎 File Attached</a>` : ''}
+                        </td>
+                        <td>
+                            ${r.follow_up ? `<div style="color: var(--gold-light); font-weight: 700; font-size: 0.78rem;">🗓️ ${r.follow_up}</div>` : '<span style="color: var(--text-muted); font-size: 0.75rem;">None</span>'}
+                            ${r.follow_up_notes ? `<div style="font-size: 0.72rem; color: var(--text-muted);">${r.follow_up_notes}</div>` : ''}
+                        </td>
+                        <td>
+                            <div style="font-weight: 700; color: var(--white); font-size: 0.82rem;">${r.fee}</div>
+                            <span class="badge ${r.status === 'Completed' || r.status === 'Billed' ? 'badge-success' : 'badge-warning'}" style="font-size: 0.68rem;">
+                                ${r.status}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            const modal = document.getElementById('modal-admin-pet-history');
+            modal.classList.add('active');
+        }
+    </script>
 @endsection

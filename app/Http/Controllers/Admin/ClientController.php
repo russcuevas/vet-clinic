@@ -16,7 +16,15 @@ class ClientController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Owner::with('pets');
+        $query = Owner::with([
+            'pets.medicalRecords' => function ($q) {
+                $q->orderBy('visit_date', 'desc')->orderBy('created_at', 'desc');
+            },
+            'pets.prescriptions',
+            'medicalRecords' => function ($q) {
+                $q->orderBy('visit_date', 'desc')->orderBy('created_at', 'desc');
+            }
+        ]);
 
         if ($request->filled('search')) {
             $search = $request->input('search');

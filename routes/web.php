@@ -170,6 +170,11 @@ Route::group(['prefix' => 'veterinarian', 'as' => 'vet.', 'middleware' => ['auth
     Route::put('/grooming/{grooming}', [\App\Http\Controllers\Veterinarian\GroomingController::class, 'update'])->name('grooming.update');
     Route::delete('/grooming/{grooming}', [\App\Http\Controllers\Veterinarian\GroomingController::class, 'destroy'])->name('grooming.destroy');
 
+    // Clients & Patient History Database
+    Route::get('/clients', [\App\Http\Controllers\Veterinarian\ClientHistoryController::class, 'index'])->name('clients.index');
+    Route::get('/clients/{owner}', [\App\Http\Controllers\Veterinarian\ClientHistoryController::class, 'show'])->name('clients.show');
+    Route::get('/pets/{pet}/history', [\App\Http\Controllers\Veterinarian\ClientHistoryController::class, 'petHistory'])->name('pets.history');
+
     // Case-linked Prescriptions
     Route::post('/prescriptions', [\App\Http\Controllers\Veterinarian\PrescriptionController::class, 'store'])->name('prescriptions.store');
     Route::put('/prescriptions/{prescription}', [\App\Http\Controllers\Veterinarian\PrescriptionController::class, 'update'])->name('prescriptions.update');
