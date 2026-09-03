@@ -78,15 +78,18 @@ class DtrController extends Controller
         $records = $query->paginate(20)->withQueryString();
         $employees = Employee::where('status', 'active')->orderBy('first_name')->get();
 
-        // Summary for selected date
+        $dayRecords = DtrRecord::with('employee')
+            ->whereDate('record_date', $selectedDate)
+            ->get();
+
         $summary = [
-            'present' => DtrRecord::whereDate('record_date', $selectedDate)->where('status', 'present')->count(),
-            'late' => DtrRecord::whereDate('record_date', $selectedDate)->where('status', 'late')->count(),
-            'absent' => DtrRecord::whereDate('record_date', $selectedDate)->where('status', 'absent')->count(),
-            'on_leave' => DtrRecord::whereDate('record_date', $selectedDate)->where('status', 'on_leave')->count(),
+            'present' => $dayRecords->whereIn('status', ['present', 'late'])->count(),
+            'late' => $dayRecords->where('late_minutes', '>', 0)->count(),
+            'absent' => $dayRecords->where('status', 'absent')->count(),
+            'on_leave' => $dayRecords->where('status', 'on_leave')->count(),
         ];
 
-        return view('admin.payroll.dtr.index', compact('records', 'employees', 'selectedDate', 'selectedEmployeeId', 'summary'));
+        return view('admin.payroll.dtr.index', compact('records', 'dayRecords', 'employees', 'selectedDate', 'selectedEmployeeId', 'summary'));
     }
 
     public function store(Request $request)
@@ -94,53 +97,88 @@ class DtrController extends Controller
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'record_date' => 'required|date',
-            'time_in' => 'nullable|date_format:H:i',
-            'time_out' => 'nullable|date_format:H:i',
+            'time_in' => 'nullable|string',
+            'time_out' => 'nullable|string',
             'ot_hours' => 'nullable|numeric|min:0',
-            'status' => 'required|in:present,late,absent,on_leave,rest_day',
+            'status' => 'nullable|in:present,late,absent,on_leave,rest_day',
             'notes' => 'nullable|string|max:255',
         ]);
 
-        $regularHours = 8.00;
+        $employee = Employee::findOrFail($validated['employee_id']);
+        $shiftStartStr = $employee->shift_start ?: '09:00';
+        $shiftEndStr = $employee->shift_end ?: '18:00';
+
+        $timeIn = !empty($validated['time_in']) ? Carbon::parse($validated['time_in'])->format('H:i') : null;
+        $timeOut = !empty($validated['time_out']) ? Carbon::parse($validated['time_out'])->format('H:i') : null;
+
+        $regularHours = 0.00;
         $lateMinutes = 0;
         $undertimeMinutes = 0;
+        $otHours = !empty($validated['ot_hours']) ? floatval($validated['ot_hours']) : 0.00;
+        $status = $validated['status'] ?? 'present';
 
-        if ($validated['status'] === 'absent' || $validated['status'] === 'on_leave' || $validated['status'] === 'rest_day') {
+        if ($status === 'absent' || $status === 'on_leave' || $status === 'rest_day') {
+            $timeIn = null;
+            $timeOut = null;
             $regularHours = 0.00;
-        } elseif (!empty($validated['time_in']) && !empty($validated['time_out'])) {
-            $in = Carbon::createFromFormat('H:i', $validated['time_in']);
-            $out = Carbon::createFromFormat('H:i', $validated['time_out']);
-            
-            // Standard shift start is 08:00
-            $standardStart = Carbon::createFromFormat('H:i', '08:00');
-            if ($in->gt($standardStart)) {
-                $lateMinutes = $in->diffInMinutes($standardStart);
-                if ($validated['status'] !== 'late') {
-                    $validated['status'] = 'late';
-                }
+        } elseif ($timeIn) {
+            $in = Carbon::createFromFormat('H:i', $timeIn);
+            $shiftStart = Carbon::createFromFormat('H:i', $shiftStartStr);
+            $shiftEnd = Carbon::createFromFormat('H:i', $shiftEndStr);
+
+            // 1. Calculate Tardiness (Late)
+            if ($in->gt($shiftStart)) {
+                $lateMinutes = $in->diffInMinutes($shiftStart);
+                $status = 'late';
             }
 
-            $diffMinutes = $in->diffInMinutes($out);
-            if ($diffMinutes > 60) {
-                // subtract 1 hour meal break
-                $workedMinutes = $diffMinutes - 60;
-                $regularHours = min(8.00, round($workedMinutes / 60, 2));
+            // 2. If Time Out is provided, calculate duty hours, undertime, and overtime
+            if ($timeOut) {
+                $out = Carbon::createFromFormat('H:i', $timeOut);
+
+                // Undertime calculation (left before shift end)
+                if ($out->lt($shiftEnd)) {
+                    $undertimeMinutes = $out->diffInMinutes($shiftEnd);
+                }
+
+                // Overtime calculation (stayed past shift end)
+                if ($out->gt($shiftEnd) && $otHours == 0) {
+                    $otHours = round($out->diffInMinutes($shiftEnd) / 60, 2);
+                }
+
+                // Duty hours worked (minus 1 hour lunch break if shift is 5+ hours)
+                $diffMinutes = $in->diffInMinutes($out);
+                if ($diffMinutes >= 300) {
+                    $workedMinutes = max(0, $diffMinutes - 60);
+                    $regularHours = min(8.00, round($workedMinutes / 60, 2));
+                } else {
+                    $regularHours = round($diffMinutes / 60, 2);
+                }
             } else {
-                $regularHours = round($diffMinutes / 60, 2);
+                // Time In logged, awaiting Time Out
+                $regularHours = 0.00;
             }
         }
 
-        $validated['regular_hours'] = $regularHours;
-        $validated['late_minutes'] = $lateMinutes;
-        $validated['undertime_minutes'] = $undertimeMinutes;
-        $validated['ot_hours'] = $validated['ot_hours'] ?? 0.00;
+        $data = [
+            'employee_id' => $employee->id,
+            'record_date' => $validated['record_date'],
+            'time_in' => $timeIn,
+            'time_out' => $timeOut,
+            'regular_hours' => $regularHours,
+            'late_minutes' => $lateMinutes,
+            'undertime_minutes' => $undertimeMinutes,
+            'ot_hours' => $otHours,
+            'status' => $status,
+            'notes' => $validated['notes'] ?? null,
+        ];
 
         DtrRecord::updateOrCreate(
-            ['employee_id' => $validated['employee_id'], 'record_date' => $validated['record_date']],
-            $validated
+            ['employee_id' => $employee->id, 'record_date' => $validated['record_date']],
+            $data
         );
 
-        return redirect()->back()->with('success', 'DTR log recorded successfully!');
+        return redirect()->back()->with('success', "DTR log for {$employee->full_name} saved successfully!");
     }
 
     public function batchGenerate(Request $request)
@@ -156,7 +194,6 @@ class DtrController extends Controller
 
         $count = 0;
         foreach ($employees as $employee) {
-            // Respect filed approved leaves: do not overwrite
             $leave = \App\Models\LeaveApplication::where('employee_id', $employee->id)
                 ->where('status', 'approved')
                 ->whereDate('start_date', '<=', $date)
@@ -169,17 +206,20 @@ class DtrController extends Controller
 
             $existing = DtrRecord::where('employee_id', $employee->id)->whereDate('record_date', $date)->first();
             if (!$existing || $existing->status === 'absent') {
+                $shiftStart = $employee->shift_start ?: '09:00';
+                $shiftEnd = $employee->shift_end ?: '18:00';
+
                 DtrRecord::updateOrCreate(
                     ['employee_id' => $employee->id, 'record_date' => $date],
                     [
-                        'time_in' => $status === 'present' ? '08:00' : null,
-                        'time_out' => $status === 'present' ? '17:00' : null,
+                        'time_in' => $status === 'present' ? $shiftStart : null,
+                        'time_out' => $status === 'present' ? $shiftEnd : null,
                         'regular_hours' => $status === 'present' ? 8.00 : 0.00,
                         'late_minutes' => 0,
                         'undertime_minutes' => 0,
                         'ot_hours' => 0.00,
                         'status' => $status,
-                        'notes' => 'Batch standard shift generated',
+                        'notes' => 'Batch schedule generated based on assigned shift (' . $shiftStart . ' - ' . $shiftEnd . ')',
                     ]
                 );
                 $count++;

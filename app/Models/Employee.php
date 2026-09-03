@@ -17,9 +17,13 @@ class Employee extends Model
         'email',
         'phone',
         'position',
+        'shift_start',
+        'shift_end',
         'department',
         'employment_type',
         'basic_salary',
+        'divisor_days',
+        'rest_days_per_week',
         'daily_rate',
         'hourly_rate',
         'sss_no',
@@ -34,6 +38,8 @@ class Employee extends Model
         'basic_salary' => 'decimal:2',
         'daily_rate' => 'decimal:2',
         'hourly_rate' => 'decimal:2',
+        'divisor_days' => 'integer',
+        'rest_days_per_week' => 'integer',
         'date_hired' => 'date',
     ];
 

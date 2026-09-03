@@ -46,9 +46,13 @@ class EmployeeController extends Controller
             'email' => 'nullable|email|max:150',
             'phone' => 'nullable|string|max:50',
             'position' => 'required|string|max:100',
+            'shift_start' => 'nullable|string|max:10',
+            'shift_end' => 'nullable|string|max:10',
             'department' => 'nullable|string|max:100',
             'employment_type' => 'required|in:full_time,part_time,contract',
             'basic_salary' => 'required|numeric|min:0',
+            'divisor_days' => 'nullable|integer|min:1',
+            'rest_days_per_week' => 'nullable|integer|min:0|max:7',
             'daily_rate' => 'nullable|numeric|min:0',
             'hourly_rate' => 'nullable|numeric|min:0',
             'sss_no' => 'nullable|string|max:50',
@@ -60,16 +64,27 @@ class EmployeeController extends Controller
             'status' => 'required|in:active,inactive,on_leave',
         ]);
 
+        $isVet = stripos($validated['position'], 'vet') !== false || stripos($validated['department'] ?? '', 'vet') !== false;
+
+        // Non-vet has 1 restday -> 26 days divisor; Vet has 2 restdays -> 22 days divisor
+        $divisor = !empty($validated['divisor_days']) ? intval($validated['divisor_days']) : ($isVet ? 22 : 26);
+        $restDays = isset($validated['rest_days_per_week']) ? intval($validated['rest_days_per_week']) : ($isVet ? 2 : 1);
+
+        $validated['divisor_days'] = $divisor;
+        $validated['rest_days_per_week'] = $restDays;
+        $validated['shift_start'] = $validated['shift_start'] ?? '09:00';
+        $validated['shift_end'] = $validated['shift_end'] ?? '18:00';
+
         $basic = floatval($validated['basic_salary']);
         if (empty($validated['daily_rate']) || floatval($validated['daily_rate']) == 0) {
-            $validated['daily_rate'] = round($basic / 22, 2);
+            $validated['daily_rate'] = round($basic / $divisor, 2);
         }
         if (empty($validated['hourly_rate']) || floatval($validated['hourly_rate']) == 0) {
             $validated['hourly_rate'] = round(floatval($validated['daily_rate']) / 8, 2);
         }
 
         $validated['employee_code'] = Employee::generateEmployeeCode();
-        $validated['department'] = $validated['department'] ?? 'Operations';
+        $validated['department'] = $validated['department'] ?? ($isVet ? 'Veterinary' : 'Operations');
 
         Employee::create($validated);
 
@@ -84,9 +99,13 @@ class EmployeeController extends Controller
             'email' => 'nullable|email|max:150',
             'phone' => 'nullable|string|max:50',
             'position' => 'required|string|max:100',
+            'shift_start' => 'nullable|string|max:10',
+            'shift_end' => 'nullable|string|max:10',
             'department' => 'nullable|string|max:100',
             'employment_type' => 'required|in:full_time,part_time,contract',
             'basic_salary' => 'required|numeric|min:0',
+            'divisor_days' => 'nullable|integer|min:1',
+            'rest_days_per_week' => 'nullable|integer|min:0|max:7',
             'daily_rate' => 'nullable|numeric|min:0',
             'hourly_rate' => 'nullable|numeric|min:0',
             'sss_no' => 'nullable|string|max:50',
@@ -98,9 +117,18 @@ class EmployeeController extends Controller
             'status' => 'required|in:active,inactive,on_leave',
         ]);
 
+        $isVet = stripos($validated['position'], 'vet') !== false || stripos($validated['department'] ?? '', 'vet') !== false;
+        $divisor = !empty($validated['divisor_days']) ? intval($validated['divisor_days']) : ($isVet ? 22 : 26);
+        $restDays = isset($validated['rest_days_per_week']) ? intval($validated['rest_days_per_week']) : ($isVet ? 2 : 1);
+
+        $validated['divisor_days'] = $divisor;
+        $validated['rest_days_per_week'] = $restDays;
+        $validated['shift_start'] = $validated['shift_start'] ?? ($employee->shift_start ?? '09:00');
+        $validated['shift_end'] = $validated['shift_end'] ?? ($employee->shift_end ?? '18:00');
+
         $basic = floatval($validated['basic_salary']);
         if (empty($validated['daily_rate']) || floatval($validated['daily_rate']) == 0) {
-            $validated['daily_rate'] = round($basic / 22, 2);
+            $validated['daily_rate'] = round($basic / $divisor, 2);
         }
         if (empty($validated['hourly_rate']) || floatval($validated['hourly_rate']) == 0) {
             $validated['hourly_rate'] = round(floatval($validated['daily_rate']) / 8, 2);

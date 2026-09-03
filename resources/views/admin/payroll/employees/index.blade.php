@@ -68,9 +68,9 @@
                         <tr>
                             <th>EMP #</th>
                             <th>Staff Member</th>
-                            <th>Position & Dept</th>
+                            <th>Position & Shift</th>
                             <th>Basic Salary (Mo.)</th>
-                            <th>Daily / Hourly</th>
+                            <th>Daily / Hourly (Divisor)</th>
                             <th>Gov Accounts</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -93,18 +93,31 @@
                                 </td>
                                 <td>
                                     <span class="badge badge-gold" style="font-size: 0.72rem;">{{ $emp->position }}</span>
-                                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                                    <div
+                                        style="font-size: 0.72rem; color: var(--gold-light); font-weight: 700; margin-top: 3px;">
+                                        ⏰
+                                        {{ $emp->shift_start ? \Carbon\Carbon::parse($emp->shift_start)->format('g:i A') : '9:00 AM' }}
+                                        -
+                                        {{ $emp->shift_end ? \Carbon\Carbon::parse($emp->shift_end)->format('g:i A') : '6:00 PM' }}
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1px;">
                                         {{ $emp->department }} •
-                                        {{ ucfirst(str_replace('_', ' ', $emp->employment_type)) }}</div>
+                                        {{ ucfirst(str_replace('_', ' ', $emp->employment_type)) }}
+                                    </div>
                                 </td>
                                 <td style="font-weight: 700; color: var(--white);">
                                     ₱{{ number_format($emp->basic_salary, 2) }}
                                 </td>
                                 <td>
-                                    <div style="font-size: 0.8rem; color: var(--white);">
+                                    <div style="font-size: 0.8rem; color: var(--white); font-weight: 700;">
                                         ₱{{ number_format($emp->daily_rate, 2) }}/day</div>
                                     <div style="font-size: 0.72rem; color: var(--text-muted);">
                                         ₱{{ number_format($emp->hourly_rate, 2) }}/hr</div>
+                                    <div style="font-size: 0.68rem; color: var(--gold-light); margin-top: 2px;">
+                                        Divisor: <strong>{{ $emp->divisor_days ?: 26 }} days</strong>
+                                        ({{ $emp->rest_days_per_week ?: 1 }} rest
+                                        {{ Str::plural('day', $emp->rest_days_per_week ?: 1) }})
+                                    </div>
                                 </td>
                                 <td>
                                     <div style="font-size: 0.72rem; color: var(--text-muted);">
@@ -219,6 +232,63 @@
                                                             value="{{ $emp->phone }}">
                                                     </div>
                                                 </div>
+
+                                                <!-- Shift Assignment -->
+                                                <div
+                                                    style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: 6px; padding: 0.75rem 1rem; margin-top: 0.75rem;">
+                                                    <div
+                                                        style="font-size: 0.78rem; font-weight: 700; color: var(--gold-light); margin-bottom: 0.5rem;">
+                                                        ⏰ Assigned Work Shift Schedule
+                                                    </div>
+                                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Shift Start (Time In) *</label>
+                                                            <select name="shift_start" class="form-control">
+                                                                <option value="08:00"
+                                                                    {{ ($emp->shift_start ?: '09:00') == '08:00' ? 'selected' : '' }}>
+                                                                    08:00 AM</option>
+                                                                <option value="08:30"
+                                                                    {{ ($emp->shift_start ?: '09:00') == '08:30' ? 'selected' : '' }}>
+                                                                    08:30 AM</option>
+                                                                <option value="09:00"
+                                                                    {{ ($emp->shift_start ?: '09:00') == '09:00' ? 'selected' : '' }}>
+                                                                    09:00 AM (Clinic Opening)</option>
+                                                                <option value="09:30"
+                                                                    {{ ($emp->shift_start ?: '09:00') == '09:30' ? 'selected' : '' }}>
+                                                                    09:30 AM</option>
+                                                                <option value="10:00"
+                                                                    {{ ($emp->shift_start ?: '09:00') == '10:00' ? 'selected' : '' }}>
+                                                                    10:00 AM (Late Shift)</option>
+                                                                <option value="11:00"
+                                                                    {{ ($emp->shift_start ?: '09:00') == '11:00' ? 'selected' : '' }}>
+                                                                    11:00 AM</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="form-label">Shift End (Time Out) *</label>
+                                                            <select name="shift_end" class="form-control">
+                                                                <option value="17:00"
+                                                                    {{ ($emp->shift_end ?: '18:00') == '17:00' ? 'selected' : '' }}>
+                                                                    05:00 PM</option>
+                                                                <option value="17:30"
+                                                                    {{ ($emp->shift_end ?: '18:00') == '17:30' ? 'selected' : '' }}>
+                                                                    05:30 PM</option>
+                                                                <option value="18:00"
+                                                                    {{ ($emp->shift_end ?: '18:00') == '18:00' ? 'selected' : '' }}>
+                                                                    06:00 PM (Standard Close)</option>
+                                                                <option value="18:30"
+                                                                    {{ ($emp->shift_end ?: '18:00') == '18:30' ? 'selected' : '' }}>
+                                                                    06:30 PM</option>
+                                                                <option value="19:00"
+                                                                    {{ ($emp->shift_end ?: '18:00') == '19:00' ? 'selected' : '' }}>
+                                                                    07:00 PM (Night Close)</option>
+                                                                <option value="20:00"
+                                                                    {{ ($emp->shift_end ?: '18:00') == '20:00' ? 'selected' : '' }}>
+                                                                    08:00 PM</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <!-- Section 2: Compensation & Rates -->
@@ -226,9 +296,10 @@
                                                 style="margin-bottom: 1.25rem; border-top: 1px solid var(--navy-border); padding-top: 1rem;">
                                                 <h5
                                                     style="font-size: 0.85rem; font-weight: 700; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px;">
-                                                    <span>💵 Compensation & Work Rates</span>
+                                                    <span>💵 Compensation & Divisor Rates</span>
                                                 </h5>
-                                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                                                <div
+                                                    style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 1rem;">
                                                     <div class="form-group">
                                                         <label class="form-label">Basic Salary (₱/Month) *</label>
                                                         <input type="number" step="0.01" name="basic_salary"
@@ -236,19 +307,58 @@
                                                             required>
                                                     </div>
                                                     <div class="form-group">
-                                                        <label class="form-label">Daily Rate (₱)</label>
-                                                        <input type="number" step="0.01" name="daily_rate"
-                                                            class="form-control" value="{{ $emp->daily_rate }}">
+                                                        <label class="form-label">Divisor (Working Days/Mo)</label>
+                                                        <select name="divisor_days" class="form-control">
+                                                            <option value="26"
+                                                                {{ ($emp->divisor_days ?: 26) == 26 ? 'selected' : '' }}>26
+                                                                Days (Non-Vet / 1 Restday)</option>
+                                                            <option value="22"
+                                                                {{ ($emp->divisor_days ?: 26) == 22 ? 'selected' : '' }}>22
+                                                                Days (Veterinarian / 2 Restdays)</option>
+                                                            <option value="21"
+                                                                {{ ($emp->divisor_days ?: 26) == 21 ? 'selected' : '' }}>
+                                                                21.75 Days</option>
+                                                            <option value="30"
+                                                                {{ ($emp->divisor_days ?: 26) == 30 ? 'selected' : '' }}>30
+                                                                Days</option>
+                                                        </select>
                                                     </div>
                                                     <div class="form-group">
-                                                        <label class="form-label">Hourly Rate (₱)</label>
-                                                        <input type="number" step="0.01" name="hourly_rate"
-                                                            class="form-control" value="{{ $emp->hourly_rate }}">
+                                                        <label class="form-label">Rest Days / Week</label>
+                                                        <select name="rest_days_per_week" class="form-control">
+                                                            <option value="1"
+                                                                {{ ($emp->rest_days_per_week ?: 1) == 1 ? 'selected' : '' }}>
+                                                                1 Day / Week (Non-Vet)</option>
+                                                            <option value="2"
+                                                                {{ ($emp->rest_days_per_week ?: 1) == 2 ? 'selected' : '' }}>
+                                                                2 Days / Week (Vet)</option>
+                                                        </select>
                                                     </div>
                                                 </div>
 
                                                 <div
                                                     style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                                                    <div class="form-group">
+                                                        <label class="form-label">Daily Rate (₱)</label>
+                                                        <input type="number" step="0.01" name="daily_rate"
+                                                            class="form-control" value="{{ $emp->daily_rate }}"
+                                                            placeholder="Auto: Basic / Divisor">
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="form-label">Hourly Rate (₱)</label>
+                                                        <input type="number" step="0.01" name="hourly_rate"
+                                                            class="form-control" value="{{ $emp->hourly_rate }}"
+                                                            placeholder="Auto: Daily / 8">
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="form-label">Date Hired</label>
+                                                        <input type="date" name="date_hired" class="form-control"
+                                                            value="{{ $emp->date_hired ? $emp->date_hired->format('Y-m-d') : '' }}">
+                                                    </div>
+                                                </div>
+
+                                                <div
+                                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
                                                     <div class="form-group">
                                                         <label class="form-label">Employment Type *</label>
                                                         <select name="employment_type" class="form-control" required>
@@ -276,11 +386,6 @@
                                                                 {{ $emp->status == 'on_leave' ? 'selected' : '' }}>On Leave
                                                             </option>
                                                         </select>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="form-label">Date Hired</label>
-                                                        <input type="date" name="date_hired" class="form-control"
-                                                            value="{{ $emp->date_hired ? $emp->date_hired->format('Y-m-d') : '' }}">
                                                     </div>
                                                 </div>
                                             </div>
@@ -398,8 +503,6 @@
                                     <option value="Veterinarian">Veterinarian</option>
                                     <option value="Janitor / Kennel Staff">Janitor / Kennel Staff</option>
                                     <option value="Cashier">Cashier</option>
-                                    <option value="Receptionist">Receptionist</option>
-                                    <option value="Clinic Assistant">Clinic Assistant</option>
                                     <option value="Manager">Manager</option>
                                 </select>
                             </div>
@@ -420,35 +523,89 @@
                                 <input type="text" name="phone" class="form-control" placeholder="0917-000-0000">
                             </div>
                         </div>
+
+                        <!-- Shift Assignment -->
+                        <div
+                            style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: 6px; padding: 0.75rem 1rem; margin-top: 0.75rem;">
+                            <div
+                                style="font-size: 0.78rem; font-weight: 700; color: var(--gold-light); margin-bottom: 0.5rem;">
+                                ⏰ Assigned Work Shift Schedule
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">Shift Start (Time In) *</label>
+                                    <select name="shift_start" class="form-control">
+                                        <option value="08:00">08:00 AM</option>
+                                        <option value="08:30">08:30 AM</option>
+                                        <option value="09:00" selected>09:00 AM (Clinic Opening)</option>
+                                        <option value="09:30">09:30 AM</option>
+                                        <option value="10:00">10:00 AM (Late Shift)</option>
+                                        <option value="11:00">11:00 AM</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Shift End (Time Out) *</label>
+                                    <select name="shift_end" class="form-control">
+                                        <option value="17:00">05:00 PM</option>
+                                        <option value="17:30">05:30 PM</option>
+                                        <option value="18:00" selected>06:00 PM (Standard Close)</option>
+                                        <option value="18:30">06:30 PM</option>
+                                        <option value="19:00">07:00 PM (Night Close)</option>
+                                        <option value="20:00">08:00 PM</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Section 2: Compensation & Salary -->
                     <div style="margin-bottom: 1.25rem; border-top: 1px solid var(--navy-border); padding-top: 1rem;">
                         <h5
                             style="font-size: 0.85rem; font-weight: 700; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px;">
-                            <span>💵 Compensation & Work Rates</span>
+                            <span>💵 Compensation & Divisor Rates</span>
                         </h5>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 1rem;">
                             <div class="form-group">
                                 <label class="form-label">Monthly Basic Salary (₱) *</label>
                                 <input type="number" step="0.01" name="basic_salary" id="add_basic_salary"
                                     class="form-control" placeholder="e.g. 18000" required>
-                                <span style="font-size: 0.68rem; color: var(--text-muted);">Daily & Hourly auto-computed if
-                                    blank</span>
                             </div>
+                            <div class="form-group">
+                                <label class="form-label">Divisor (Working Days/Mo)</label>
+                                <select name="divisor_days" class="form-control">
+                                    <option value="26" selected>26 Days (Non-Vet / 1 Restday)</option>
+                                    <option value="22">22 Days (Veterinarian / 2 Restdays)</option>
+                                    <option value="21">21.75 Days</option>
+                                    <option value="30">30 Days</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Rest Days / Week</label>
+                                <select name="rest_days_per_week" class="form-control">
+                                    <option value="1" selected>1 Day / Week (Non-Vet)</option>
+                                    <option value="2">2 Days / Week (Vet)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
                             <div class="form-group">
                                 <label class="form-label">Daily Rate (₱)</label>
                                 <input type="number" step="0.01" name="daily_rate" class="form-control"
-                                    placeholder="Auto: Basic / 22">
+                                    placeholder="Auto: Basic / Divisor">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Hourly Rate (₱)</label>
                                 <input type="number" step="0.01" name="hourly_rate" class="form-control"
                                     placeholder="Auto: Daily / 8">
                             </div>
+                            <div class="form-group">
+                                <label class="form-label">Date Hired</label>
+                                <input type="date" name="date_hired" class="form-control">
+                            </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
                             <div class="form-group">
                                 <label class="form-label">Employment Type *</label>
                                 <select name="employment_type" class="form-control" required>
@@ -464,11 +621,6 @@
                                     <option value="inactive">Inactive</option>
                                     <option value="on_leave">On Leave</option>
                                 </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Date Hired</label>
-                                <input type="date" name="date_hired" class="form-control"
-                                    value="{{ date('Y-m-d') }}">
                             </div>
                         </div>
                     </div>

@@ -50,7 +50,9 @@ class PayrollController extends Controller
             foreach ($employees as $emp) {
                 // 1. Basic & Regular Pay
                 $monthlySalary = floatval($emp->basic_salary);
-                $dailyRate = floatval($emp->daily_rate) ?: ($monthlySalary / 22);
+                $isVet = stripos($emp->position, 'vet') !== false || stripos($emp->department ?? '', 'vet') !== false;
+                $divisor = $emp->divisor_days ?: ($isVet ? 22 : 26);
+                $dailyRate = floatval($emp->daily_rate) ?: ($monthlySalary / $divisor);
                 $hourlyRate = floatval($emp->hourly_rate) ?: ($dailyRate / 8);
 
                 // Base regular salary for this period
@@ -65,10 +67,11 @@ class PayrollController extends Controller
                 $otHours = $dtrs->sum('ot_hours');
                 $otPay = round($otHours * $hourlyRate * 1.25, 2);
 
-                // Absences / Tardiness
+                // Absences / Tardiness / Undertime
                 $absentDays = $dtrs->where('status', 'absent')->count();
                 $lateMinutes = $dtrs->sum('late_minutes');
-                $tardinessDeduction = round(($dailyRate * $absentDays) + (($hourlyRate / 60) * $lateMinutes), 2);
+                $undertimeMinutes = $dtrs->sum('undertime_minutes');
+                $tardinessDeduction = round(($dailyRate * $absentDays) + (($hourlyRate / 60) * ($lateMinutes + $undertimeMinutes)), 2);
 
                 // If no DTR records logged, default days worked based on period
                 if ($dtrs->isEmpty()) {
