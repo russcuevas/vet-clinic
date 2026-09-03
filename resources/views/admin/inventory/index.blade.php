@@ -65,8 +65,25 @@
                                     <strong style="color: var(--gold-primary);">{{ $item->item_code }}</strong>
                                 </td>
                                 <td>
-                                    <div style="font-weight: 700; color: var(--white);">{{ $item->name }}</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ Str::limit($item->description, 50) }}</div>
+                                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                                        @if($item->image && file_exists(public_path($item->image)))
+                                            <img src="{{ asset($item->image) }}" alt="{{ $item->name }}" style="width: 36px; height: 36px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--black-border);">
+                                        @else
+                                            <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--navy-dark); border: 1px solid var(--black-border); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                                                @switch($item->category)
+                                                    @case('vaccine') 💉 @break
+                                                    @case('medicine') 💊 @break
+                                                    @case('grooming_supply') 🛁 @break
+                                                    @case('accessories') 🎀 @break
+                                                    @default 🦴
+                                                @endswitch
+                                            </div>
+                                        @endif
+                                        <div>
+                                            <div style="font-weight: 700; color: var(--white);">{{ $item->name }}</div>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ Str::limit($item->description, 50) }}</div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge badge-navy" style="background: var(--navy-dark); border: 1px solid var(--navy-border); color: var(--gold-light);">

@@ -7,6 +7,7 @@ use App\Models\InventoryItem;
 use App\Models\Owner;
 use App\Models\Bill;
 use App\Models\BillItem;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -14,8 +15,8 @@ class SupplyController extends Controller
 {
     public function index(Request $request)
     {
-        $supplies = InventoryItem::where('category', 'pet_supplies')
-            ->orWhere('category', 'accessories')
+        $supplies = InventoryItem::orderBy('category')
+            ->orderBy('name')
             ->get();
         $owners = Owner::where('status', 'active')->latest()->get();
         $recentBills = Bill::where('service_type', 'pet_supplies')
@@ -93,7 +94,7 @@ class SupplyController extends Controller
         $bill = Bill::create([
             'invoice_no' => $invoiceNo,
             'owner_id' => $owner ? $owner->id : null,
-            'cashier_id' => auth()->id(),
+            'cashier_id' => Auth::id(),
             'client_name' => $clientName,
             'service_type' => 'pet_supplies',
             'subtotal' => $subtotal,
