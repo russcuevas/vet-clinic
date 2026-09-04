@@ -243,4 +243,68 @@ class MedicalRecordController extends Controller
 
         return redirect()->back()->with('success', "Record {$record->record_code} updated successfully!");
     }
+
+    public function followUps(Request $request)
+    {
+        $today = Carbon::today();
+        $startOfWeek = Carbon::today()->startOfWeek();
+        $endOfWeek = Carbon::today()->endOfWeek();
+
+        $query = MedicalRecord::with(['owner', 'pet', 'veterinarian', 'prescription'])
+            ->whereNotNull('follow_up_date');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('record_code', 'LIKE', "%{$search}%")
+                  ->orWhere('follow_up_notes', 'LIKE', "%{$search}%")
+                  ->orWhere('diagnosis', 'LIKE', "%{$search}%")
+                  ->orWhereHas('owner', fn($sub) => $sub->where('full_name', 'LIKE', "%{$search}%")->orWhere('contact_number', 'LIKE', "%{$search}%"))
+                  ->orWhereHas('pet', fn($sub) => $sub->where('name', 'LIKE', "%{$search}%")->orWhere('pet_code', 'LIKE', "%{$search}%"));
+            });
+        }
+
+        $filter = $request->get('filter', 'all');
+
+        if ($filter === 'today') {
+            $query->whereDate('follow_up_date', $today);
+        } elseif ($filter === 'upcoming') {
+            $query->whereDate('follow_up_date', '>', $today);
+        } elseif ($filter === 'this_week') {
+            $query->whereBetween('follow_up_date', [$startOfWeek, $endOfWeek]);
+        } elseif ($filter === 'overdue') {
+            $query->whereDate('follow_up_date', '<', $today);
+        }
+
+        $followUps = $query->orderBy('follow_up_date', 'asc')->get();
+
+        // Metrics count
+        $todayCount = MedicalRecord::whereDate('follow_up_date', $today)->count();
+        $upcomingCount = MedicalRecord::whereDate('follow_up_date', '>', $today)->count();
+        $thisWeekCount = MedicalRecord::whereBetween('follow_up_date', [$startOfWeek, $endOfWeek])->count();
+        $overdueCount = MedicalRecord::whereDate('follow_up_date', '<', $today)->count();
+        $totalCount = MedicalRecord::whereNotNull('follow_up_date')->count();
+
+        return view('veterinarian.medical.followups', compact(
+            'followUps',
+            'filter',
+            'todayCount',
+            'upcomingCount',
+            'thisWeekCount',
+            'overdueCount',
+            'totalCount'
+        ));
+    }
+
+    public function updateFollowUp(Request $request, MedicalRecord $record)
+    {
+        $validated = $request->validate([
+            'follow_up_date' => 'nullable|date',
+            'follow_up_notes' => 'nullable|string|max:500',
+        ]);
+
+        $record->update($validated);
+
+        return redirect()->back()->with('success', "Follow-up schedule for record {$record->record_code} updated successfully!");
+    }
 }

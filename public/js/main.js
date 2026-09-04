@@ -32,8 +32,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCollapsed = sidebar.classList.contains('collapsed');
         localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
       }
+
+      // Smoothly recalculate and adjust all DataTable widths and column layouts
+      setTimeout(() => {
+        if (window.jQuery && $.fn.DataTable) {
+          $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+          $(window).trigger('resize');
+        }
+      }, 260);
     });
   }
+
+  window.addEventListener('resize', () => {
+    if (window.jQuery && $.fn.DataTable) {
+      $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+    }
+  });
 
   if (overlay && sidebar) {
     overlay.addEventListener('click', () => {

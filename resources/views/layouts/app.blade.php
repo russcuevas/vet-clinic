@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="{{ asset('css/variables.css') }}">
     <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/datatables.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/datatables.css') }}?v={{ time() }}">
     <link rel="stylesheet" href="{{ asset('css/modal.css') }}">
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
     <link rel="stylesheet" href="{{ asset('css/select2.min.css') }}">
@@ -178,13 +178,22 @@
 
                             <div class="nav-section-title">Clinic Services</div>
                             <a href="{{ route('admin.veterinary.index') }}"
-                                class="nav-link-item {{ request()->routeIs('admin.veterinary.*') ? 'active' : '' }}">
+                                class="nav-link-item {{ request()->routeIs('admin.veterinary.index') ? 'active' : '' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <span>Veterinary Services</span>
+                            </a>
+                            <a href="{{ route('admin.veterinary.followups') }}"
+                                class="nav-link-item {{ request()->routeIs('admin.veterinary.followups') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>Incoming Follow-ups</span>
                             </a>
                             <a href="{{ route('admin.grooming.index') }}"
                                 class="nav-link-item {{ request()->routeIs('admin.grooming.*') ? 'active' : '' }}">
@@ -288,13 +297,22 @@
                             <span>Dashboard</span>
                         </a>
                         <a href="{{ route('vet.medical.index') }}"
-                            class="nav-link-item {{ request()->routeIs('vet.medical.*') ? 'active' : '' }}">
+                            class="nav-link-item {{ request()->routeIs('vet.medical.index') ? 'active' : '' }}">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             <span>Medical Records</span>
+                        </a>
+                        <a href="{{ route('vet.followups.index') }}"
+                            class="nav-link-item {{ request()->routeIs('vet.followups.*') ? 'active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>Incoming Follow-ups</span>
                         </a>
                         <a href="{{ route('vet.clients.index') }}"
                             class="nav-link-item {{ request()->routeIs('vet.clients.*') ? 'active' : '' }}">

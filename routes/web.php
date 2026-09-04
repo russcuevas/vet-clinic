@@ -49,6 +49,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     Route::post('/veterinary', [\App\Http\Controllers\Admin\VeterinaryController::class, 'store'])->name('veterinary.store');
     Route::put('/veterinary/{record}', [\App\Http\Controllers\Admin\VeterinaryController::class, 'update'])->name('veterinary.update');
     Route::delete('/veterinary/{record}', [\App\Http\Controllers\Admin\VeterinaryController::class, 'destroy'])->name('veterinary.destroy');
+    Route::get('/veterinary/follow-ups', [\App\Http\Controllers\Admin\VeterinaryController::class, 'followUps'])->name('veterinary.followups');
+    Route::put('/veterinary/{record}/follow-up', [\App\Http\Controllers\Admin\VeterinaryController::class, 'updateFollowUp'])->name('veterinary.followup.update');
 
     // Admin Prescriptions (Linked to Clinical Examinations)
     Route::post('/prescriptions', [\App\Http\Controllers\Admin\PrescriptionController::class, 'store'])->name('prescriptions.store');
@@ -164,6 +166,8 @@ Route::group(['prefix' => 'veterinarian', 'as' => 'vet.', 'middleware' => ['auth
     Route::post('/medical', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'store'])->name('medical.store');
     Route::get('/medical/{record}', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'show'])->name('medical.show');
     Route::put('/medical/{record}', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'update'])->name('medical.update');
+    Route::get('/follow-ups', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'followUps'])->name('followups.index');
+    Route::put('/follow-ups/{record}', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'updateFollowUp'])->name('followups.update');
 
     Route::get('/grooming', [\App\Http\Controllers\Veterinarian\GroomingController::class, 'index'])->name('grooming.index');
     Route::post('/grooming', [\App\Http\Controllers\Veterinarian\GroomingController::class, 'store'])->name('grooming.store');

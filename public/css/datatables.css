@@ -4,19 +4,38 @@
    ========================================================================== */
 
 .dataTables_wrapper {
-  width: 100%;
-  max-width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
   padding: 1.25rem;
   color: var(--text-secondary);
   font-family: inherit;
   box-sizing: border-box;
-  overflow-x: auto;
 }
 
 .dataTables_wrapper .dataTables_scroll {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.dataTables_wrapper .dataTables_scrollHead,
+.dataTables_wrapper .dataTables_scrollBody,
+.dataTables_wrapper .dataTables_scrollFoot {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.dataTables_wrapper .dataTables_scrollHeadInner {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+.dataTables_wrapper .dataTables_scrollHeadInner > table.dataTable,
+.dataTables_wrapper .dataTables_scrollBody > table.dataTable {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* Header Toolbar: Length Menu & Search */
@@ -78,6 +97,7 @@
 /* DataTable Elements */
 table.dataTable {
   width: 100% !important;
+  max-width: 100% !important;
   margin: 0 !important;
   border-collapse: collapse !important;
   background: var(--black-card);
@@ -90,17 +110,87 @@ table.dataTable thead th {
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.06em !important;
-  padding: 0.85rem 1rem !important;
+  padding: 0.85rem 1.6rem 0.85rem 1rem !important;
   border-bottom: 1.5px solid var(--gold-border) !important;
   position: relative;
   cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-fast);
 }
 
-table.dataTable thead th.sorting:after,
-table.dataTable thead th.sorting_asc:after,
-table.dataTable thead th.sorting_desc:after {
-  opacity: 0.6;
+table.dataTable thead th:hover {
+  background: rgba(212, 175, 55, 0.12) !important;
+  color: var(--white) !important;
+}
+
+/* Hide any duplicate/ghost icons inside cloned scrollBody headers */
+.dataTables_scrollBody thead,
+.dataTables_scrollBody thead th,
+.dataTables_scrollBody thead th:before,
+.dataTables_scrollBody thead th:after {
+  visibility: hidden !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  content: "" !important;
+}
+
+/* Clean, Sleek Sorting Arrows on Visible Headers */
+.dataTables_scrollHead table.dataTable thead th.sorting:after,
+.dataTables_scrollHead table.dataTable thead th.sorting_asc:after,
+.dataTables_scrollHead table.dataTable thead th.sorting_desc:after,
+table.dataTable:not(.dataTable--scrolled) thead th.sorting:after,
+table.dataTable:not(.dataTable--scrolled) thead th.sorting_asc:after,
+table.dataTable:not(.dataTable--scrolled) thead th.sorting_desc:after {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.72rem;
+  line-height: 1;
+  font-family: monospace, sans-serif;
+  font-weight: bold;
+  transition: all var(--transition-fast);
+}
+
+/* Neutral Sortable State (Subtle muted carets) */
+.dataTables_scrollHead table.dataTable thead th.sorting:after,
+table.dataTable:not(.dataTable--scrolled) thead th.sorting:after {
+  content: "⇅";
+  opacity: 0.3;
+  color: var(--text-muted);
+}
+
+.dataTables_scrollHead table.dataTable thead th.sorting:hover:after,
+table.dataTable:not(.dataTable--scrolled) thead th.sorting:hover:after {
+  opacity: 0.85;
+  color: var(--gold-light);
+}
+
+/* Active Ascending (Gold Up Arrow) */
+.dataTables_scrollHead table.dataTable thead th.sorting_asc:after,
+table.dataTable:not(.dataTable--scrolled) thead th.sorting_asc:after {
+  content: "▲";
+  opacity: 1;
   color: var(--gold-primary);
+  text-shadow: 0 0 6px rgba(212, 175, 55, 0.5);
+}
+
+/* Active Descending (Gold Down Arrow) */
+.dataTables_scrollHead table.dataTable thead th.sorting_desc:after,
+table.dataTable:not(.dataTable--scrolled) thead th.sorting_desc:after {
+  content: "▼";
+  opacity: 1;
+  color: var(--gold-primary);
+  text-shadow: 0 0 6px rgba(212, 175, 55, 0.5);
+}
+
+/* Non-sortable columns (e.g. Actions) */
+th.sorting_disabled:after,
+th.no-sort:after {
+  content: "" !important;
+  display: none !important;
 }
 
 table.dataTable tbody td {
