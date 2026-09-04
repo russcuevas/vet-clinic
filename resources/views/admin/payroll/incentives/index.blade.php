@@ -505,23 +505,36 @@
                     if (pos.includes('groom')) {
                         document.getElementById('inc_title').value = 'Grooming Commission';
                         document.getElementById('inc_rate').value = data.suggested_rate;
-                        document.getElementById('inc_base').value = data.total_sales > 0 ? data.total_sales : (data.count * 500);
-                        document.getElementById('inc_notes').value = `Month Pet Count: ${data.count} pets (${data.tier_info})`;
-                        statusBox.innerHTML = `🐾 Found <strong>${data.count}</strong> pets groomed in month! Rate applied: <strong>${data.suggested_rate}%</strong> (${data.tier_info})`;
+                        document.getElementById('inc_base').value = data.total_sales > 0 ? data.total_sales : 0;
+                        document.getElementById('inc_notes').value = `Individual: ${data.count} pets (₱${Number(data.total_sales).toLocaleString(undefined, {minimumFractionDigits: 2})}) | Groomers Total: ${data.team_count || data.count}/${data.threshold || 100} pets (${data.suggested_rate}%)`;
+                        if (data.count > 0 || (data.team_count && data.team_count > 0)) {
+                            statusBox.innerHTML = `🐾 Individual Output: <strong>${data.count}</strong> pets (Sales: ₱<strong>${Number(data.total_sales).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong>) &bull; 👥 <strong>Groomers Team Total: ${data.team_count} / ${data.threshold} pets</strong> &rarr; Rate: <strong>${data.suggested_rate}%</strong> (${data.tier_info})`;
+                        } else {
+                            statusBox.innerHTML = `🐾 Found <strong>0</strong> pets groomed for this groomer. Groomers Team Total: <strong>${data.team_count || 0}</strong> pets.`;
+                        }
                     } else if (pos.includes('vet')) {
                         document.getElementById('inc_title').value = 'Veterinary Consultation Incentive';
                         document.getElementById('inc_rate').value = data.suggested_rate; // 200
-                        document.getElementById('inc_base').value = data.count > 0 ? data.count : 1;
+                        document.getElementById('inc_base').value = data.count;
                         document.getElementById('inc_notes').value = `Consultations recorded: ${data.count} @ ₱${data.suggested_rate}/case`;
-                        statusBox.innerHTML = `🩺 Found <strong>${data.count}</strong> consultations. Rate: <strong>₱${data.suggested_rate}</strong>/consultation`;
-                    } else if (pos.includes('janitor') || pos.includes('kennel')) {
+                        if (data.count > 0) {
+                            statusBox.innerHTML = `🩺 Found <strong>${data.count}</strong> consultations. Rate: <strong>₱${data.suggested_rate}</strong>/consultation (₱${(data.count * data.suggested_rate).toLocaleString(undefined, {minimumFractionDigits: 2})})`;
+                        } else {
+                            statusBox.innerHTML = `🩺 Found <strong>0</strong> consultations in month. No clinical records logged for this doctor.`;
+                        }
+                    } else if (pos.includes('janitor') || pos.includes('kennel') || pos.includes('utility')) {
                         document.getElementById('inc_title').value = 'Pet Boarding Care Incentive';
                         document.getElementById('inc_rate').value = data.suggested_rate; // 35
-                        document.getElementById('inc_base').value = data.count || 26;
+                        document.getElementById('inc_base').value = data.count;
                         document.getElementById('inc_notes').value = `Boarding days: ${data.count} days @ ₱${data.suggested_rate}/day`;
-                        statusBox.innerHTML = `🧹 Boarding daily incentive. Rate: <strong>₱${data.suggested_rate}</strong>/day`;
+                        if (data.count > 0) {
+                            statusBox.innerHTML = `🧹 Found <strong>${data.count}</strong> active duty days in DTR. Rate: <strong>₱${data.suggested_rate}</strong>/day`;
+                        } else {
+                            statusBox.innerHTML = `🧹 Found <strong>0</strong> active duty days in DTR for this month.`;
+                        }
                     } else {
                         document.getElementById('inc_rate').value = data.suggested_rate;
+                        document.getElementById('inc_base').value = 0;
                         statusBox.textContent = `Staff Role: ${data.position}`;
                     }
 

@@ -146,41 +146,68 @@ class IncentiveController extends Controller
         $tier = 'tier1';
         $basis = 'percentage';
 
-        // Check if Groomer
+        // Check if Groomer (Strictly for staff with 'Groomer' role)
         if (str_contains($position, 'groom')) {
-            // Count grooming records in this month
-            // Either by groomer_id or all completed grooming if not set
-            $query = GroomingRecord::whereMonth('created_at', $month)->whereYear('created_at', $year);
-            if ($query->clone()->where('groomer_id', $employee->id)->exists()) {
-                $query->where('groomer_id', $employee->id);
-            }
-            $count = $query->count();
-            $totalSales = $query->sum('price');
+            // 1. Count ONLY pets handled by staff with GROOMER role (exclude Admin, Vet, Cashier, etc.)
+            $groomerEmployeeIds = Employee::where('status', 'active')
+                ->where('position', 'like', '%groom%')
+                ->pluck('id');
 
-            // Find rule if exists
+            $teamTotalPets = GroomingRecord::whereIn('groomer_id', $groomerEmployeeIds)
+                ->whereMonth('created_at', $month)
+                ->whereYear('created_at', $year)
+                ->count();
+
+            // 2. Count ONLY this specific groomer's individual pet count and sales
+            $individualQuery = GroomingRecord::where('groomer_id', $employee->id)
+                ->whereMonth('created_at', $month)
+                ->whereYear('created_at', $year);
+
+            $count = $individualQuery->count();
+            $totalSales = (float) $individualQuery->sum('price');
+
+            // 3. Find incentive rule
             $rule = IncentiveRule::where('role_name', 'like', '%groom%')->first();
             $tier1Rate = $rule ? $rule->default_rate : 10.00;
             $threshold = $rule ? $rule->threshold_count : 100;
             $tier2Rate = $rule ? ($rule->tier2_rate ?: 20.00) : 20.00;
 
-            if ($count >= $threshold && $threshold > 0) {
+            // Combined threshold check: Groomer 1 + Groomer 2 >= 100
+            if ($teamTotalPets >= $threshold && $threshold > 0) {
                 $suggestedRate = $tier2Rate; // 20%
-                $tier = 'tier2 (100+ pets reached!)';
+                $tier = "Team Target Met ({$teamTotalPets}/{$threshold} pets >= 100) -> 20% Bonus Tier!";
             } else {
                 $suggestedRate = $tier1Rate; // 10%
-                $tier = "tier1 ({$count}/{$threshold} pets)";
+                $tier = "Team Target: {$teamTotalPets}/{$threshold} pets -> Base {$tier1Rate}% Tier";
             }
             $basis = 'percentage';
+
+            return response()->json([
+                'success' => true,
+                'position' => $employee->position,
+                'count' => $count,
+                'team_count' => $teamTotalPets,
+                'threshold' => $threshold,
+                'total_sales' => $totalSales,
+                'suggested_rate' => $suggestedRate,
+                'basis' => $basis,
+                'tier_info' => $tier,
+            ]);
         }
         // Check if Vet
         elseif (str_contains($position, 'vet')) {
             $vetUserId = $employee->user_id;
-            $query = MedicalRecord::whereMonth('created_at', $month)->whereYear('created_at', $year);
             if ($vetUserId) {
-                $query->where('veterinarian_id', $vetUserId);
+                $query = MedicalRecord::where('veterinarian_id', $vetUserId)
+                    ->whereMonth('created_at', $month)
+                    ->whereYear('created_at', $year);
+
+                $count = $query->count();
+                $totalSales = (float) $query->sum('service_fee');
+            } else {
+                $count = 0;
+                $totalSales = 0;
             }
-            $count = $query->count();
-            $totalSales = $query->sum('service_fee');
 
             $rule = IncentiveRule::where('role_name', 'like', '%vet%')->first();
             $suggestedRate = $rule ? $rule->default_rate : 200.00;
@@ -200,7 +227,7 @@ class IncentiveController extends Controller
                 ->whereIn('status', ['present', 'late'])
                 ->count();
 
-            $count = $dtrDays > 0 ? $dtrDays : 26;
+            $count = $dtrDays;
             $tier = "DTR Kennel Duty: {$count} days worked";
         } else {
             $rule = IncentiveRule::where('role_name', 'like', "%{$position}%")->first();
