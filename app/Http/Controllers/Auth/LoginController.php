@@ -56,6 +56,8 @@ class LoginController extends Controller
             'cashier' => redirect()->route('cashier.dashboard'),
             'veterinarian' => redirect()->route('vet.dashboard'),
             'manager' => redirect()->route('manager.dashboard'),
+            'inventory_officer' => redirect()->route('inventory_officer.instruments.index'),
+            'back_office' => redirect()->route('back_office.instruments.index'),
             default => redirect()->route('admin.dashboard'),
         };
     }

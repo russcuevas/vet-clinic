@@ -54,6 +54,16 @@ class User extends Authenticatable
         return $this->role === 'manager';
     }
 
+    public function isInventoryOfficer(): bool
+    {
+        return $this->role === 'inventory_officer';
+    }
+
+    public function isBackOffice(): bool
+    {
+        return $this->role === 'back_office';
+    }
+
     public function medicalRecords()
     {
         return $this->hasMany(MedicalRecord::class, 'veterinarian_id');
@@ -67,5 +77,10 @@ class User extends Authenticatable
     public function bills()
     {
         return $this->hasMany(Bill::class, 'cashier_id');
+    }
+
+    public function instrumentRestockLogs()
+    {
+        return $this->hasMany(InstrumentRestockLog::class, 'user_id');
     }
 }

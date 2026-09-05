@@ -17,6 +17,8 @@ Route::get('/', function () {
             'cashier' => redirect()->route('cashier.dashboard'),
             'veterinarian' => redirect()->route('vet.dashboard'),
             'manager' => redirect()->route('manager.dashboard'),
+            'inventory_officer' => redirect()->route('inventory_officer.instruments.index'),
+            'back_office' => redirect()->route('back_office.instruments.index'),
             default => redirect()->route('admin.dashboard'),
         };
     }
@@ -73,6 +75,14 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     Route::put('/inventory/{item}', [\App\Http\Controllers\Admin\InventoryController::class, 'update'])->name('inventory.update');
     Route::post('/inventory/{item}/restock', [\App\Http\Controllers\Admin\InventoryController::class, 'restock'])->name('inventory.restock');
     Route::delete('/inventory/{item}', [\App\Http\Controllers\Admin\InventoryController::class, 'destroy'])->name('inventory.destroy');
+
+    // Instruments & Equipment Inventory (Non-POS)
+    Route::get('/instruments', [\App\Http\Controllers\InstrumentController::class, 'index'])->name('instruments.index');
+    Route::post('/instruments', [\App\Http\Controllers\InstrumentController::class, 'store'])->name('instruments.store');
+    Route::put('/instruments/{instrument}', [\App\Http\Controllers\InstrumentController::class, 'update'])->name('instruments.update');
+    Route::post('/instruments/{instrument}/restock', [\App\Http\Controllers\InstrumentController::class, 'restock'])->name('instruments.restock');
+    Route::get('/instruments/history', [\App\Http\Controllers\InstrumentController::class, 'history'])->name('instruments.history');
+    Route::delete('/instruments/{instrument}', [\App\Http\Controllers\InstrumentController::class, 'destroy'])->name('instruments.destroy');
 
     // Central Billing Database
     Route::get('/billing', [\App\Http\Controllers\Admin\BillingController::class, 'index'])->name('billing.index');
@@ -192,4 +202,32 @@ Route::group(['prefix' => 'manager', 'as' => 'manager.', 'middleware' => ['auth'
     Route::get('/dashboard', [\App\Http\Controllers\Manager\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reports/sales', [\App\Http\Controllers\Manager\SalesReportController::class, 'index'])->name('reports.sales');
     Route::get('/inventory/audit', [\App\Http\Controllers\Manager\InventoryAuditController::class, 'index'])->name('inventory.audit');
+});
+
+// ==========================================
+// 5. INVENTORY OFFICER MODULE
+// ==========================================
+Route::group(['prefix' => 'inventory-officer', 'as' => 'inventory_officer.', 'middleware' => ['auth', 'role:inventory_officer']], function () {
+    Route::get('/', function () {
+        return redirect()->route('inventory_officer.instruments.index');
+    });
+    Route::get('/instruments', [\App\Http\Controllers\InstrumentController::class, 'index'])->name('instruments.index');
+    Route::post('/instruments', [\App\Http\Controllers\InstrumentController::class, 'store'])->name('instruments.store');
+    Route::put('/instruments/{instrument}', [\App\Http\Controllers\InstrumentController::class, 'update'])->name('instruments.update');
+    Route::post('/instruments/{instrument}/restock', [\App\Http\Controllers\InstrumentController::class, 'restock'])->name('instruments.restock');
+    Route::get('/instruments/history', [\App\Http\Controllers\InstrumentController::class, 'history'])->name('instruments.history');
+});
+
+// ==========================================
+// 6. BACK OFFICE MODULE
+// ==========================================
+Route::group(['prefix' => 'back-office', 'as' => 'back_office.', 'middleware' => ['auth', 'role:back_office']], function () {
+    Route::get('/', function () {
+        return redirect()->route('back_office.instruments.index');
+    });
+    Route::get('/instruments', [\App\Http\Controllers\InstrumentController::class, 'index'])->name('instruments.index');
+    Route::post('/instruments', [\App\Http\Controllers\InstrumentController::class, 'store'])->name('instruments.store');
+    Route::put('/instruments/{instrument}', [\App\Http\Controllers\InstrumentController::class, 'update'])->name('instruments.update');
+    Route::post('/instruments/{instrument}/restock', [\App\Http\Controllers\InstrumentController::class, 'restock'])->name('instruments.restock');
+    Route::get('/instruments/history', [\App\Http\Controllers\InstrumentController::class, 'history'])->name('instruments.history');
 });
