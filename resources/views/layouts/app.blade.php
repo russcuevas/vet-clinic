@@ -302,6 +302,15 @@
                             </svg>
                             <span>Pet Supplies POS</span>
                         </a>
+                        <a href="{{ route('cashier.grooming.index') }}"
+                            class="nav-link-item {{ request()->routeIs('cashier.grooming.*') ? 'active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L10.758 7.758a3 3 0 014.242 4.242z" />
+                            </svg>
+                            <span>Grooming Services</span>
+                        </a>
                     @elseif(auth()->user()->role === 'veterinarian')
                         <!-- Veterinarian Navigation -->
                         <div class="nav-section-title">Veterinary Clinic</div>

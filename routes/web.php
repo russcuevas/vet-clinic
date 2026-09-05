@@ -164,6 +164,12 @@ Route::group(['prefix' => 'cashier', 'as' => 'cashier.', 'middleware' => ['auth'
 
     Route::get('/pos', [\App\Http\Controllers\Cashier\SuppliesPOSController::class, 'index'])->name('pos.index');
     Route::post('/pos', [\App\Http\Controllers\Cashier\SuppliesPOSController::class, 'store'])->name('pos.store');
+
+    // Grooming Module for Cashier Desk
+    Route::get('/grooming', [\App\Http\Controllers\Cashier\GroomingController::class, 'index'])->name('grooming.index');
+    Route::post('/grooming', [\App\Http\Controllers\Cashier\GroomingController::class, 'store'])->name('grooming.store');
+    Route::put('/grooming/{grooming}', [\App\Http\Controllers\Cashier\GroomingController::class, 'update'])->name('grooming.update');
+    Route::delete('/grooming/{grooming}', [\App\Http\Controllers\Cashier\GroomingController::class, 'destroy'])->name('grooming.destroy');
 });
 
 // ==========================================
