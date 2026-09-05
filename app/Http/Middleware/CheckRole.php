@@ -35,6 +35,7 @@ class CheckRole
                 'manager' => redirect()->route('manager.dashboard')->with('error', 'Access restricted to Manager module.'),
                 'inventory_officer' => redirect()->route('inventory_officer.instruments.index')->with('error', 'Access restricted to Inventory Officer module.'),
                 'back_office' => redirect()->route('back_office.instruments.index')->with('error', 'Access restricted to Back Office module.'),
+                'receptionist' => redirect()->route('receptionist.appointments.index')->with('error', 'Access restricted to Receptionist module.'),
                 default => redirect()->route('login')->with('error', 'Unauthorized access.'),
             };
         }

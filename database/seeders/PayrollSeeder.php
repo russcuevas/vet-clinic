@@ -22,6 +22,7 @@ class PayrollSeeder extends Seeder
         $vetUser = User::where('role', 'veterinarian')->first();
         $cashierUser = User::where('role', 'cashier')->first();
         $managerUser = User::where('role', 'manager')->first();
+        $receptionistUser = User::where('role', 'receptionist')->first();
 
         // 1. Create Default Incentive Rules (As specified in images 2 & 3 + client requests)
         $groomerRule = IncentiveRule::create([
@@ -180,6 +181,26 @@ class PayrollSeeder extends Seeder
                 'pagibig_no' => '1210-4321-0987',
                 'tin_no' => '789-012-345-000',
                 'date_hired' => '2024-05-01',
+                'status' => 'active',
+            ],
+            [
+                'employee_code' => 'EMP-2026-0007',
+                'user_id' => $receptionistUser ? $receptionistUser->id : null,
+                'first_name' => 'Ella Mae',
+                'last_name' => 'Dizon',
+                'email' => 'receptionist@sanmodesto.com',
+                'phone' => '0928-111-2233',
+                'position' => 'Receptionist',
+                'department' => 'Front Desk & Reception',
+                'employment_type' => 'full_time',
+                'basic_salary' => 19000.00,
+                'daily_rate' => 863.64,
+                'hourly_rate' => 107.95,
+                'sss_no' => '03-3210987-7',
+                'philhealth_no' => '12-789012345-8',
+                'pagibig_no' => '1210-3210-9876',
+                'tin_no' => '890-123-456-000',
+                'date_hired' => '2024-01-10',
                 'status' => 'active',
             ],
         ];

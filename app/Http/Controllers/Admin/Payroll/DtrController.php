@@ -121,6 +121,9 @@ class DtrController extends Controller
             $timeIn = null;
             $timeOut = null;
             $regularHours = 0.00;
+            $lateMinutes = 0;
+            $undertimeMinutes = 0;
+            $otHours = 0.00;
         } elseif ($timeIn) {
             $in = Carbon::createFromFormat('H:i', $timeIn);
             $shiftStart = Carbon::createFromFormat('H:i', $shiftStartStr);
@@ -128,7 +131,7 @@ class DtrController extends Controller
 
             // 1. Calculate Tardiness (Late)
             if ($in->gt($shiftStart)) {
-                $lateMinutes = $in->diffInMinutes($shiftStart);
+                $lateMinutes = (int) abs($shiftStart->diffInMinutes($in, true));
                 $status = 'late';
             }
 
@@ -138,16 +141,16 @@ class DtrController extends Controller
 
                 // Undertime calculation (left before shift end)
                 if ($out->lt($shiftEnd)) {
-                    $undertimeMinutes = $out->diffInMinutes($shiftEnd);
+                    $undertimeMinutes = (int) abs($shiftEnd->diffInMinutes($out, true));
                 }
 
                 // Overtime calculation (stayed past shift end)
                 if ($out->gt($shiftEnd) && $otHours == 0) {
-                    $otHours = round($out->diffInMinutes($shiftEnd) / 60, 2);
+                    $otHours = round(abs($shiftEnd->diffInMinutes($out, true)) / 60, 2);
                 }
 
                 // Duty hours worked (minus 1 hour lunch break if shift is 5+ hours)
-                $diffMinutes = $in->diffInMinutes($out);
+                $diffMinutes = (int) abs($in->diffInMinutes($out, true));
                 if ($diffMinutes >= 300) {
                     $workedMinutes = max(0, $diffMinutes - 60);
                     $regularHours = min(8.00, round($workedMinutes / 60, 2));

@@ -58,11 +58,13 @@
                         $dayLate = $dayRecords->where('late_minutes', '>', 0)->count();
                         $dayUndertime = $dayRecords->where('undertime_minutes', '>', 0)->count();
                         $dayAwaitingOut = $dayRecords->whereNotNull('time_in')->whereNull('time_out')->count();
+                        $dayRestDay = $dayRecords->where('status', 'rest_day')->count();
                     @endphp
                     <span class="badge badge-success">🟢 Present: {{ $dayPresent }}</span>
                     <span class="badge badge-warning">⚠️ Late: {{ $dayLate }}</span>
                     <span class="badge badge-danger">⏳ Undertime: {{ $dayUndertime }}</span>
                     <span class="badge badge-blue">⏳ On Duty (No Out Yet): {{ $dayAwaitingOut }}</span>
+                    <span class="badge badge-navy" style="border: 1px solid rgba(59, 130, 246, 0.35); color: #93c5fd;">🏖️ Rest Day: {{ $dayRestDay }}</span>
                 </div>
             </form>
         </div>
@@ -125,8 +127,8 @@
                                     style="padding: 12px 16px; color: var(--gold-light); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; min-width: 170px;">
                                     Clock-In Status</th>
                                 <th
-                                    style="padding: 12px 16px; color: var(--gold-light); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; min-width: 320px;">
-                                    Time In Selection & Action</th>
+                                    style="padding: 12px 16px; color: var(--gold-light); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; min-width: 420px;">
+                                    Time In Selection & Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -134,6 +136,8 @@
                                 @php
                                     $dtr = $dayRecords->firstWhere('employee_id', $emp->id);
                                     $hasTimedIn = $dtr && !empty($dtr->time_in);
+                                    $isRestDay = $dtr && $dtr->status === 'rest_day';
+                                    $isOnLeave = $dtr && $dtr->status === 'on_leave';
                                     $shiftStartFormatted = $emp->shift_start
                                         ? \Carbon\Carbon::parse($emp->shift_start)->format('g:i A')
                                         : '9:00 AM';
@@ -146,7 +150,7 @@
                                         '09:00');
                                 @endphp
                                 <tr
-                                    style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); {{ $hasTimedIn ? 'background: rgba(16, 185, 129, 0.03);' : '' }}">
+                                    style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); {{ $hasTimedIn ? 'background: rgba(16, 185, 129, 0.03);' : ($isRestDay ? 'background: rgba(59, 130, 246, 0.03);' : '') }}">
                                     <td style="padding: 14px 16px; vertical-align: middle;">
                                         <span
                                             style="font-family: monospace; font-weight: 700; color: var(--gold-light); font-size: 0.88rem;">
@@ -176,12 +180,22 @@
                                             @if ($dtr->late_minutes > 0)
                                                 <div
                                                     style="font-size: 0.74rem; color: #f59e0b; font-weight: 700; margin-top: 3px;">
-                                                    ⚠️ Late: {{ $dtr->late_minutes }} mins
+                                                    ⚠️ Late: {{ $dtr->formatted_late }}
                                                 </div>
                                             @else
                                                 <div style="font-size: 0.72rem; color: #10b981; margin-top: 3px;">✓ On Time
                                                 </div>
                                             @endif
+                                        @elseif ($isRestDay)
+                                            <span class="badge badge-navy"
+                                                style="font-size: 0.80rem; padding: 4px 8px; border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; background: rgba(59, 130, 246, 0.12);">
+                                                🏖️ Rest Day
+                                            </span>
+                                        @elseif ($isOnLeave)
+                                            <span class="badge badge-blue"
+                                                style="font-size: 0.80rem; padding: 4px 8px;">
+                                                🏖️ On Leave
+                                            </span>
                                         @else
                                             <span class="badge badge-danger"
                                                 style="font-size: 0.75rem; padding: 4px 8px;">
@@ -190,35 +204,54 @@
                                         @endif
                                     </td>
                                     <td style="padding: 14px 16px; vertical-align: middle;">
-                                        <form action="{{ route('admin.payroll.dtr.store') }}" method="POST"
-                                            style="display: flex; align-items: center; gap: 6px; margin: 0; flex-wrap: nowrap;">
-                                            @csrf
-                                            <input type="hidden" name="employee_id" value="{{ $emp->id }}">
-                                            <input type="hidden" name="record_date" value="{{ $selectedDate }}">
-                                            <input type="hidden" name="status" value="present">
-                                            @if ($dtr && $dtr->time_out)
-                                                <input type="hidden" name="time_out" value="{{ $dtr->time_out }}">
-                                            @endif
+                                        <div style="display: flex; align-items: center; gap: 6px; margin: 0; flex-wrap: nowrap;">
+                                            <!-- Clock In Form -->
+                                            <form action="{{ route('admin.payroll.dtr.store') }}" method="POST"
+                                                style="display: flex; align-items: center; gap: 6px; margin: 0; flex-wrap: nowrap;">
+                                                @csrf
+                                                <input type="hidden" name="employee_id" value="{{ $emp->id }}">
+                                                <input type="hidden" name="record_date" value="{{ $selectedDate }}">
+                                                <input type="hidden" name="status" value="present">
+                                                @if ($dtr && $dtr->time_out)
+                                                    <input type="hidden" name="time_out" value="{{ $dtr->time_out }}">
+                                                @endif
 
-                                            <!-- Exact Inputtable Time Picker -->
-                                            <input type="time" name="time_in" id="time_in_{{ $emp->id }}"
-                                                class="form-control" value="{{ $defaultTimeInVal }}"
-                                                style="width: 140px; height: 38px; font-weight: 700; font-size: 0.92rem; background: #071322; border: 1.5px solid rgba(212, 175, 55, 0.45); border-radius: 6px; color: #fff; text-align: center;"
-                                                required>
+                                                <!-- Exact Inputtable Time Picker -->
+                                                <input type="time" name="time_in" id="time_in_{{ $emp->id }}"
+                                                    class="form-control" value="{{ $defaultTimeInVal }}"
+                                                    style="width: 125px; height: 38px; font-weight: 700; font-size: 0.90rem; background: #071322; border: 1.5px solid rgba(212, 175, 55, 0.45); border-radius: 6px; color: #fff; text-align: center;"
+                                                    required>
 
-                                            <button type="button" class="btn btn-navy btn-sm"
-                                                style="height: 38px; padding: 0 10px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;"
-                                                onclick="setExactNow('time_in_{{ $emp->id }}')"
-                                                title="Set Current Live Time (Hours & Minutes)">
-                                                ⚡ Time now
-                                            </button>
+                                                <button type="button" class="btn btn-navy btn-sm"
+                                                    style="height: 38px; padding: 0 8px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;"
+                                                    onclick="setExactNow('time_in_{{ $emp->id }}')"
+                                                    title="Set Current Live Time (Hours & Minutes)">
+                                                    ⚡ Now
+                                                </button>
 
-                                            <button type="submit"
-                                                class="btn {{ $hasTimedIn ? 'btn-ghost' : 'btn-gold' }}"
-                                                style="height: 38px; padding: 0 14px; font-size: 0.82rem; font-weight: 700; white-space: nowrap;">
-                                                {{ $hasTimedIn ? 'Update In' : '⏱️ Clock In' }}
-                                            </button>
-                                        </form>
+                                                <button type="submit"
+                                                    class="btn {{ $hasTimedIn ? 'btn-ghost' : 'btn-gold' }}"
+                                                    style="height: 38px; padding: 0 12px; font-size: 0.82rem; font-weight: 700; white-space: nowrap;">
+                                                    {{ $hasTimedIn ? 'Update In' : '⏱️ Clock In' }}
+                                                </button>
+                                            </form>
+
+                                            <!-- Rest Day Quick Tag Button -->
+                                            <form action="{{ route('admin.payroll.dtr.store') }}" method="POST" style="margin: 0;">
+                                                @csrf
+                                                <input type="hidden" name="employee_id" value="{{ $emp->id }}">
+                                                <input type="hidden" name="record_date" value="{{ $selectedDate }}">
+                                                <input type="hidden" name="status" value="rest_day">
+                                                <input type="hidden" name="notes" value="Official Rest Day">
+                                                <button type="submit"
+                                                    class="btn {{ $isRestDay ? 'btn-ghost' : 'btn-navy' }}"
+                                                    style="height: 38px; padding: 0 10px; font-size: 0.78rem; font-weight: 700; white-space: nowrap; {{ $isRestDay ? 'border-color: #3b82f6; color: #93c5fd; background: rgba(59, 130, 246, 0.18);' : '' }}"
+                                                    onclick="return confirm('Tag {{ addslashes($emp->full_name) }} as REST DAY for {{ \Carbon\Carbon::parse($selectedDate)->format('M d, Y') }}?');"
+                                                    title="Tag this employee as Rest Day">
+                                                    🏖️ Rest Day
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -274,6 +307,8 @@
                                     $dtr = $dayRecords->firstWhere('employee_id', $emp->id);
                                     $hasTimedIn = $dtr && !empty($dtr->time_in);
                                     $hasTimedOut = $dtr && !empty($dtr->time_out);
+                                    $isRestDay = $dtr && $dtr->status === 'rest_day';
+                                    $isOnLeave = $dtr && $dtr->status === 'on_leave';
                                     $shiftStartFormatted = $emp->shift_start
                                         ? \Carbon\Carbon::parse($emp->shift_start)->format('g:i A')
                                         : '9:00 AM';
@@ -286,7 +321,7 @@
                                         '18:00');
                                 @endphp
                                 <tr
-                                    style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); {{ $hasTimedOut ? 'background: rgba(212, 175, 55, 0.03);' : '' }}">
+                                    style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); {{ $hasTimedOut ? 'background: rgba(212, 175, 55, 0.03);' : ($isRestDay ? 'background: rgba(59, 130, 246, 0.03);' : '') }}">
                                     <td style="padding: 14px 16px; vertical-align: middle;">
                                         <span
                                             style="font-family: monospace; font-weight: 700; color: var(--gold-light); font-size: 0.88rem;">
@@ -307,6 +342,16 @@
                                                 style="font-size: 0.82rem; font-weight: 700; color: #10b981; margin-top: 3px;">
                                                 🟢 In: {{ date('h:i A', strtotime($dtr->time_in)) }}
                                             </div>
+                                        @elseif ($isRestDay)
+                                            <div
+                                                style="font-size: 0.80rem; font-weight: 700; color: #93c5fd; margin-top: 3px;">
+                                                🏖️ Rest Day
+                                            </div>
+                                        @elseif ($isOnLeave)
+                                            <div
+                                                style="font-size: 0.80rem; font-weight: 700; color: #60a5fa; margin-top: 3px;">
+                                                🏖️ On Leave
+                                            </div>
                                         @else
                                             <div
                                                 style="font-size: 0.74rem; color: #ef4444; font-weight: 700; margin-top: 3px;">
@@ -321,7 +366,7 @@
                                             @if ($dtr->undertime_minutes > 0)
                                                 <div
                                                     style="font-size: 0.74rem; color: #ef4444; font-weight: 700; margin-top: 2px;">
-                                                    ⏳ Undertime: {{ $dtr->undertime_minutes }}m
+                                                    ⏳ Undertime: {{ $dtr->formatted_undertime }}
                                                 </div>
                                             @endif
                                             @if ($dtr->ot_hours > 0)
@@ -334,7 +379,13 @@
                                                 <div style="font-size: 0.72rem; color: #10b981; margin-top: 2px;">✓
                                                     Completed Full Shift</div>
                                             @endif
-                                        @elseif($hasTimedIn)
+                                        @elseif ($isRestDay)
+                                            <span class="badge badge-navy"
+                                                style="font-size: 0.75rem; padding: 4px 8px; color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4);">🏖️ Rest Day</span>
+                                        @elseif ($isOnLeave)
+                                            <span class="badge badge-blue"
+                                                style="font-size: 0.75rem; padding: 4px 8px;">🏖️ On Leave</span>
+                                        @elseif ($hasTimedIn)
                                             <span class="badge badge-warning"
                                                 style="font-size: 0.75rem; padding: 4px 8px;">Currently on Duty</span>
                                         @else
@@ -473,12 +524,12 @@
                                     <td>
                                         @if ($dtr->late_minutes > 0)
                                             <div style="font-size: 0.72rem; color: #f59e0b; font-weight: 700;">
-                                                ⚠️ Late: {{ $dtr->late_minutes }}m
+                                                ⚠️ Late: {{ $dtr->formatted_late }}
                                             </div>
                                         @endif
                                         @if ($dtr->undertime_minutes > 0)
                                             <div style="font-size: 0.72rem; color: #ef4444; font-weight: 700;">
-                                                ⏳ UT: {{ $dtr->undertime_minutes }}m
+                                                ⏳ UT: {{ $dtr->formatted_undertime }}
                                             </div>
                                         @endif
                                         @if ($dtr->late_minutes == 0 && $dtr->undertime_minutes == 0)

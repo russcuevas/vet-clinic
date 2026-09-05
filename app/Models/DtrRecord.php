@@ -30,6 +30,37 @@ class DtrRecord extends Model
         'undertime_minutes' => 'integer',
     ];
 
+    public static function formatMinutesToHuman(int $minutes): string
+    {
+        $minutes = abs($minutes);
+        if ($minutes === 0) {
+            return '0 mins';
+        }
+
+        $hours = intdiv($minutes, 60);
+        $remMinutes = $minutes % 60;
+
+        if ($hours > 0 && $remMinutes > 0) {
+            $hrLabel = $hours === 1 ? '1 hr' : "{$hours} hrs";
+            $minLabel = $remMinutes === 1 ? '1 min' : "{$remMinutes} mins";
+            return "{$hrLabel} and {$minLabel}";
+        } elseif ($hours > 0) {
+            return $hours === 1 ? '1 hr' : "{$hours} hrs";
+        } else {
+            return $remMinutes === 1 ? '1 min' : "{$remMinutes} mins";
+        }
+    }
+
+    public function getFormattedLateAttribute(): string
+    {
+        return self::formatMinutesToHuman($this->late_minutes ?? 0);
+    }
+
+    public function getFormattedUndertimeAttribute(): string
+    {
+        return self::formatMinutesToHuman($this->undertime_minutes ?? 0);
+    }
+
     public function employee()
     {
         return $this->belongsTo(Employee::class);

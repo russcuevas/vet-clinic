@@ -23,9 +23,9 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Create Default Users for all Roles (including Inventory Officer & Back Office)
         $admin = User::create([
-            'name' => 'Dr. Modesto Reyes',
+            'name' => 'Cen Tutor',
             'email' => 'admin@sanmodesto.com',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('123456789'),
             'role' => 'admin',
             'license_no' => 'PRC-VET-001099',
             'contact_number' => '0917-123-4567',
@@ -75,6 +75,15 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'back_office',
             'contact_number' => '0926-789-0123',
+            'status' => 'active',
+        ]);
+
+        $receptionist = User::create([
+            'name' => 'Ella Mae Dizon',
+            'email' => 'receptionist@sanmodesto.com',
+            'password' => Hash::make('password'),
+            'role' => 'receptionist',
+            'contact_number' => '0928-111-2233',
             'status' => 'active',
         ]);
 

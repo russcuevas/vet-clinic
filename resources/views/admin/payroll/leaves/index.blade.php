@@ -368,23 +368,30 @@
         </div>
     </div>
 
-    <!-- Modal: File Leave Application -->
+    <!-- Modal: File Leave Application (Enlarged & Select2 Searchable) -->
     <div class="modal-backdrop" id="modal-file-leave">
-        <div class="modal-dialog" style="max-width: 580px;">
-            <div class="modal-header">
+        <div class="modal-dialog modal-lg" style="max-width: 860px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, rgba(13, 30, 51, 0.95), rgba(26, 44, 76, 0.95)); border-bottom: 1.5px solid var(--gold-border); padding: 1.25rem 1.5rem;">
                 <div class="modal-title-group">
-                    <h4 class="modal-title">File Leave Application</h4>
-                    <span style="font-size: 0.72rem; color: var(--gold-light);">Automatic limit check against 12-day annual quota (5 VL, 5 SL, 2 SPL)</span>
+                    <h4 class="modal-title" style="color: var(--gold-light); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🏖️</span> File Leave Application
+                    </h4>
+                    <span style="font-size: 0.78rem; color: var(--text-muted);">Select2 Searchable Staff Picker • 12-Day Annual Quota Tracking (5 VL, 5 SL, 2 SPL)</span>
                 </div>
                 <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
             </div>
             <form action="{{ route('admin.payroll.leaves.store') }}" method="POST">
                 @csrf
-                <div class="modal-body" style="padding: 1.5rem;">
-                    <div class="form-group">
-                        <label class="form-label">Employee *</label>
-                        <select name="employee_id" class="form-control" required>
-                            <option value="">-- Select Employee --</option>
+                <div class="modal-body" style="padding: 1.75rem;">
+                    
+                    <!-- 1. Employee Select2 Selector -->
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label class="form-label" style="font-weight: 700; color: var(--gold-light); font-size: 0.88rem; margin-bottom: 0.4rem; display: flex; justify-content: space-between;">
+                            <span>👤 Select Employee / Staff Member <span class="req" style="color: #ef4444;">*</span></span>
+                            <span style="font-size: 0.74rem; font-weight: normal; color: var(--text-muted);">Type name or EMP code to search</span>
+                        </label>
+                        <select name="employee_id" id="leave_employee_select" class="form-control select2" style="width: 100%;" required>
+                            <option value="">-- Type or Select Employee --</option>
                             @foreach($employees as $emp)
                                 @php
                                     $stat = $leaveStats[$emp->id] ?? [
@@ -394,52 +401,172 @@
                                         'total' => ['remaining' => 12],
                                     ];
                                 @endphp
-                                <option value="{{ $emp->id }}">
-                                    {{ $emp->employee_code }} - {{ $emp->full_name }} (VL: {{ $stat['vl']['remaining'] }}d | SL: {{ $stat['sl']['remaining'] }}d | SPL: {{ $stat['spl']['remaining'] }}d left — {{ $stat['total']['remaining'] }}d total)
+                                <option value="{{ $emp->id }}"
+                                    data-code="{{ $emp->employee_code }}"
+                                    data-name="{{ $emp->full_name }}"
+                                    data-position="{{ $emp->position }}"
+                                    data-department="{{ $emp->department }}"
+                                    data-vl="{{ $stat['vl']['remaining'] }}"
+                                    data-sl="{{ $stat['sl']['remaining'] }}"
+                                    data-spl="{{ $stat['spl']['remaining'] }}"
+                                    data-total="{{ $stat['total']['remaining'] }}">
+                                    {{ $emp->employee_code }} — {{ $emp->full_name }} ({{ $emp->position }} • {{ $emp->department }})
                                 </option>
                             @endforeach
                         </select>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-                        <div class="form-group">
-                            <label class="form-label">Leave Type *</label>
-                            <select name="leave_type" class="form-control" required>
-                                <option value="vacation_leave">Vacation Leave (VL) — Max 5 Days</option>
-                                <option value="sick_leave">Sick Leave (SL) — Max 5 Days</option>
-                                <option value="special_leave">Special Leave (SPL) — Max 2 Days</option>
-                            </select>
+                    <!-- Live Quota Balance Card (Shown when employee is selected) -->
+                    <div id="emp_balance_card" style="display: none; background: rgba(13, 30, 51, 0.7); border: 1.5px solid rgba(212, 175, 55, 0.35); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; border-bottom: 1px dashed rgba(255, 255, 255, 0.1); padding-bottom: 0.4rem;">
+                            <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gold-light); font-weight: 700;">
+                                📊 Real-Time Annual Leave Quota for Year {{ $year }}
+                            </span>
+                            <span id="card_emp_name" style="font-size: 0.8rem; font-weight: 700; color: var(--white);"></span>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Annual Leave Rules</label>
-                            <div style="background: rgba(212, 175, 55, 0.1); border: 1px solid var(--gold-border); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.72rem; color: var(--gold-light); line-height: 1.35;">
-                                <strong>12 Days Total:</strong> 5 VL, 5 SL, 2 SPL.<br>
-                                Excess beyond type limits converted to unpaid deduction.
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; text-align: center;">
+                            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; padding: 0.6rem 0.5rem;">
+                                <div style="font-size: 0.7rem; color: #93c5fd; font-weight: 700; text-transform: uppercase;">🌴 Vacation (VL)</div>
+                                <div id="badge_emp_vl" style="font-size: 1.05rem; font-weight: 800; color: #60a5fa; margin-top: 2px;">5 / 5 days</div>
+                                <div style="font-size: 0.65rem; color: var(--text-muted);">Non-convertible</div>
+                            </div>
+                            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.6rem 0.5rem;">
+                                <div style="font-size: 0.7rem; color: #6ee7b7; font-weight: 700; text-transform: uppercase;">🩺 Sick (SL)</div>
+                                <div id="badge_emp_sl" style="font-size: 1.05rem; font-weight: 800; color: #34d399; margin-top: 2px;">5 / 5 days</div>
+                                <div style="font-size: 0.65rem; color: #10b981;">Cash convertible</div>
+                            </div>
+                            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 0.6rem 0.5rem;">
+                                <div style="font-size: 0.7rem; color: #fcd34d; font-weight: 700; text-transform: uppercase;">⭐ Special (SPL)</div>
+                                <div id="badge_emp_spl" style="font-size: 1.05rem; font-weight: 800; color: #fbbf24; margin-top: 2px;">2 / 2 days</div>
+                                <div style="font-size: 0.65rem; color: var(--text-muted);">Non-convertible</div>
+                            </div>
+                            <div style="background: rgba(212, 175, 55, 0.1); border: 1px solid var(--gold-border); border-radius: 6px; padding: 0.6rem 0.5rem;">
+                                <div style="font-size: 0.7rem; color: var(--gold-light); font-weight: 700; text-transform: uppercase;">📅 Total Left</div>
+                                <div id="badge_emp_total" style="font-size: 1.05rem; font-weight: 800; color: var(--gold-primary); margin-top: 2px;">12 / 12 days</div>
+                                <div style="font-size: 0.65rem; color: var(--text-muted);">Max 12d Quota</div>
                             </div>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-                        <div class="form-group">
-                            <label class="form-label">Start Date *</label>
-                            <input type="date" name="start_date" class="form-control" value="{{ date('Y-m-d') }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">End Date *</label>
-                            <input type="date" name="end_date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                    <!-- 2. Leave Type Selection -->
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label class="form-label" style="font-weight: 700; color: var(--gold-light); font-size: 0.88rem; margin-bottom: 0.4rem;">
+                            📋 Type of Leave Application <span class="req" style="color: #ef4444;">*</span>
+                        </label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.85rem;">
+                            <label style="cursor: pointer; border: 1.5px solid var(--navy-border); border-radius: 8px; padding: 0.85rem; background: rgba(7, 19, 34, 0.6); display: flex; flex-direction: column; gap: 0.25rem; transition: all 0.2s;">
+                                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                                    <input type="radio" name="leave_type" value="vacation_leave" checked style="accent-color: #3b82f6;">
+                                    <strong style="color: #60a5fa; font-size: 0.88rem;">🌴 Vacation (VL)</strong>
+                                </div>
+                                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 1.35rem;">Max 5 days / year (Rest & Recreation)</span>
+                            </label>
+
+                            <label style="cursor: pointer; border: 1.5px solid var(--navy-border); border-radius: 8px; padding: 0.85rem; background: rgba(7, 19, 34, 0.6); display: flex; flex-direction: column; gap: 0.25rem; transition: all 0.2s;">
+                                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                                    <input type="radio" name="leave_type" value="sick_leave" style="accent-color: #10b981;">
+                                    <strong style="color: #34d399; font-size: 0.88rem;">🩺 Sick Leave (SL)</strong>
+                                </div>
+                                <span style="font-size: 0.72rem; color: #10b981; margin-left: 1.35rem;">Max 5 days (Cash-convertible if unused)</span>
+                            </label>
+
+                            <label style="cursor: pointer; border: 1.5px solid var(--navy-border); border-radius: 8px; padding: 0.85rem; background: rgba(7, 19, 34, 0.6); display: flex; flex-direction: column; gap: 0.25rem; transition: all 0.2s;">
+                                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                                    <input type="radio" name="leave_type" value="special_leave" style="accent-color: #f59e0b;">
+                                    <strong style="color: #fbbf24; font-size: 0.88rem;">⭐ Special Leave</strong>
+                                </div>
+                                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 1.35rem;">Max 2 days / year (SPL Quota)</span>
+                            </label>
                         </div>
                     </div>
 
-                    <div class="form-group" style="margin-top: 0.75rem;">
-                        <label class="form-label">Reason / Justification *</label>
-                        <textarea name="reason" class="form-control" rows="3" placeholder="Provide medical or personal reason for leave..." required></textarea>
+                    <!-- 3. Leave Period & Days Count Display -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; align-items: flex-end;">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-weight: 700; color: var(--white); font-size: 0.84rem;">📅 Start Date *</label>
+                            <input type="date" name="start_date" id="leave_start_date" class="form-control" value="{{ date('Y-m-d') }}" style="height: 40px; font-weight: 700;" required>
+                        </div>
+
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-weight: 700; color: var(--white); font-size: 0.84rem;">📅 End Date *</label>
+                            <input type="date" name="end_date" id="leave_end_date" class="form-control" value="{{ date('Y-m-d') }}" style="height: 40px; font-weight: 700;" required>
+                        </div>
+
+                        <div style="background: rgba(212, 175, 55, 0.08); border: 1.5px solid var(--gold-border); border-radius: 6px; padding: 0.5rem 0.85rem; height: 40px; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Total Duration:</span>
+                            <span id="leave_days_display" style="font-size: 0.92rem; font-weight: 800; color: var(--gold-light);">1 day(s)</span>
+                        </div>
                     </div>
+
+                    <!-- 4. Reason / Notes -->
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" style="font-weight: 700; color: var(--white); font-size: 0.84rem;">📝 Reason / Justification *</label>
+                        <textarea name="reason" class="form-control" rows="3" placeholder="Provide medical or personal reason for filing leave application..." style="resize: vertical;" required></textarea>
+                    </div>
+
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" style="padding: 1rem 1.5rem; background: rgba(13, 30, 51, 0.8); border-top: 1px solid var(--navy-border);">
                     <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
-                    <button type="submit" class="btn btn-gold">File & Process Leave</button>
+                    <button type="submit" class="btn btn-gold" style="padding: 0.5rem 1.5rem; font-weight: 700;">
+                        <span>✓ File & Process Leave Application</span>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    // Initialize Select2 on Employee picker inside modal
+    if ($.fn.select2) {
+        $('#leave_employee_select').select2({
+            dropdownParent: $('#modal-file-leave'),
+            placeholder: '🔍 Search employee name or code...',
+            allowClear: true,
+            width: '100%'
+        });
+    }
+
+    // Live update of balance card when employee is selected
+    $('#leave_employee_select').on('change', function() {
+        var opt = $(this).find(':selected');
+        if (opt.val()) {
+            var name = opt.data('name') || '';
+            var vl = opt.data('vl') !== undefined ? opt.data('vl') : 5;
+            var sl = opt.data('sl') !== undefined ? opt.data('sl') : 5;
+            var spl = opt.data('spl') !== undefined ? opt.data('spl') : 2;
+            var total = opt.data('total') !== undefined ? opt.data('total') : 12;
+
+            $('#card_emp_name').text(name);
+            $('#badge_emp_vl').text(vl + ' / 5 days');
+            $('#badge_emp_sl').text(sl + ' / 5 days');
+            $('#badge_emp_spl').text(spl + ' / 2 days');
+            $('#badge_emp_total').text(total + ' / 12 days');
+            $('#emp_balance_card').slideDown(150);
+        } else {
+            $('#emp_balance_card').slideUp(150);
+        }
+    });
+
+    // Auto calculate days duration
+    function calcLeaveDays() {
+        var start = $('#leave_start_date').val();
+        var end = $('#leave_end_date').val();
+        if (start && end) {
+            var d1 = new Date(start);
+            var d2 = new Date(end);
+            if (d2 >= d1) {
+                var diffTime = Math.abs(d2 - d1);
+                var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                $('#leave_days_display').text(diffDays + ' day(s)');
+            } else {
+                $('#leave_days_display').text('Invalid date range');
+            }
+        }
+    }
+    $('#leave_start_date, #leave_end_date').on('change', calcLeaveDays);
+});
+</script>
+@endpush

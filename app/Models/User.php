@@ -64,6 +64,16 @@ class User extends Authenticatable
         return $this->role === 'back_office';
     }
 
+    public function isReceptionist(): bool
+    {
+        return $this->role === 'receptionist';
+    }
+
+    public function appointmentsBooked()
+    {
+        return $this->hasMany(Appointment::class, 'booked_by');
+    }
+
     public function medicalRecords()
     {
         return $this->hasMany(MedicalRecord::class, 'veterinarian_id');

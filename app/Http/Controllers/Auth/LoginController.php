@@ -58,6 +58,7 @@ class LoginController extends Controller
             'manager' => redirect()->route('manager.dashboard'),
             'inventory_officer' => redirect()->route('inventory_officer.instruments.index'),
             'back_office' => redirect()->route('back_office.instruments.index'),
+            'receptionist' => redirect()->route('receptionist.appointments.index'),
             default => redirect()->route('admin.dashboard'),
         };
     }
