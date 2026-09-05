@@ -226,7 +226,7 @@ class PayrollSeeder extends Seeder
             'is_paid' => true,
             'exceeded_limit' => false,
             'approved_by' => $adminUser ? $adminUser->id : null,
-            'admin_remarks' => 'Approved (2/5 days used)',
+            'admin_remarks' => 'Approved (2/5 SL used, 2/12 Total Annual)',
         ]);
 
         // 5. Seed Sample Deductions (Loan & Cash Advance)

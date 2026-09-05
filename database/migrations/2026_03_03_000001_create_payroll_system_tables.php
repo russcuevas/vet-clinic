@@ -54,7 +54,7 @@ return new class extends Migration
         Schema::create('leave_applications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
-            $table->enum('leave_type', ['sick_leave', 'vacation_leave', 'special_leave', 'emergency_leave'])->default('sick_leave');
+            $table->enum('leave_type', ['vacation_leave', 'sick_leave', 'special_leave'])->default('sick_leave');
             $table->date('start_date');
             $table->date('end_date');
             $table->integer('days_count')->default(1);

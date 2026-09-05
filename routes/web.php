@@ -118,9 +118,12 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
         Route::post('/dtr/batch', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'batchGenerate'])->name('dtr.batch');
         Route::delete('/dtr/{dtr}', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'destroy'])->name('dtr.destroy');
 
-        // Leave Applications
+        // Leave Applications & Annual Ledgers (File Keeping)
         Route::get('/leaves', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'index'])->name('leaves.index');
         Route::post('/leaves', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'store'])->name('leaves.store');
+        Route::post('/leaves/convert-sl', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'convertSlToIncentive'])->name('leaves.convert_sl');
+        Route::post('/leaves/archive', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'archiveYear'])->name('leaves.archive');
+        Route::get('/leaves/archives/{year}/print', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'printLedger'])->name('leaves.print_ledger');
         Route::put('/leaves/{leave}/status', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'updateStatus'])->name('leaves.status');
         Route::delete('/leaves/{leave}', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'destroy'])->name('leaves.destroy');
 

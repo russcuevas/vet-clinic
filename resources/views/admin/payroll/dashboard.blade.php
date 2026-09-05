@@ -96,7 +96,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span>Leave Applications (5-Day Limit)</span>
+            <span>Leave Applications (12-Day Quota)</span>
         </a>
     </div>
 
@@ -156,12 +156,12 @@
             </div>
         </div>
 
-        <!-- Pending Leave Applications with 5-Day Limit Indicator -->
+        <!-- Pending Leave Applications with 12-Day Quota Indicator -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title-group">
                     <h3 class="card-title">Pending Leave Applications</h3>
-                    <span class="card-subtitle">Enforcing the 5-day annual paid limit rule</span>
+                    <span class="card-subtitle">Enforcing the 12-day annual quota (5 VL, 5 SL, 2 SPL)</span>
                 </div>
                 <a href="{{ route('admin.payroll.leaves.index') }}" class="btn btn-ghost btn-sm">View Leaves</a>
             </div>
@@ -173,7 +173,7 @@
                                 <th>Employee</th>
                                 <th>Type</th>
                                 <th>Duration</th>
-                                <th>5-Day Limit</th>
+                                <th>Quota Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -197,7 +197,7 @@
                                         @if($leave->exceeded_limit)
                                             <span class="badge badge-danger" style="font-size: 0.68rem;">Exceeded (Unpaid)</span>
                                         @else
-                                            <span class="badge badge-success" style="font-size: 0.68rem;">Within Limit (Paid)</span>
+                                            <span class="badge badge-success" style="font-size: 0.68rem;">Within Quota</span>
                                         @endif
                                     </td>
                                     <td>
