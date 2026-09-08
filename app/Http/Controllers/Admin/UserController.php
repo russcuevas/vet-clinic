@@ -21,7 +21,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'role' => 'required|in:admin,cashier,veterinarian,manager,inventory_officer,back_office',
+            'role' => 'required|in:admin,cashier,veterinarian,manager,inventory_officer,back_office,receptionist',
             'license_no' => 'nullable|string|max:100',
             'contact_number' => 'nullable|string|max:50',
         ]);
@@ -45,7 +45,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:6',
-            'role' => 'required|in:admin,cashier,veterinarian,manager,inventory_officer,back_office',
+            'role' => 'required|in:admin,cashier,veterinarian,manager,inventory_officer,back_office,receptionist',
             'license_no' => 'nullable|string|max:100',
             'contact_number' => 'nullable|string|max:50',
             'status' => 'required|in:active,inactive',

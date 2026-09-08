@@ -26,8 +26,8 @@
         </div>
         <div class="stat-card">
             <span class="stat-title">Doctors & Staff</span>
-            <div class="stat-value" style="color: #38bdf8;">{{ $users->whereIn('role', ['veterinarian', 'cashier', 'manager', 'inventory_officer', 'back_office'])->count() }}</div>
-            <div class="stat-desc">Clinical, desk & stock personnel</div>
+            <div class="stat-value" style="color: #38bdf8;">{{ $users->whereIn('role', ['veterinarian', 'cashier', 'manager', 'inventory_officer', 'back_office', 'receptionist'])->count() }}</div>
+            <div class="stat-desc">Clinical, desk, front desk & stock personnel</div>
         </div>
     </div>
 
@@ -105,6 +105,8 @@
                                         <span class="badge badge-gold" style="font-size: 0.72rem; background: rgba(212, 175, 55, 0.2);">📦 Inventory Officer</span>
                                     @elseif($user->role === 'back_office')
                                         <span class="badge badge-navy" style="font-size: 0.72rem; border-color: var(--blue-accent); color: #38bdf8;">🏢 Back Office</span>
+                                    @elseif($user->role === 'receptionist')
+                                        <span class="badge badge-purple" style="font-size: 0.72rem; background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.3);">📅 Receptionist</span>
                                     @else
                                         <span class="badge badge-navy" style="font-size: 0.72rem;">{{ ucfirst(str_replace('_', ' ', $user->role)) }}</span>
                                     @endif
@@ -191,6 +193,7 @@
                             <select name="role" class="form-control" required>
                                 <option value="veterinarian">Veterinarian (Clinical & Prescriptions)</option>
                                 <option value="cashier">Cashier (Billing & Cash Register)</option>
+                                <option value="receptionist">Receptionist (Appointments & Front Desk)</option>
                                 <option value="manager">Manager (Operations & Review)</option>
                                 <option value="inventory_officer">Inventory Officer (Instruments & Restock)</option>
                                 <option value="back_office">Back Office (Instruments & Records)</option>
@@ -254,6 +257,7 @@
                             <select name="role" class="form-control" required>
                                 <option value="veterinarian">Veterinarian (Clinical & Prescriptions)</option>
                                 <option value="cashier">Cashier (Billing & Cash Register)</option>
+                                <option value="receptionist">Receptionist (Appointments & Front Desk)</option>
                                 <option value="manager">Manager (Operations & Review)</option>
                                 <option value="inventory_officer">Inventory Officer (Instruments & Restock)</option>
                                 <option value="back_office">Back Office (Instruments & Records)</option>
