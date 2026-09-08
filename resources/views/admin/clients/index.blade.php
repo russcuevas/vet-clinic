@@ -240,11 +240,15 @@
                                         <input type="text" name="breed" class="form-control" placeholder="e.g. Persian / Shih Tzu">
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label">Birthdate</label>
+                                        <label class="form-label">Birthdate <span style="color: var(--text-muted); font-size: 0.72rem;">(Auto-calculates age)</span></label>
                                         <input type="date" name="birth_date" class="form-control">
                                     </div>
                                 </div>
                                 <div class="form-grid" style="margin-top: 0.5rem;">
+                                    <div class="form-group">
+                                        <label class="form-label">Age</label>
+                                        <input type="text" name="age" class="form-control" placeholder="Auto-calculated from birthdate">
+                                    </div>
                                     <div class="form-group">
                                         <label class="form-label">Sex</label>
                                         <select name="sex" class="form-select">
@@ -254,10 +258,10 @@
                                             <option value="Spayed Female">Spayed Female</option>
                                         </select>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Color / Markings</label>
-                                        <input type="text" name="color" class="form-control" placeholder="e.g. Gray / Tri-color">
-                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-top: 0.5rem;">
+                                    <label class="form-label">Color / Markings</label>
+                                    <input type="text" name="color" class="form-control" placeholder="e.g. Gray / Tri-color">
                                 </div>
                             </div>
                         </div>
@@ -542,7 +546,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Age</label>
-                            <input type="text" name="age" class="form-control">
+                            <input type="text" name="age" class="form-control" placeholder="Auto or e.g. 1 year old">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Sex <span class="req">*</span></label>

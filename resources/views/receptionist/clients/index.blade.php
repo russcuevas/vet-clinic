@@ -156,6 +156,17 @@
 
                                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
                                                 <div class="form-group">
+                                                    <label class="form-label">Birthdate <span style="color: var(--text-muted); font-size: 0.72rem;">(Optional)</span></label>
+                                                    <input type="date" name="birth_date" class="form-control">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="form-label">Age</label>
+                                                    <input type="text" name="age" class="form-control" placeholder="Auto or e.g. 2 yrs, 6 mos">
+                                                </div>
+                                            </div>
+
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
+                                                <div class="form-group">
                                                     <label class="form-label">Sex</label>
                                                     <select name="sex" class="form-control">
                                                         <option value="">-- Choose Sex --</option>
@@ -166,14 +177,9 @@
                                                     </select>
                                                 </div>
                                                 <div class="form-group">
-                                                    <label class="form-label">Age</label>
-                                                    <input type="text" name="age" class="form-control" placeholder="e.g. 2 yrs, 6 mos">
+                                                    <label class="form-label">Color / Markings</label>
+                                                    <input type="text" name="color" class="form-control" placeholder="e.g. White with brown patches">
                                                 </div>
-                                            </div>
-
-                                            <div class="form-group" style="margin-top: 0.75rem;">
-                                                <label class="form-label">Color / Markings</label>
-                                                <input type="text" name="color" class="form-control" placeholder="e.g. White with brown patches">
                                             </div>
                                         </div>
                                         <div class="modal-footer">

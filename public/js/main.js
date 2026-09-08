@@ -214,9 +214,106 @@ document.addEventListener('DOMContentLoaded', () => {
       $petSelect.find('.no-pets-opt').remove();
     }
   });
+
+  // ---------------------------------------------------------
+  // Universal Pet Age Auto-Calculator from Birthdate
+  // ---------------------------------------------------------
+  $(document).on('input change', 'input[type="date"]', function() {
+    const name = $(this).attr('name') || '';
+    const id = $(this).attr('id') || '';
+
+    // Check if this input is a birthdate field
+    if (name.toLowerCase().includes('birth') || name.toLowerCase().includes('dob') || id.toLowerCase().includes('birth')) {
+      const birthVal = $(this).val();
+      const ageStr = calculatePetAge(birthVal);
+
+      // Find the corresponding age input in the same form or container
+      const $form = $(this).closest('form, .modal-dialog, .form-grid, fieldset, .card-body, body');
+      
+      let $ageInput = null;
+      if (id === 'input_pet_birth_date') {
+        $ageInput = $('#input_pet_age');
+      } else if (name === 'pet_birth_date') {
+        $ageInput = $form.find('input[name="pet_age"]');
+      }
+
+      if (!$ageInput || !$ageInput.length) {
+        $ageInput = $form.find('input[name="age"]');
+      }
+      if (!$ageInput || !$ageInput.length) {
+        $ageInput = $form.find('input[id*="age"]');
+      }
+
+      if ($ageInput && $ageInput.length) {
+        $ageInput.val(ageStr);
+      }
+    }
+  });
 });
+
+/**
+ * Universal Pet Age Calculator
+ * Formats birthdate into readable age: e.g. "2 yrs, 4 mos", "1 yr old", "5 months old", "3 weeks old", "4 days old"
+ */
+function calculatePetAge(birthDateStr) {
+  if (!birthDateStr) return '';
+  
+  // Parse parts to avoid UTC timezone off-by-one errors
+  const parts = birthDateStr.split('-');
+  if (parts.length !== 3) return '';
+  
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  
+  const birthDate = new Date(year, month, day);
+  if (isNaN(birthDate.getTime())) return '';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  birthDate.setHours(0, 0, 0, 0);
+
+  if (birthDate > today) return ''; // Future date
+
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+  let days = today.getDate() - birthDate.getDate();
+
+  if (days < 0) {
+    months--;
+    const prevMonthLastDay = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+    days += prevMonthLastDay;
+  }
+
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+
+  if (years >= 2) {
+    return months > 0 ? `${years} yrs, ${months} mo${months > 1 ? 's' : ''}` : `${years} yrs old`;
+  } else if (years === 1) {
+    return months > 0 ? `1 yr, ${months} mo${months > 1 ? 's' : ''}` : `1 yr old`;
+  } else if (months >= 1) {
+    if (days >= 7 && months < 3) {
+      const weeks = Math.floor(days / 7);
+      return `${months} mo${months > 1 ? 's' : ''}, ${weeks} wk${weeks > 1 ? 's' : ''}`;
+    }
+    return `${months} month${months > 1 ? 's' : ''} old`;
+  } else {
+    const diffTime = today.getTime() - birthDate.getTime();
+    const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    if (totalDays >= 7) {
+      const weeks = Math.floor(totalDays / 7);
+      return `${weeks} week${weeks > 1 ? 's' : ''} old`;
+    }
+    return totalDays > 0 ? `${totalDays} day${totalDays > 1 ? 's' : ''} old` : 'Newborn';
+  }
+}
+window.calculatePetAge = calculatePetAge;
 
 function printSection(elementId) {
   window.print();
 }
 window.printSection = printSection;
+

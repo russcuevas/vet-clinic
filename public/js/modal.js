@@ -85,6 +85,15 @@ function openModal(modalId, triggerElement = null) {
         }
       }
     }
+
+    // Auto calculate age if birth_date is present and age is blank/unspecified
+    const birthInput = modal.querySelector('input[type="date"][name*="birth"], input[type="date"][id*="birth"]');
+    const ageInput = modal.querySelector('input[name="age"], input[name="pet_age"], input[id*="age"]');
+    if (birthInput && birthInput.value && ageInput && (!ageInput.value || ageInput.value === 'Not specified' || ageInput.value === 'N/A')) {
+      if (typeof window.calculatePetAge === 'function') {
+        ageInput.value = window.calculatePetAge(birthInput.value);
+      }
+    }
   }
 
   modal.classList.add('active');

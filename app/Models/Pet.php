@@ -26,6 +26,31 @@ class Pet extends Model
         'birth_date' => 'date',
     ];
 
+    public function getAgeAttribute($value)
+    {
+        if (!empty($value) && $value !== 'Not specified' && $value !== 'N/A') {
+            return $value;
+        }
+
+        if ($this->birth_date) {
+            $diff = $this->birth_date->diff(now());
+            if ($diff->y >= 2) {
+                return $diff->m > 0 ? "{$diff->y} yrs, {$diff->m} mos" : "{$diff->y} yrs old";
+            } elseif ($diff->y === 1) {
+                return $diff->m > 0 ? "1 yr, {$diff->m} mos" : "1 yr old";
+            } elseif ($diff->m >= 1) {
+                return $diff->m > 1 ? "{$diff->m} months old" : "1 month old";
+            } elseif ($diff->d >= 7) {
+                $weeks = floor($diff->d / 7);
+                return $weeks > 1 ? "{$weeks} weeks old" : "1 week old";
+            } else {
+                return $diff->d > 1 ? "{$diff->d} days old" : ($diff->d === 1 ? "1 day old" : "Newborn");
+            }
+        }
+
+        return $value ?: 'Not specified';
+    }
+
     public static function generatePetCode(): string
     {
         $year = date('Y');
