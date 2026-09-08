@@ -32,7 +32,9 @@ class EmployeeController extends Controller
         }
 
         $employees = $query->latest()->paginate(15)->withQueryString();
-        $positions = Employee::distinct()->pluck('position')->filter();
+        $definedPositions = Employee::POSITIONS;
+        $dbPositions = Employee::distinct()->pluck('position')->filter()->toArray();
+        $positions = array_values(array_unique(array_merge($definedPositions, $dbPositions)));
         $users = User::where('status', 'active')->orderBy('name')->get();
 
         return view('admin.payroll.employees.index', compact('employees', 'positions', 'users'));

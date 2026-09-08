@@ -195,21 +195,18 @@
                                                     <div class="form-group">
                                                         <label class="form-label">Position / Role *</label>
                                                         <select name="position" class="form-control" required>
-                                                            <option value="Veterinarian"
-                                                                {{ $emp->position == 'Veterinarian' ? 'selected' : '' }}>
-                                                                Veterinarian</option>
-                                                            <option value="Groomer"
-                                                                {{ $emp->position == 'Groomer' ? 'selected' : '' }}>Groomer
-                                                            </option>
-                                                            <option value="Janitor / Kennel Staff"
-                                                                {{ $emp->position == 'Janitor / Kennel Staff' ? 'selected' : '' }}>
-                                                                Janitor / Kennel Staff</option>
-                                                            <option value="Cashier"
-                                                                {{ $emp->position == 'Cashier' ? 'selected' : '' }}>Cashier
-                                                            </option>
-                                                            <option value="Manager"
-                                                                {{ $emp->position == 'Manager' ? 'selected' : '' }}>Manager
-                                                            </option>
+                                                            @php
+                                                                $posOptions = \App\Models\Employee::POSITIONS;
+                                                                if ($emp->position && !in_array($emp->position, $posOptions)) {
+                                                                    $posOptions[] = $emp->position;
+                                                                }
+                                                            @endphp
+                                                            @foreach ($posOptions as $posOption)
+                                                                <option value="{{ $posOption }}"
+                                                                    {{ $emp->position == $posOption ? 'selected' : '' }}>
+                                                                    {{ $posOption }}
+                                                                </option>
+                                                            @endforeach
                                                         </select>
                                                     </div>
                                                     <div class="form-group">
@@ -498,12 +495,12 @@
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
                             <div class="form-group">
                                 <label class="form-label">Position / Role *</label>
-                                <select name="position" class="form-control" required>
-                                    <option value="Groomer">Groomer</option>
-                                    <option value="Veterinarian">Veterinarian</option>
-                                    <option value="Janitor / Kennel Staff">Janitor / Kennel Staff</option>
-                                    <option value="Cashier">Cashier</option>
-                                    <option value="Manager">Manager</option>
+                                <select name="position" class="form-control" required id="add_position">
+                                    @foreach (\App\Models\Employee::POSITIONS as $posOption)
+                                        <option value="{{ $posOption }}" {{ $posOption === 'Receptionist' ? 'selected' : '' }}>
+                                            {{ $posOption }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="form-group">

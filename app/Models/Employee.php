@@ -9,6 +9,19 @@ class Employee extends Model
 {
     use HasFactory;
 
+    public const POSITIONS = [
+        'Veterinarian',
+        'Veterinary Technician',
+        'Groomer',
+        'Handler',
+        'Receptionist',
+        'Cashier',
+        'Back Office',
+        'Inventory',
+        'Janitor / Kennel Staff',
+        'Manager',
+    ];
+
     protected $fillable = [
         'employee_code',
         'user_id',
