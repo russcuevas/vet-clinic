@@ -17,6 +17,7 @@ class DtrRecord extends Model
         'regular_hours',
         'late_minutes',
         'undertime_minutes',
+        'undertime_reason',
         'ot_hours',
         'status',
         'notes',

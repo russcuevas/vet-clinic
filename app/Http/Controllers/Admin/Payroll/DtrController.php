@@ -101,6 +101,7 @@ class DtrController extends Controller
             'time_out' => 'nullable|string',
             'ot_hours' => 'nullable|numeric|min:0',
             'status' => 'nullable|in:present,late,absent,on_leave,rest_day',
+            'undertime_reason' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:255',
         ]);
 
@@ -171,6 +172,7 @@ class DtrController extends Controller
             'regular_hours' => $regularHours,
             'late_minutes' => $lateMinutes,
             'undertime_minutes' => $undertimeMinutes,
+            'undertime_reason' => $validated['undertime_reason'] ?? $request->input('undertime_reason', null),
             'ot_hours' => $otHours,
             'status' => $status,
             'notes' => $validated['notes'] ?? null,

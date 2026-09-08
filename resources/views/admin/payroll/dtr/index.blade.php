@@ -64,7 +64,8 @@
                     <span class="badge badge-warning">⚠️ Late: {{ $dayLate }}</span>
                     <span class="badge badge-danger">⏳ Undertime: {{ $dayUndertime }}</span>
                     <span class="badge badge-blue">⏳ On Duty (No Out Yet): {{ $dayAwaitingOut }}</span>
-                    <span class="badge badge-navy" style="border: 1px solid rgba(59, 130, 246, 0.35); color: #93c5fd;">🏖️ Rest Day: {{ $dayRestDay }}</span>
+                    <span class="badge badge-navy" style="border: 1px solid rgba(59, 130, 246, 0.35); color: #93c5fd;">🏖️
+                        Rest Day: {{ $dayRestDay }}</span>
                 </div>
             </form>
         </div>
@@ -192,8 +193,7 @@
                                                 🏖️ Rest Day
                                             </span>
                                         @elseif ($isOnLeave)
-                                            <span class="badge badge-blue"
-                                                style="font-size: 0.80rem; padding: 4px 8px;">
+                                            <span class="badge badge-blue" style="font-size: 0.80rem; padding: 4px 8px;">
                                                 🏖️ On Leave
                                             </span>
                                         @else
@@ -204,7 +204,8 @@
                                         @endif
                                     </td>
                                     <td style="padding: 14px 16px; vertical-align: middle;">
-                                        <div style="display: flex; align-items: center; gap: 6px; margin: 0; flex-wrap: nowrap;">
+                                        <div
+                                            style="display: flex; align-items: center; gap: 6px; margin: 0; flex-wrap: nowrap;">
                                             <!-- Clock In Form -->
                                             <form action="{{ route('admin.payroll.dtr.store') }}" method="POST"
                                                 style="display: flex; align-items: center; gap: 6px; margin: 0; flex-wrap: nowrap;">
@@ -237,7 +238,8 @@
                                             </form>
 
                                             <!-- Rest Day Quick Tag Button -->
-                                            <form action="{{ route('admin.payroll.dtr.store') }}" method="POST" style="margin: 0;">
+                                            <form action="{{ route('admin.payroll.dtr.store') }}" method="POST"
+                                                style="margin: 0;">
                                                 @csrf
                                                 <input type="hidden" name="employee_id" value="{{ $emp->id }}">
                                                 <input type="hidden" name="record_date" value="{{ $selectedDate }}">
@@ -297,8 +299,8 @@
                                     style="padding: 12px 16px; color: var(--gold-light); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; min-width: 180px;">
                                     Duty Hours & UT/OT</th>
                                 <th
-                                    style="padding: 12px 16px; color: var(--gold-light); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; min-width: 320px;">
-                                    Exact Time Out (Hours & Mins)</th>
+                                    style="padding: 12px 16px; color: var(--gold-light); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; min-width: 440px;">
+                                    Exact Time Out & Undertime Reason</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -368,6 +370,12 @@
                                                     style="font-size: 0.74rem; color: #ef4444; font-weight: 700; margin-top: 2px;">
                                                     ⏳ Undertime: {{ $dtr->formatted_undertime }}
                                                 </div>
+                                                @if ($dtr->undertime_reason)
+                                                    <div
+                                                        style="font-size: 0.72rem; color: var(--gold-light); font-style: italic; margin-top: 1px;">
+                                                        📝 {{ $dtr->undertime_reason }}
+                                                    </div>
+                                                @endif
                                             @endif
                                             @if ($dtr->ot_hours > 0)
                                                 <div
@@ -381,7 +389,8 @@
                                             @endif
                                         @elseif ($isRestDay)
                                             <span class="badge badge-navy"
-                                                style="font-size: 0.75rem; padding: 4px 8px; color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4);">🏖️ Rest Day</span>
+                                                style="font-size: 0.75rem; padding: 4px 8px; color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4);">🏖️
+                                                Rest Day</span>
                                         @elseif ($isOnLeave)
                                             <span class="badge badge-blue"
                                                 style="font-size: 0.75rem; padding: 4px 8px;">🏖️ On Leave</span>
@@ -394,7 +403,7 @@
                                     </td>
                                     <td style="padding: 14px 16px; vertical-align: middle;">
                                         <form action="{{ route('admin.payroll.dtr.store') }}" method="POST"
-                                            style="display: flex; align-items: center; gap: 6px; margin: 0; flex-wrap: nowrap;">
+                                            style="display: flex; align-items: center; gap: 6px; margin: 0; flex-wrap: wrap;">
                                             @csrf
                                             <input type="hidden" name="employee_id" value="{{ $emp->id }}">
                                             <input type="hidden" name="record_date" value="{{ $selectedDate }}">
@@ -410,19 +419,26 @@
                                             <input type="time" name="time_out" id="time_out_{{ $emp->id }}"
                                                 class="form-control"
                                                 value="{{ $hasTimedOut ? date('H:i', strtotime($dtr->time_out)) : $defaultTimeOutVal }}"
-                                                style="width: 140px; height: 38px; font-weight: 700; font-size: 0.92rem; background: #071322; border: 1.5px solid rgba(212, 175, 55, 0.45); border-radius: 6px; color: #fff; text-align: center;"
+                                                style="width: 120px; height: 38px; font-weight: 700; font-size: 0.90rem; background: #071322; border: 1.5px solid rgba(212, 175, 55, 0.45); border-radius: 6px; color: #fff; text-align: center;"
                                                 required>
 
                                             <button type="button" class="btn btn-navy btn-sm"
-                                                style="height: 38px; padding: 0 10px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;"
+                                                style="height: 38px; padding: 0 8px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;"
                                                 onclick="setExactNow('time_out_{{ $emp->id }}')"
                                                 title="Set Current Live Time (Hours & Minutes)">
-                                                ⚡ Time now
+                                                ⚡ Now
                                             </button>
+
+                                            <!-- Inputtable Undertime Reason / Note -->
+                                            <input type="text" name="undertime_reason" class="form-control"
+                                                value="{{ $dtr->undertime_reason ?? '' }}"
+                                                placeholder="Undertime reason (if early)..."
+                                                style="width: 190px; height: 38px; font-size: 0.80rem; background: #071322; border: 1.5px solid rgba(212, 175, 55, 0.35); border-radius: 6px; color: #fff;"
+                                                title="Enter reason for early departure or undertime">
 
                                             <button type="submit"
                                                 class="btn {{ $hasTimedOut ? 'btn-ghost' : 'btn-navy' }}"
-                                                style="height: 38px; padding: 0 14px; font-size: 0.82rem; font-weight: 700; white-space: nowrap; background: #2563eb;">
+                                                style="height: 38px; padding: 0 12px; font-size: 0.82rem; font-weight: 700; white-space: nowrap; background: #2563eb;">
                                                 {{ $hasTimedOut ? 'Update Out' : '🏁 Clock Out' }}
                                             </button>
                                         </form>
@@ -531,6 +547,12 @@
                                             <div style="font-size: 0.72rem; color: #ef4444; font-weight: 700;">
                                                 ⏳ UT: {{ $dtr->formatted_undertime }}
                                             </div>
+                                            @if ($dtr->undertime_reason)
+                                                <div
+                                                    style="font-size: 0.70rem; color: var(--gold-light); font-style: italic; margin-top: 1px;">
+                                                    📝 {{ $dtr->undertime_reason }}
+                                                </div>
+                                            @endif
                                         @endif
                                         @if ($dtr->late_minutes == 0 && $dtr->undertime_minutes == 0)
                                             <span style="color: #10b981; font-size: 0.75rem;">✓ On Time</span>
@@ -633,7 +655,7 @@
                                                 </div>
 
                                                 <div
-                                                    style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.85rem; margin-top: 1rem;">
+                                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-top: 1rem;">
                                                     <div class="form-group">
                                                         <label class="form-label">🟢 Time In</label>
                                                         <input type="time" name="time_in" class="form-control"
@@ -644,19 +666,26 @@
                                                         <input type="time" name="time_out" class="form-control"
                                                             value="{{ $dtr->time_out ? date('H:i', strtotime($dtr->time_out)) : '' }}">
                                                     </div>
-
                                                 </div>
-                                                <div class="form-group">
+
+                                                <div class="form-group" style="margin-top: 0.85rem;">
+                                                    <label class="form-label">⏳ Undertime Reason / Note (Optional)</label>
+                                                    <input type="text" name="undertime_reason" class="form-control"
+                                                        value="{{ $dtr->undertime_reason }}"
+                                                        placeholder="e.g. Approved medical checkup / Family emergency / Early pass">
+                                                </div>
+
+                                                <div class="form-group" style="margin-top: 0.85rem;">
                                                     <label class="form-label">OT Hours</label>
                                                     <input type="number" step="0.5" name="ot_hours"
                                                         class="form-control" value="{{ $dtr->ot_hours ?? 0.0 }}"
                                                         min="0">
                                                 </div>
-                                                <div class="form-group" style="margin-top: 1rem;">
-                                                    <label class="form-label">Notes / Remarks</label>
+                                                <div class="form-group" style="margin-top: 0.85rem;">
+                                                    <label class="form-label">General Notes / Remarks</label>
                                                     <input type="text" name="notes" class="form-control"
                                                         value="{{ $dtr->notes }}"
-                                                        placeholder="e.g. Regular shift / approved undertime">
+                                                        placeholder="e.g. Regular shift notes">
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
@@ -741,7 +770,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
                         <div class="form-group">
                             <label class="form-label">🟢 Time In</label>
                             <div style="display: flex; gap: 4px; align-items: center;">
@@ -768,15 +797,21 @@
                                 </button>
                             </div>
                         </div>
-
                     </div>
-                    <div class="form-group">
+
+                    <div class="form-group" style="margin-top: 0.75rem;">
+                        <label class="form-label">⏳ Undertime Reason / Note (Optional)</label>
+                        <input type="text" name="undertime_reason" class="form-control"
+                            placeholder="e.g. Approved early departure / Medical appointment">
+                    </div>
+
+                    <div class="form-group" style="margin-top: 0.75rem;">
                         <label class="form-label">OT Hours</label>
                         <input type="number" step="0.5" name="ot_hours" class="form-control" value="0.0"
                             min="0" style="height: 38px;">
                     </div>
                     <div class="form-group" style="margin-top: 0.75rem;">
-                        <label class="form-label">Notes / Remarks</label>
+                        <label class="form-label">General Notes / Remarks</label>
                         <input type="text" name="notes" class="form-control"
                             placeholder="e.g. Regular shift / approved overtime">
                     </div>
@@ -805,7 +840,8 @@
                 <div class="modal-body" style="padding: 1.5rem;">
                     <div class="form-group">
                         <label class="form-label">Select Date to Populate *</label>
-                        <input type="date" name="date" class="form-control" value="{{ $selectedDate }}" required>
+                        <input type="date" name="date" class="form-control" value="{{ $selectedDate }}"
+                            required>
                     </div>
                     <div class="form-group" style="margin-top: 0.75rem;">
                         <label class="form-label">Default Attendance Status *</label>
