@@ -105,6 +105,7 @@
                                         <button type="button" class="btn btn-navy btn-sm"
                                             data-modal-target="modal-edit-grooming"
                                             data-action-url="{{ route('cashier.grooming.update', $groom->id) }}"
+                                            data-field-groomer_id="{{ $groom->groomer_id }}"
                                             data-field-body_weight="{{ $groom->body_weight }}"
                                             data-field-temperature="{{ $groom->temperature }}"
                                             data-field-body_score="{{ $groom->body_score }}"

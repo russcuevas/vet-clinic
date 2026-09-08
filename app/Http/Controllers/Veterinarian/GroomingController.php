@@ -129,11 +129,14 @@ class GroomingController extends Controller
             'invoice_no' => $invoiceNo,
             'owner_id' => $owner->id,
             'pet_id' => $petId,
+            'grooming_record_id' => $grooming->id,
             'client_name' => $owner->full_name,
             'service_type' => 'grooming',
+            'subtotal' => $validated['price'],
             'total_amount' => $validated['price'],
             'payment_status' => 'unpaid',
             'transaction_date' => Carbon::now(),
+            'notes' => "Grooming Service ({$validated['style']}) for {$code}",
         ]);
 
         BillItem::create([
@@ -163,12 +166,83 @@ class GroomingController extends Controller
 
         $grooming->update($validated);
 
-        return redirect()->back()->with('success', "Grooming session {$grooming->grooming_code} updated successfully!");
+        // Sync with Central Billing Database
+        $bill = Bill::where('grooming_record_id', $grooming->id)->first();
+        if ($bill) {
+            // Update grooming bill item
+            $billItem = BillItem::where('bill_id', $bill->id)->where('item_type', 'grooming')->first();
+            if ($billItem) {
+                $billItem->update([
+                    'item_name' => 'Pet Grooming: ' . $validated['style'] . ' (' . $grooming->grooming_code . ')',
+                    'unit_price' => $validated['price'],
+                    'total_price' => $validated['price'] * ($billItem->quantity ?: 1),
+                ]);
+            } else {
+                BillItem::create([
+                    'bill_id' => $bill->id,
+                    'item_name' => 'Pet Grooming: ' . $validated['style'] . ' (' . $grooming->grooming_code . ')',
+                    'item_type' => 'grooming',
+                    'quantity' => 1,
+                    'unit_price' => $validated['price'],
+                    'total_price' => $validated['price'],
+                ]);
+            }
+
+            // If bill is unpaid, recalculate subtotal and total_amount
+            if ($bill->payment_status === 'unpaid') {
+                $subtotal = $bill->items()->sum('total_price');
+                $discount = $bill->discount ?? 0;
+                $tax = $bill->tax ?? 0;
+                $total = max(0, $subtotal - $discount + $tax);
+
+                $bill->update([
+                    'subtotal' => $subtotal,
+                    'total_amount' => $total,
+                    'notes' => "Grooming Service ({$validated['style']}) for {$grooming->grooming_code}",
+                ]);
+            }
+        } else {
+            // Auto-create bill if one doesn't exist yet
+            $owner = $grooming->owner ?: Owner::find($grooming->owner_id);
+            $invoiceNo = Bill::generateInvoiceNo();
+            $bill = Bill::create([
+                'invoice_no' => $invoiceNo,
+                'owner_id' => $grooming->owner_id,
+                'pet_id' => $grooming->pet_id,
+                'grooming_record_id' => $grooming->id,
+                'client_name' => $owner ? $owner->full_name : 'Client',
+                'service_type' => 'grooming',
+                'subtotal' => $validated['price'],
+                'total_amount' => $validated['price'],
+                'payment_status' => ($validated['status'] === 'billed') ? 'paid' : 'unpaid',
+                'transaction_date' => Carbon::now(),
+                'notes' => "Grooming Service ({$validated['style']}) for {$grooming->grooming_code}",
+            ]);
+
+            BillItem::create([
+                'bill_id' => $bill->id,
+                'item_name' => 'Pet Grooming: ' . $validated['style'] . ' (' . $grooming->grooming_code . ')',
+                'item_type' => 'grooming',
+                'quantity' => 1,
+                'unit_price' => $validated['price'],
+                'total_price' => $validated['price'],
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Grooming session {$grooming->grooming_code} and Billing database updated successfully!");
     }
 
     public function destroy(GroomingRecord $grooming)
     {
         $code = $grooming->grooming_code;
+
+        // Clean up unpaid bill if exists
+        $bill = Bill::where('grooming_record_id', $grooming->id)->first();
+        if ($bill && $bill->payment_status === 'unpaid') {
+            $bill->items()->delete();
+            $bill->delete();
+        }
+
         $grooming->delete();
 
         return redirect()->back()->with('success', "Grooming record {$code} removed successfully.");

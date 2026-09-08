@@ -101,6 +101,7 @@
                                         <button type="button" class="btn btn-navy btn-sm"
                                             data-modal-target="modal-edit-grooming"
                                             data-action-url="{{ route('admin.grooming.update', $groom->id) }}"
+                                            data-field-groomer_id="{{ $groom->groomer_id }}"
                                             data-field-body_weight="{{ $groom->body_weight }}"
                                             data-field-temperature="{{ $groom->temperature }}"
                                             data-field-body_score="{{ $groom->body_score }}"
@@ -233,6 +234,19 @@
                         </div>
                     </div>
 
+                    <!-- Attending Groomer -->
+                    <div class="form-group">
+                        <label class="form-label">Attending Groomer</label>
+                        <select name="groomer_id" class="form-control">
+                            <option value="">-- Unassigned (General Grooming) --</option>
+                            @foreach($groomers as $groomer)
+                                <option value="{{ $groomer->id }}">
+                                    {{ $groomer->full_name }} ({{ $groomer->position }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Style [text type] <span class="req">*</span></label>
                         <input type="text" name="style" class="form-control" required>
@@ -245,7 +259,7 @@
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label">Price (₱)</label>
+                            <label class="form-label">Price (₱) <span class="req">*</span></label>
                             <input type="number" step="0.01" name="price" class="form-control" required>
                         </div>
                         <div class="form-group">
