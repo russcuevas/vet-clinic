@@ -117,7 +117,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     });
 });
 
-Route::group(['prefix' => 'admin/payroll', 'as' => 'admin.payroll.', 'middleware' => ['auth', 'role:admin,receptionist']], function () {
+Route::group(['prefix' => 'admin/payroll', 'as' => 'admin.payroll.', 'middleware' => ['auth', 'role:admin']], function () {
     // Timekeeping (DTR)
     Route::get('/dtr', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'index'])->name('dtr.index');
     Route::post('/dtr', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'store'])->name('dtr.store');
@@ -267,4 +267,12 @@ Route::group(['prefix' => 'receptionist', 'as' => 'receptionist.', 'middleware' 
     Route::get('/clients', [\App\Http\Controllers\Receptionist\ClientController::class, 'index'])->name('clients.index');
     Route::post('/clients', [\App\Http\Controllers\Receptionist\ClientController::class, 'store'])->name('clients.store');
     Route::post('/clients/pet', [\App\Http\Controllers\Receptionist\ClientController::class, 'storePet'])->name('clients.pet.store');
+
+    // Standalone Attendance & Timekeeping (DTR)
+    Route::get('/dtr', [\App\Http\Controllers\Receptionist\DtrController::class, 'index'])->name('dtr.index');
+    Route::post('/dtr', [\App\Http\Controllers\Receptionist\DtrController::class, 'store'])->name('dtr.store');
+
+    // Standalone Leave Applications (Direct Filing)
+    Route::get('/leaves', [\App\Http\Controllers\Receptionist\LeaveController::class, 'index'])->name('leaves.index');
+    Route::post('/leaves', [\App\Http\Controllers\Receptionist\LeaveController::class, 'store'])->name('leaves.store');
 });
