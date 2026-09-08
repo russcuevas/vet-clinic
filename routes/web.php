@@ -218,6 +218,15 @@ Route::group(['prefix' => 'manager', 'as' => 'manager.', 'middleware' => ['auth'
     Route::get('/dashboard', [\App\Http\Controllers\Manager\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/reports/sales', [\App\Http\Controllers\Manager\SalesReportController::class, 'index'])->name('reports.sales');
     Route::get('/inventory/audit', [\App\Http\Controllers\Manager\InventoryAuditController::class, 'index'])->name('inventory.audit');
+
+    // Manager Leave Management (Full 12-Day Quota, Approval, SL Monetization, Archival)
+    Route::get('/leaves', [\App\Http\Controllers\Manager\LeaveController::class, 'index'])->name('leaves.index');
+    Route::post('/leaves', [\App\Http\Controllers\Manager\LeaveController::class, 'store'])->name('leaves.store');
+    Route::post('/leaves/convert-sl', [\App\Http\Controllers\Manager\LeaveController::class, 'convertSlToIncentive'])->name('leaves.convert_sl');
+    Route::post('/leaves/archive', [\App\Http\Controllers\Manager\LeaveController::class, 'archiveYear'])->name('leaves.archive');
+    Route::get('/leaves/archives/{year}/print', [\App\Http\Controllers\Manager\LeaveController::class, 'printLedger'])->name('leaves.print_ledger');
+    Route::put('/leaves/{leave}/status', [\App\Http\Controllers\Manager\LeaveController::class, 'updateStatus'])->name('leaves.status');
+    Route::delete('/leaves/{leave}', [\App\Http\Controllers\Manager\LeaveController::class, 'destroy'])->name('leaves.destroy');
 });
 
 // ==========================================
