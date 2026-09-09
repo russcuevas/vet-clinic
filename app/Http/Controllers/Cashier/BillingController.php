@@ -55,7 +55,9 @@ class BillingController extends Controller
         }
 
         if ($bill->groomingRecord) {
-            $bill->groomingRecord->update(['status' => 'billed']);
+            if ($bill->groomingRecord->status === 'completed') {
+                $bill->groomingRecord->update(['status' => 'billed']);
+            }
         }
 
         return redirect()->back()->with('success', "Payment received for {$bill->invoice_no}! Change: ₱" . number_format($change, 2));

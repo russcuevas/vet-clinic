@@ -15,7 +15,7 @@ class GroomingController extends Controller
 {
     public function index(Request $request)
     {
-        $query = GroomingRecord::with(['owner', 'pet', 'groomer']);
+        $query = GroomingRecord::with(['owner', 'pet', 'groomer', 'bill']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);

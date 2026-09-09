@@ -9,6 +9,8 @@ use App\Models\Pet;
 use App\Models\User;
 use App\Models\MedicalRecord;
 use App\Models\GroomingRecord;
+use App\Models\Bill;
+use App\Models\BillItem;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -255,14 +257,43 @@ class AppointmentController extends Controller
                     ->first();
 
                 if (!$existingGroom) {
-                    GroomingRecord::create([
-                        'grooming_code' => GroomingRecord::generateGroomingCode(),
+                    $groomingPrice = 650.00;
+                    $groomCode = GroomingRecord::generateGroomingCode();
+
+                    $grooming = GroomingRecord::create([
+                        'grooming_code' => $groomCode,
                         'owner_id' => $appointment->owner_id,
                         'pet_id' => $appointment->pet_id,
                         'style' => 'Standard Grooming Package',
                         'groomer_observation_notes' => $appointment->purpose_examination_notes ?: 'Checked in via Reception appointment: ' . $appointment->appointment_code,
                         'status' => 'queued',
-                        'price' => 0.00,
+                        'price' => $groomingPrice,
+                    ]);
+
+                    // Automatically generate Bill so Cashier can immediately process advance payment while pet is in queue
+                    $owner = $appointment->owner ?: Owner::find($appointment->owner_id);
+                    $invoiceNo = Bill::generateInvoiceNo();
+                    $bill = Bill::create([
+                        'invoice_no' => $invoiceNo,
+                        'owner_id' => $appointment->owner_id,
+                        'pet_id' => $appointment->pet_id,
+                        'grooming_record_id' => $grooming->id,
+                        'client_name' => $owner ? $owner->full_name : 'Client',
+                        'service_type' => 'grooming',
+                        'subtotal' => $groomingPrice,
+                        'total_amount' => $groomingPrice,
+                        'payment_status' => 'unpaid',
+                        'transaction_date' => Carbon::now(),
+                        'notes' => "Grooming Service (Standard Grooming Package) for {$groomCode}",
+                    ]);
+
+                    BillItem::create([
+                        'bill_id' => $bill->id,
+                        'item_name' => 'Grooming Service: Standard Grooming Package',
+                        'item_type' => 'grooming',
+                        'quantity' => 1,
+                        'unit_price' => $groomingPrice,
+                        'total_price' => $groomingPrice,
                     ]);
                 }
             }

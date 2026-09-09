@@ -63,9 +63,11 @@ class BillingController extends Controller
             $bill->medicalRecord->update(['status' => 'billed']);
         }
 
-        // If linked to grooming record, mark grooming record as billed
+        // If linked to grooming record, mark grooming record as billed only if completed
         if ($bill->groomingRecord) {
-            $bill->groomingRecord->update(['status' => 'billed']);
+            if ($bill->groomingRecord->status === 'completed') {
+                $bill->groomingRecord->update(['status' => 'billed']);
+            }
         }
 
         return redirect()->back()->with('success', "Payment of ₱" . number_format($bill->total_amount, 2) . " received for {$bill->invoice_no}! Change: ₱" . number_format($change, 2));

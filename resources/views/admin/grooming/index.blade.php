@@ -89,6 +89,13 @@
                                 </td>
                                 <td>
                                     <strong>₱{{ number_format($groom->price, 2) }}</strong>
+                                    <div style="margin-top: 3px;">
+                                        @if($groom->bill && $groom->bill->payment_status === 'paid')
+                                            <span class="badge badge-success" style="font-size: 0.68rem; padding: 2px 6px;">🟢 Paid</span>
+                                        @else
+                                            <span class="badge badge-warning" style="font-size: 0.68rem; padding: 2px 6px;">⏳ Unpaid</span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge {{ $groom->status === 'completed' || $groom->status === 'billed' ? 'badge-success' : ($groom->status === 'in_progress' ? 'badge-info' : 'badge-warning') }}">
