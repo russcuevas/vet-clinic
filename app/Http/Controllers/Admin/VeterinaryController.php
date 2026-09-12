@@ -10,6 +10,7 @@ use App\Models\Pet;
 use App\Models\User;
 use App\Models\Bill;
 use App\Models\BillItem;
+use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -204,6 +205,11 @@ class VeterinaryController extends Controller
             'total_price' => $validated['service_fee'],
         ]);
 
+        // Complete any checked-in appointments for this pet
+        Appointment::where('pet_id', $petId)
+            ->where('status', 'checked_in')
+            ->update(['status' => 'completed']);
+
         $msg = $isPaid 
             ? "Historical record saved ({$recordCode}) and automatically marked as PAID ({$invoiceNo})!"
             : "Veterinary examination saved ({$recordCode}) and sent to Billing queue ({$invoiceNo})!";
@@ -228,6 +234,8 @@ class VeterinaryController extends Controller
             'follow_up_notes' => 'nullable|string',
             'status' => 'required|in:ongoing,completed,billed',
             'lab_results' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:10240',
+            'prescribe_rx' => 'nullable|string',
+            'rx_instructions' => 'nullable|string',
         ]);
 
         if ($request->hasFile('lab_results')) {
@@ -240,9 +248,126 @@ class VeterinaryController extends Controller
             $validated['attached_lab_results'] = 'uploads/lab_results/' . $filename;
         }
 
-        $record->update($validated);
+        $record->update([
+            'visit_date' => !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date']) : ($record->visit_date ?: Carbon::now()),
+            'body_weight' => $validated['body_weight'] ?? $record->body_weight,
+            'temperature' => $validated['temperature'] ?? $record->temperature,
+            'body_score' => $validated['body_score'] ?? $record->body_score,
+            'history_taking' => $validated['history_taking'] ?? $record->history_taking,
+            'diagnosis' => $validated['diagnosis'] ?? $record->diagnosis,
+            'medication_treatment' => $validated['medication_treatment'] ?? $record->medication_treatment,
+            'laboratory_notes' => $validated['laboratory_notes'] ?? $record->laboratory_notes,
+            'veterinarians_notes' => $validated['veterinarians_notes'] ?? $record->veterinarians_notes,
+            'service_fee' => $validated['service_fee'],
+            'follow_up_date' => $validated['follow_up_date'] ?? null,
+            'follow_up_notes' => $validated['follow_up_notes'] ?? null,
+            'status' => $validated['status'],
+            'attached_lab_results' => $validated['attached_lab_results'] ?? $record->attached_lab_results,
+        ]);
 
-        return redirect()->back()->with('success', "Medical record {$record->record_code} updated successfully!");
+        // Prescription handling
+        $vetUser = auth()->user();
+        if (!empty($validated['prescribe_rx'])) {
+            if ($record->prescription) {
+                $record->prescription->update([
+                    'body_weight' => $validated['body_weight'] ?? $record->prescription->body_weight,
+                    'rx_details' => $validated['prescribe_rx'],
+                    'instructions' => $validated['rx_instructions'] ?? $record->prescription->instructions,
+                ]);
+            } else {
+                Prescription::create([
+                    'prescription_code' => Prescription::generatePrescriptionCode(),
+                    'medical_record_id' => $record->id,
+                    'owner_id' => $record->owner_id,
+                    'pet_id' => $record->pet_id,
+                    'veterinarian_id' => $vetUser->id,
+                    'veterinarian_name' => $vetUser->name,
+                    'license_no' => $vetUser->license_no ?? 'PRC-VET',
+                    'body_weight' => $validated['body_weight'] ?? null,
+                    'rx_details' => $validated['prescribe_rx'],
+                    'instructions' => $validated['rx_instructions'] ?? null,
+                    'date_issued' => Carbon::now()->format('Y-m-d'),
+                ]);
+            }
+        }
+
+        // Central Billing Queue synchronization
+        $bill = $record->bill ?: Bill::where('medical_record_id', $record->id)->first();
+        $invoiceNo = null;
+
+        if ($bill) {
+            $invoiceNo = $bill->invoice_no;
+            if ($bill->payment_status === 'unpaid') {
+                $bill->update([
+                    'subtotal' => $validated['service_fee'],
+                    'total_amount' => $validated['service_fee'],
+                    'notes' => ucfirst($record->service_type) . " for {$record->record_code} on " . Carbon::parse($record->visit_date ?? Carbon::now())->format('M d, Y'),
+                ]);
+
+                // Update or create bill item
+                $item = $bill->items()->first();
+                if ($item) {
+                    $item->update([
+                        'item_name' => 'Veterinary Service: ' . ucfirst(str_replace('_', ' ', $record->service_type)),
+                        'unit_price' => $validated['service_fee'],
+                        'total_price' => $validated['service_fee'],
+                    ]);
+                } else {
+                    BillItem::create([
+                        'bill_id' => $bill->id,
+                        'item_name' => 'Veterinary Service: ' . ucfirst(str_replace('_', ' ', $record->service_type)),
+                        'item_type' => 'service',
+                        'quantity' => 1,
+                        'unit_price' => $validated['service_fee'],
+                        'total_price' => $validated['service_fee'],
+                    ]);
+                }
+            }
+        } else {
+            // Generate Bill in Cashier queue
+            $owner = $record->owner ?: Owner::find($record->owner_id);
+            $invoiceNo = Bill::generateInvoiceNo();
+            $bill = Bill::create([
+                'invoice_no' => $invoiceNo,
+                'owner_id' => $record->owner_id,
+                'pet_id' => $record->pet_id,
+                'medical_record_id' => $record->id,
+                'client_name' => $owner ? $owner->full_name : 'Client',
+                'service_type' => 'veterinary',
+                'subtotal' => $validated['service_fee'],
+                'total_amount' => $validated['service_fee'],
+                'payment_status' => 'unpaid',
+                'paid_amount' => 0.00,
+                'change_amount' => 0.00,
+                'transaction_date' => Carbon::now(),
+                'notes' => ucfirst(str_replace('_', ' ', $record->service_type)) . " for {$record->record_code} on " . Carbon::parse($record->visit_date ?? Carbon::now())->format('M d, Y'),
+            ]);
+
+            BillItem::create([
+                'bill_id' => $bill->id,
+                'item_name' => 'Veterinary Service: ' . ucfirst(str_replace('_', ' ', $record->service_type)),
+                'item_type' => 'service',
+                'quantity' => 1,
+                'unit_price' => $validated['service_fee'],
+                'total_price' => $validated['service_fee'],
+            ]);
+        }
+
+        // If marked completed, also complete any linked checked-in appointment
+        if (in_array($validated['status'], ['completed', 'billed'])) {
+            Appointment::where('pet_id', $record->pet_id)
+                ->where('status', 'checked_in')
+                ->update(['status' => 'completed']);
+        }
+
+        $petName = $record->pet ? $record->pet->name : 'Patient';
+        $feeFormatted = number_format($validated['service_fee'], 2);
+
+        $msg = $validated['status'] === 'completed'
+            ? "Clinical checkup completed for {$petName}! Case {$record->record_code} sent to Cashier Billing queue ({$invoiceNo} - ₱{$feeFormatted})."
+            : "Medical record {$record->record_code} updated successfully and synced with Central Billing ({$invoiceNo}).";
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function destroy(MedicalRecord $record)

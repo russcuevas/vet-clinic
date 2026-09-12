@@ -64,9 +64,18 @@
                                     <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
                                         {{ $record->record_code }}
                                     </div>
-                                    <span class="badge badge-navy" style="font-size: 0.68rem; margin-top: 3px;">
-                                        {{ ucfirst(str_replace('_', ' ', $record->service_type)) }}
-                                    </span>
+                                    <div style="display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px;">
+                                        <span class="badge badge-navy" style="font-size: 0.68rem;">
+                                            {{ ucfirst(str_replace('_', ' ', $record->service_type)) }}
+                                        </span>
+                                        @if($record->status === 'ongoing')
+                                            <span class="badge badge-warning" style="font-size: 0.68rem;">In Exam</span>
+                                        @elseif($record->status === 'completed')
+                                            <span class="badge badge-info" style="font-size: 0.68rem;">Sent to Cashier</span>
+                                        @elseif($record->status === 'billed')
+                                            <span class="badge badge-success" style="font-size: 0.68rem;">Billed / Paid</span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td>
                                     <div style="font-weight: 800; color: var(--white); font-size: 0.95rem;">
@@ -174,7 +183,9 @@
                                             data-field-follow_up_date="{{ $record->follow_up_date ? $record->follow_up_date->format('Y-m-d') : '' }}"
                                             data-field-follow_up_notes="{{ $record->follow_up_notes }}"
                                             data-field-service_fee="{{ $record->service_fee }}"
-                                            data-field-status="{{ $record->status }}">
+                                            data-field-status="{{ $record->status }}"
+                                            data-field-prescribe_rx="{{ $record->prescription ? $record->prescription->rx_details : '' }}"
+                                            data-field-rx_instructions="{{ $record->prescription ? $record->prescription->instructions : '' }}">
                                             Edit
                                         </button>
                                     </div>
@@ -455,6 +466,21 @@
                                 </div>
                             </div>
 
+                            <!-- Prescription Area -->
+                            <div style="background: rgba(245, 186, 49, 0.05); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+                                <h5 style="color: var(--gold-light); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem;">
+                                    💊 Prescribe Medications (Rx)
+                                </h5>
+                                <div class="form-group" style="margin-bottom: 0.5rem;">
+                                    <label class="form-label" style="font-size: 0.75rem;">Medications & Dosage</label>
+                                    <textarea name="prescribe_rx" class="form-control" rows="2" placeholder="e.g. 1. Amoxicillin 250mg - 1 tab BID for 7 days"></textarea>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label" style="font-size: 0.75rem;">Rx Instructions</label>
+                                    <input type="text" name="rx_instructions" class="form-control" placeholder="e.g. After meals">
+                                </div>
+                            </div>
+
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label class="form-label">Service Fee (₱) <span class="req">*</span></label>
@@ -463,8 +489,8 @@
                                 <div class="form-group">
                                     <label class="form-label">Status <span class="req">*</span></label>
                                     <select name="status" class="form-select" required>
-                                        <option value="ongoing">Ongoing</option>
-                                        <option value="completed">Completed</option>
+                                        <option value="completed">Completed (Send to Cashier)</option>
+                                        <option value="ongoing">Ongoing / In-Progress</option>
                                         <option value="billed">Billed</option>
                                     </select>
                                 </div>
@@ -474,7 +500,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
-                    <button type="submit" class="btn btn-gold">Update Details</button>
+                    <button type="submit" class="btn btn-gold">💾 Save & Send to Cashier</button>
                 </div>
             </form>
         </div>

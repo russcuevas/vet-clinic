@@ -7,14 +7,73 @@
 @endphp
 
 @section('content')
-    <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+    <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <a href="{{ route('vet.medical.index') }}" class="btn btn-navy btn-sm">← Back to Medical Records</a>
-        @if($record->prescription)
-            <a href="{{ route('vet.prescriptions.print', $record->prescription->id) }}" target="_blank" class="btn btn-gold btn-sm">
-                🖨️ Print Prescription
-            </a>
-        @endif
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button type="button" class="btn btn-gold btn-sm" data-modal-target="modal-examine-case">
+                🩺 {{ $record->status === 'ongoing' ? 'Complete Examination & Send to Billing' : '✏️ Edit Case & Update Billing' }}
+            </button>
+            @if($record->prescription)
+                <a href="{{ route('vet.prescriptions.print', $record->prescription->id) }}" target="_blank" class="btn btn-navy btn-sm">
+                    🖨️ Print Prescription
+                </a>
+            @endif
+        </div>
     </div>
+
+    <!-- Billing & Workflow Status Banner -->
+    @php
+        $bill = $record->bill ?: \App\Models\Bill::where('medical_record_id', $record->id)->first();
+    @endphp
+
+    @if($bill && $bill->payment_status === 'paid')
+        <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: var(--radius-sm); padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.5rem;">✅</span>
+                <div>
+                    <div style="font-weight: 700; color: #4ade80; font-size: 0.95rem;">
+                        Consultation Billed & Paid at Cashier Desk
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                        Invoice: <strong>{{ $bill->invoice_no }}</strong> • Total Paid: <strong>₱{{ number_format($bill->total_amount, 2) }}</strong> via {{ ucfirst($bill->payment_method ?? 'Cash') }} • {{ $bill->paid_at ? $bill->paid_at->format('M d, Y h:i A') : $bill->updated_at->format('M d, Y') }}
+                    </div>
+                </div>
+            </div>
+            <span class="badge badge-success" style="font-size: 0.82rem; padding: 5px 12px;">Paid</span>
+        </div>
+    @elseif($bill && $bill->payment_status === 'unpaid')
+        <div style="background: rgba(245, 186, 49, 0.1); border: 1px solid rgba(245, 186, 49, 0.4); border-radius: var(--radius-sm); padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.5rem;">💳</span>
+                <div>
+                    <div style="font-weight: 700; color: var(--gold-light); font-size: 0.95rem;">
+                        Transferred to Cashier Billing Queue — Waiting for Client Payment
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                        Invoice: <strong>{{ $bill->invoice_no }}</strong> • Total Due: <strong>₱{{ number_format($bill->total_amount, 2) }}</strong> • The client can now proceed to the Cashier counter to settle the bill.
+                    </div>
+                </div>
+            </div>
+            <span class="badge badge-warning" style="font-size: 0.82rem; padding: 5px 12px;">Unpaid in Cashier Queue</span>
+        </div>
+    @else
+        <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.35); border-radius: var(--radius-sm); padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.5rem;">🩺</span>
+                <div>
+                    <div style="font-weight: 700; color: #38bdf8; font-size: 0.95rem;">
+                        Patient Checked In — Examination / Consultation In Progress
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                        Enter findings, diagnosis, treatment, and consultation fee below. Once done, it will automatically route to the Cashier.
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-gold btn-sm" data-modal-target="modal-examine-case">
+                Begin / Save Exam
+            </button>
+        </div>
+    @endif
 
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start;">
         <!-- Left: Case File Breakdown -->
@@ -352,4 +411,145 @@
         </div>
     </div>
     @endif
+    <!-- ==================== MODAL: COMPLETE / EDIT EXAMINATION & BILLING ==================== -->
+    <div class="modal-backdrop" id="modal-examine-case">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-icon">🩺</div>
+                    <div>
+                        <h4 class="modal-title">Clinical Findings, Prescription & Billing — Case {{ $record->record_code }}</h4>
+                        <span style="font-size: 0.75rem; color: var(--gold-light);">
+                            Patient: <strong>{{ $record->pet->name ?? 'N/A' }}</strong> ({{ $record->pet->species ?? '' }}) • Owner: <strong>{{ $record->owner->full_name ?? 'N/A' }}</strong>
+                        </span>
+                    </div>
+                </div>
+                <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
+            </div>
+            <form action="{{ route('vet.medical.update', $record->id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.25rem; align-items: start;">
+                        <!-- LEFT COLUMN: Examination & Diagnosis -->
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="form-group">
+                                <label class="form-label">📅 Date of Visit</label>
+                                <input type="date" name="visit_date" class="form-control" value="{{ $record->visit_date ? $record->visit_date->format('Y-m-d') : ($record->created_at ? $record->created_at->format('Y-m-d') : date('Y-m-d')) }}">
+                            </div>
+
+                            <div style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem;">
+                                <h5 style="color: var(--gold-primary); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+                                    🌡️ Physical Vitals
+                                </h5>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-size: 0.75rem;">Temp (°C)</label>
+                                        <input type="text" name="temperature" class="form-control" value="{{ $record->temperature }}" placeholder="e.g. 38.5°C">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-size: 0.75rem;">Weight (BW)</label>
+                                        <input type="text" name="body_weight" class="form-control" value="{{ $record->body_weight }}" placeholder="e.g. 5.2 kg">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-size: 0.75rem;">Body Score</label>
+                                        <input type="text" name="body_score" class="form-control" value="{{ $record->body_score }}" placeholder="e.g. 3/5 Ideal">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">📝 Purpose / Examination Notes / Complaint</label>
+                                <textarea name="history_taking" class="form-control" rows="3" placeholder="Symptoms, observed condition, patient history...">{{ $record->history_taking }}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Clinical Diagnosis / Assessment <span class="req">*</span></label>
+                                <textarea name="diagnosis" class="form-control" rows="2" placeholder="e.g. Acute Gastroenteritis, Canine Parvovirus, Otitis Externa..." required>{{ $record->diagnosis }}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Veterinarian's Clinical Notes / Advice</label>
+                                <textarea name="veterinarians_notes" class="form-control" rows="2" placeholder="Diet recommendations, home-care instructions...">{{ $record->veterinarians_notes }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: Treatment, Prescription, Fee & Billing -->
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="form-group">
+                                <label class="form-label">💊 Medication / In-Clinic Treatment</label>
+                                <textarea name="medication_treatment" class="form-control" rows="3" placeholder="Injections, intravenous fluids, in-clinic administered drugs...">{{ $record->medication_treatment }}</textarea>
+                            </div>
+
+                            <!-- Prescription Area -->
+                            <div style="background: rgba(245, 186, 49, 0.05); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1rem;">
+                                <h5 style="color: var(--gold-light); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>💊</span> Prescribe Take-Home Medications (Rx)
+                                </h5>
+                                <div class="form-group" style="margin-bottom: 0.75rem;">
+                                    <label class="form-label" style="font-size: 0.78rem;">Medication Name, Strength, Dosage & Frequency</label>
+                                    <textarea name="prescribe_rx" class="form-control" rows="3" placeholder="e.g. 1. Amoxicillin 250mg - 1 tab BID for 7 days&#10;2. Nutriplus Gel - 1 tsp daily">{{ $record->prescription ? $record->prescription->rx_details : '' }}</textarea>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label" style="font-size: 0.78rem;">Rx Instructions / Precautions</label>
+                                    <input type="text" name="rx_instructions" class="form-control" placeholder="e.g. Give after meals. Keep refrigerated." value="{{ $record->prescription ? $record->prescription->instructions : '' }}">
+                                </div>
+                            </div>
+
+                            <div style="background: rgba(11, 25, 44, 0.4); border: 1px dashed var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+                                <label class="form-label" style="margin-bottom: 0.35rem;">🔬 Laboratory / Test Notes</label>
+                                <input type="text" name="laboratory_notes" class="form-control" placeholder="e.g. CBC Normal, Parvo Rapid Test Negative" value="{{ $record->laboratory_notes }}" style="margin-bottom: 0.5rem;">
+                                <label class="form-label" style="margin-bottom: 0.35rem; font-size: 0.75rem;">📎 Attach / Replace Lab Result File</label>
+                                <input type="file" name="lab_results" class="form-control" accept="image/*,.pdf,.doc,.docx" style="padding: 5px;">
+                            </div>
+
+                            <div style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+                                <h5 style="color: var(--gold-light); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem;">
+                                    🗓️ Follow-Up Schedule (Optional)
+                                </h5>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-size: 0.75rem;">Follow Up Date</label>
+                                        <input type="date" name="follow_up_date" class="form-control" value="{{ $record->follow_up_date ? $record->follow_up_date->format('Y-m-d') : '' }}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-size: 0.75rem;">Purpose / Notes</label>
+                                        <input type="text" name="follow_up_notes" class="form-control" placeholder="e.g. Re-evaluation / suture removal" value="{{ $record->follow_up_notes }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Consultation Fee & Status / Cashier Route -->
+                            <div style="background: var(--navy-dark); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1rem;">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label" style="color: var(--gold-light); font-weight: 700;">Consultation / Service Fee (₱) <span class="req">*</span></label>
+                                        <input type="number" step="0.01" min="0" name="service_fee" class="form-control" value="{{ $record->service_fee ?? 350.00 }}" required style="font-size: 1.1rem; font-weight: 700; color: var(--gold-primary);">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" style="color: var(--gold-light); font-weight: 700;">Consultation Status <span class="req">*</span></label>
+                                        <select name="status" class="form-select" required>
+                                            <option value="completed" {{ $record->status === 'completed' || $record->status === 'ongoing' ? 'selected' : '' }}>✅ Completed (Send to Cashier Billing)</option>
+                                            <option value="ongoing" {{ $record->status === 'ongoing' ? '' : '' }}>🟡 Ongoing / In-Progress</option>
+                                            <option value="billed" {{ $record->status === 'billed' ? 'selected' : '' }}>🟢 Billed / Settled</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">
+                                    💡 Selecting <strong>"Completed"</strong> automatically generates or updates the Bill in the Cashier Queue for client checkout.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn btn-gold" style="font-weight: 700; padding: 0.65rem 1.25rem;">
+                        💾 Save Examination & Send to Cashier
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection

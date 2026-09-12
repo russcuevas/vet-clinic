@@ -21,6 +21,11 @@ class DashboardController extends Controller
             'total_grooming' => GroomingRecord::count(),
         ];
 
+        $activeQueue = MedicalRecord::with(['owner', 'pet', 'prescription'])
+            ->where('status', 'ongoing')
+            ->latest()
+            ->get();
+
         $recentRecords = MedicalRecord::with(['owner', 'pet', 'prescription'])
             ->latest()
             ->take(8)
@@ -31,6 +36,6 @@ class DashboardController extends Controller
             ->take(6)
             ->get();
 
-        return view('veterinarian.dashboard', compact('stats', 'recentRecords', 'recentGrooming'));
+        return view('veterinarian.dashboard', compact('stats', 'activeQueue', 'recentRecords', 'recentGrooming'));
     }
 }
