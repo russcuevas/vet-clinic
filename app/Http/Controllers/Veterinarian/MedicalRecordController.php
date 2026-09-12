@@ -102,7 +102,11 @@ class MedicalRecordController extends Controller
             'medication_treatment' => 'nullable|string',
             'laboratory_notes' => 'nullable|string',
             'veterinarians_notes' => 'nullable|string',
-            'service_fee' => 'required|numeric|min:0',
+            'service_fee' => 'nullable|numeric|min:0',
+            'items' => 'nullable|array',
+            'items.*.name' => 'nullable|string|max:255',
+            'items.*.quantity' => 'nullable|numeric|min:0.01',
+            'items.*.price' => 'nullable|numeric|min:0',
             'follow_up_date' => 'nullable|date',
             'follow_up_notes' => 'nullable|string',
             'lab_results' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:10240',
@@ -119,6 +123,28 @@ class MedicalRecordController extends Controller
             $file->move(public_path('uploads/lab_results'), $filename);
             $labPath = 'uploads/lab_results/' . $filename;
         }
+
+        // Process Prescribed Items / Clinical Advice Notes (Saved to medical record, not cashier bill)
+        $prescribedItems = [];
+        $baseServiceFee = $request->filled('service_fee') 
+            ? floatval($request->input('service_fee')) 
+            : 450.00;
+
+        if (!empty($request->input('items')) && is_array($request->input('items'))) {
+            foreach ($request->input('items') as $itemData) {
+                $itemName = trim($itemData['name'] ?? '');
+                if (!empty($itemName)) {
+                    $prescribedItems[] = [
+                        'name' => $itemName,
+                        'quantity' => $itemData['quantity'] ?? '1',
+                        'price' => isset($itemData['price']) && $itemData['price'] !== '' ? floatval($itemData['price']) : null,
+                        'instructions' => $itemData['instructions'] ?? ($itemData['remarks'] ?? ''),
+                    ];
+                }
+            }
+        }
+
+        $totalBillAmount = $baseServiceFee;
 
         $vetUser = auth()->user();
         $visitDate = !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date']) : Carbon::now();
@@ -141,7 +167,8 @@ class MedicalRecordController extends Controller
             'diagnosis' => $validated['diagnosis'] ?? null,
             'medication_treatment' => $validated['medication_treatment'] ?? null,
             'veterinarians_notes' => $validated['veterinarians_notes'] ?? null,
-            'service_fee' => $validated['service_fee'],
+            'prescribed_items' => $prescribedItems,
+            'service_fee' => $baseServiceFee,
             'follow_up_date' => $validated['follow_up_date'] ?? null,
             'follow_up_notes' => $validated['follow_up_notes'] ?? null,
             'status' => $isPaid ? 'completed' : 'ongoing',
@@ -165,7 +192,7 @@ class MedicalRecordController extends Controller
             ]);
         }
 
-        // Push directly to Central Billing Data Base
+        // Push Service Fee to Central Billing Data Base
         $owner = Owner::find($ownerId);
         $invoiceNo = Bill::generateInvoiceNo();
         $bill = Bill::create([
@@ -175,27 +202,28 @@ class MedicalRecordController extends Controller
             'medical_record_id' => $record->id,
             'client_name' => $owner->full_name,
             'service_type' => 'veterinary',
-            'subtotal' => $validated['service_fee'],
-            'total_amount' => $validated['service_fee'],
+            'subtotal' => $totalBillAmount,
+            'total_amount' => $totalBillAmount,
             'payment_status' => $isPaid ? 'paid' : 'unpaid',
-            'paid_amount' => $isPaid ? $validated['service_fee'] : 0.00,
+            'paid_amount' => $isPaid ? $totalBillAmount : 0.00,
             'change_amount' => 0.00,
-            'payment_method' => $isPaid ? 'cash' : null,
+            'payment_method' => 'cash',
             'paid_at' => $isPaid ? $visitDate : null,
             'cashier_id' => $isPaid ? auth()->id() : null,
             'transaction_date' => $visitDate,
             'notes' => $isPaid 
                 ? "Old/Historical record for {$recordCode} (Auto-marked as Paid)"
-                : ucfirst($validated['service_type']) . " for {$recordCode} on " . $visitDate->format('M d, Y'),
+                : ucfirst(str_replace('_', ' ', $validated['service_type'])) . " for {$recordCode} on " . $visitDate->format('M d, Y'),
         ]);
 
+        // Automatic base veterinary service item for Cashier
         BillItem::create([
             'bill_id' => $bill->id,
-            'item_name' => 'Veterinary Service: ' . ucfirst($validated['service_type']),
+            'item_name' => 'Veterinary Service: ' . ucfirst(str_replace('_', ' ', $validated['service_type'])),
             'item_type' => 'service',
             'quantity' => 1,
-            'unit_price' => $validated['service_fee'],
-            'total_price' => $validated['service_fee'],
+            'unit_price' => $baseServiceFee,
+            'total_price' => $baseServiceFee,
         ]);
 
         // Complete any checked-in appointments for this pet
@@ -212,7 +240,7 @@ class MedicalRecordController extends Controller
 
     public function show(MedicalRecord $record)
     {
-        $record->load(['owner', 'pet', 'prescription', 'veterinarian']);
+        $record->load(['owner', 'pet', 'prescription', 'veterinarian', 'bill.items']);
         return view('veterinarian.medical.show', compact('record'));
     }
 
@@ -228,7 +256,11 @@ class MedicalRecordController extends Controller
             'medication_treatment' => 'nullable|string',
             'laboratory_notes' => 'nullable|string',
             'veterinarians_notes' => 'nullable|string',
-            'service_fee' => 'required|numeric|min:0',
+            'service_fee' => 'nullable|numeric|min:0',
+            'items' => 'nullable|array',
+            'items.*.name' => 'nullable|string|max:255',
+            'items.*.quantity' => 'nullable|numeric|min:0.01',
+            'items.*.price' => 'nullable|numeric|min:0',
             'follow_up_date' => 'nullable|date',
             'follow_up_notes' => 'nullable|string',
             'status' => 'required|in:ongoing,completed,billed',
@@ -247,6 +279,30 @@ class MedicalRecordController extends Controller
             $validated['attached_lab_results'] = 'uploads/lab_results/' . $filename;
         }
 
+        $baseServiceFee = $request->filled('service_fee') 
+            ? floatval($request->input('service_fee')) 
+            : floatval($record->service_fee ?? 450.00);
+
+        // Process Prescribed Items / Clinical Advice Notes (Saved to medical record, not cashier bill)
+        $prescribedItems = [];
+        if ($request->has('items') && is_array($request->input('items'))) {
+            foreach ($request->input('items') as $itemData) {
+                $itemName = trim($itemData['name'] ?? '');
+                if (!empty($itemName)) {
+                    $prescribedItems[] = [
+                        'name' => $itemName,
+                        'quantity' => $itemData['quantity'] ?? '1',
+                        'price' => isset($itemData['price']) && $itemData['price'] !== '' ? floatval($itemData['price']) : null,
+                        'instructions' => $itemData['instructions'] ?? ($itemData['remarks'] ?? ''),
+                    ];
+                }
+            }
+        } elseif (!$request->has('items')) {
+            $prescribedItems = $record->prescribed_items ?? [];
+        }
+
+        $totalBillAmount = $baseServiceFee;
+
         $record->update([
             'visit_date' => !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date']) : ($record->visit_date ?: Carbon::now()),
             'body_weight' => $validated['body_weight'] ?? $record->body_weight,
@@ -257,7 +313,8 @@ class MedicalRecordController extends Controller
             'medication_treatment' => $validated['medication_treatment'] ?? $record->medication_treatment,
             'laboratory_notes' => $validated['laboratory_notes'] ?? $record->laboratory_notes,
             'veterinarians_notes' => $validated['veterinarians_notes'] ?? $record->veterinarians_notes,
-            'service_fee' => $validated['service_fee'],
+            'prescribed_items' => $prescribedItems,
+            'service_fee' => $baseServiceFee,
             'follow_up_date' => $validated['follow_up_date'] ?? null,
             'follow_up_notes' => $validated['follow_up_notes'] ?? null,
             'status' => $validated['status'],
@@ -290,37 +347,30 @@ class MedicalRecordController extends Controller
             }
         }
 
-        // Central Billing Queue synchronization
+        // Central Billing Queue synchronization (Base service fee only)
         $bill = $record->bill ?: Bill::where('medical_record_id', $record->id)->first();
         $invoiceNo = null;
 
         if ($bill) {
             $invoiceNo = $bill->invoice_no;
-            if ($bill->payment_status === 'unpaid') {
+            if ($bill->payment_status !== 'paid') {
                 $bill->update([
-                    'subtotal' => $validated['service_fee'],
-                    'total_amount' => $validated['service_fee'],
-                    'notes' => ucfirst($record->service_type) . " for {$record->record_code} on " . Carbon::parse($record->visit_date ?? Carbon::now())->format('M d, Y'),
+                    'subtotal' => $totalBillAmount,
+                    'total_amount' => $totalBillAmount,
+                    'notes' => ucfirst(str_replace('_', ' ', $record->service_type)) . " for {$record->record_code} on " . Carbon::parse($record->visit_date ?? Carbon::now())->format('M d, Y'),
                 ]);
 
-                // Update or create bill item
-                $item = $bill->items()->first();
-                if ($item) {
-                    $item->update([
-                        'item_name' => 'Veterinary Service: ' . ucfirst(str_replace('_', ' ', $record->service_type)),
-                        'unit_price' => $validated['service_fee'],
-                        'total_price' => $validated['service_fee'],
-                    ]);
-                } else {
-                    BillItem::create([
-                        'bill_id' => $bill->id,
-                        'item_name' => 'Veterinary Service: ' . ucfirst(str_replace('_', ' ', $record->service_type)),
-                        'item_type' => 'service',
-                        'quantity' => 1,
-                        'unit_price' => $validated['service_fee'],
-                        'total_price' => $validated['service_fee'],
-                    ]);
-                }
+                // Clear any product items and ensure single base service fee line item
+                $bill->items()->delete();
+
+                BillItem::create([
+                    'bill_id' => $bill->id,
+                    'item_name' => 'Veterinary Service: ' . ucfirst(str_replace('_', ' ', $record->service_type)),
+                    'item_type' => 'service',
+                    'quantity' => 1,
+                    'unit_price' => $baseServiceFee,
+                    'total_price' => $baseServiceFee,
+                ]);
             }
         } else {
             // Generate Bill in Cashier queue
@@ -333,11 +383,12 @@ class MedicalRecordController extends Controller
                 'medical_record_id' => $record->id,
                 'client_name' => $owner ? $owner->full_name : 'Client',
                 'service_type' => 'veterinary',
-                'subtotal' => $validated['service_fee'],
-                'total_amount' => $validated['service_fee'],
+                'subtotal' => $totalBillAmount,
+                'total_amount' => $totalBillAmount,
                 'payment_status' => 'unpaid',
                 'paid_amount' => 0.00,
                 'change_amount' => 0.00,
+                'payment_method' => 'cash',
                 'transaction_date' => Carbon::now(),
                 'notes' => ucfirst(str_replace('_', ' ', $record->service_type)) . " for {$record->record_code} on " . Carbon::parse($record->visit_date ?? Carbon::now())->format('M d, Y'),
             ]);
@@ -347,8 +398,8 @@ class MedicalRecordController extends Controller
                 'item_name' => 'Veterinary Service: ' . ucfirst(str_replace('_', ' ', $record->service_type)),
                 'item_type' => 'service',
                 'quantity' => 1,
-                'unit_price' => $validated['service_fee'],
-                'total_price' => $validated['service_fee'],
+                'unit_price' => $baseServiceFee,
+                'total_price' => $baseServiceFee,
             ]);
         }
 
@@ -360,7 +411,7 @@ class MedicalRecordController extends Controller
         }
 
         $petName = $record->pet ? $record->pet->name : 'Patient';
-        $feeFormatted = number_format($validated['service_fee'], 2);
+        $feeFormatted = number_format($totalBillAmount, 2);
 
         $msg = $validated['status'] === 'completed'
             ? "Doctor checkup completed for {$petName}! Case {$record->record_code} sent to Cashier Billing queue ({$invoiceNo} - ₱{$feeFormatted})."

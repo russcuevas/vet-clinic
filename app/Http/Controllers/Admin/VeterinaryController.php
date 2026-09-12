@@ -187,7 +187,7 @@ class VeterinaryController extends Controller
             'payment_status' => $isPaid ? 'paid' : 'unpaid',
             'paid_amount' => $isPaid ? $validated['service_fee'] : 0.00,
             'change_amount' => 0.00,
-            'payment_method' => $isPaid ? 'cash' : null,
+            'payment_method' => 'cash',
             'paid_at' => $isPaid ? $visitDate : null,
             'cashier_id' => $isPaid ? auth()->id() : null,
             'transaction_date' => $visitDate,
@@ -339,6 +339,7 @@ class VeterinaryController extends Controller
                 'payment_status' => 'unpaid',
                 'paid_amount' => 0.00,
                 'change_amount' => 0.00,
+                'payment_method' => 'cash',
                 'transaction_date' => Carbon::now(),
                 'notes' => ucfirst(str_replace('_', ' ', $record->service_type)) . " for {$record->record_code} on " . Carbon::parse($record->visit_date ?? Carbon::now())->format('M d, Y'),
             ]);

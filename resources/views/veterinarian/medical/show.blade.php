@@ -201,6 +201,98 @@
                             </div>
                         </div>
                     @endif
+
+                    <!-- Prescribed Take-Home Supplies & Clinical Advice (Doctor's Notes) -->
+                    @if(!empty($record->prescribed_items) && is_array($record->prescribed_items) && count($record->prescribed_items) > 0)
+                        <div style="margin-top: 1.5rem; background: var(--navy-dark); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1.25rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.05em; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>📋</span> Prescribed Supplies & Advice Notes
+                                </h4>
+                                <span class="badge badge-navy" style="font-size: 0.72rem; color: var(--text-muted);">
+                                    Clinical Chart Notes
+                                </span>
+                            </div>
+
+                            <div style="border: 1px solid var(--black-border); border-radius: var(--radius-sm); overflow: hidden; background: rgba(4, 7, 13, 0.4);">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                    <thead>
+                                        <tr style="background: rgba(11, 25, 44, 0.8); border-bottom: 1px solid var(--black-border);">
+                                            <th style="padding: 10px 14px; text-align: left; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Item / Recommended Supply</th>
+                                            <th style="padding: 10px 14px; text-align: center; width: 90px; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Qty</th>
+                                            <th style="padding: 10px 14px; text-align: right; width: 120px; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Est. Price</th>
+                                            <th style="padding: 10px 14px; text-align: left; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Directions / Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($record->prescribed_items as $pItem)
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                                <td style="padding: 9px 14px; font-weight: 600; color: var(--white); display: flex; align-items: center; gap: 0.4rem;">
+                                                    <span>📦</span>
+                                                    <span>{{ $pItem['name'] ?? '' }}</span>
+                                                </td>
+                                                <td style="padding: 9px 14px; text-align: center; color: var(--gold-light);">{{ $pItem['quantity'] ?? '1' }}</td>
+                                                <td style="padding: 9px 14px; text-align: right; color: var(--text-secondary);">
+                                                    {{ !empty($pItem['price']) ? '₱' . number_format($pItem['price'], 2) : '—' }}
+                                                </td>
+                                                <td style="padding: 9px 14px; color: var(--text-secondary); font-size: 0.82rem;">
+                                                    {{ $pItem['instructions'] ?? ($pItem['remarks'] ?? '—') }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Central Billing & Cashier Invoice Breakdown -->
+                    <div style="margin-top: 1.5rem; background: var(--navy-dark); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--gold-primary); text-transform: uppercase; letter-spacing: 0.05em; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                                <span>🧾</span> Cashier Billing Breakdown
+                            </h4>
+                            @if($bill)
+                                <span class="badge {{ $bill->payment_status === 'paid' ? 'badge-success' : 'badge-warning' }}" style="font-size: 0.75rem;">
+                                    {{ ucfirst($bill->payment_status) }} (Invoice: {{ $bill->invoice_no }})
+                                </span>
+                            @endif
+                        </div>
+
+                        <div style="border: 1px solid var(--black-border); border-radius: var(--radius-sm); overflow: hidden; background: rgba(4, 7, 13, 0.4);">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                <thead>
+                                    <tr style="background: rgba(11, 25, 44, 0.8); border-bottom: 1px solid var(--black-border);">
+                                        <th style="padding: 10px 14px; text-align: left; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Service Description</th>
+                                        <th style="padding: 10px 14px; text-align: center; width: 90px; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Qty</th>
+                                        <th style="padding: 10px 14px; text-align: right; width: 120px; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Rate</th>
+                                        <th style="padding: 10px 14px; text-align: right; width: 130px; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                        <td style="padding: 9px 14px; font-weight: 600; color: var(--white); display: flex; align-items: center; gap: 0.4rem;">
+                                            <span style="font-size: 0.9rem;">🩺</span>
+                                            <span>Veterinary Service: {{ ucfirst(str_replace('_', ' ', $record->service_type)) }}</span>
+                                        </td>
+                                        <td style="padding: 9px 14px; text-align: center; color: var(--gold-light);">1</td>
+                                        <td style="padding: 9px 14px; text-align: right; color: var(--text-secondary);">₱{{ number_format($record->service_fee ?? 450.00, 2) }}</td>
+                                        <td style="padding: 9px 14px; text-align: right; font-weight: 700; color: var(--gold-primary);">₱{{ number_format($record->service_fee ?? 450.00, 2) }}</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="border-top: 2px solid var(--gold-border); background: rgba(245, 186, 49, 0.06);">
+                                        <td colspan="3" style="padding: 10px 14px; text-align: right; font-weight: 800; color: var(--white); text-transform: uppercase; font-size: 0.85rem;">
+                                            Total Amount Due to Cashier:
+                                        </td>
+                                        <td style="padding: 10px 14px; text-align: right; font-size: 1.15rem; font-weight: 800; color: var(--gold-primary);">
+                                            ₱{{ number_format($bill ? $bill->total_amount : ($record->service_fee ?? 450.00), 2) }}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -411,14 +503,15 @@
         </div>
     </div>
     @endif
+
     <!-- ==================== MODAL: COMPLETE / EDIT EXAMINATION & BILLING ==================== -->
     <div class="modal-backdrop" id="modal-examine-case">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-xl" style="max-width: 1100px;">
             <div class="modal-header">
                 <div class="modal-title-group">
                     <div class="modal-icon">🩺</div>
                     <div>
-                        <h4 class="modal-title">Clinical Findings, Prescription & Billing — Case {{ $record->record_code }}</h4>
+                        <h4 class="modal-title">Patient Examination Form — Case {{ $record->record_code }}</h4>
                         <span style="font-size: 0.75rem; color: var(--gold-light);">
                             Patient: <strong>{{ $record->pet->name ?? 'N/A' }}</strong> ({{ $record->pet->species ?? '' }}) • Owner: <strong>{{ $record->owner->full_name ?? 'N/A' }}</strong>
                         </span>
@@ -429,127 +522,287 @@
             <form action="{{ route('vet.medical.update', $record->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-                <div class="modal-body" style="padding: 1.25rem 1.5rem;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.25rem; align-items: start;">
-                        <!-- LEFT COLUMN: Examination & Diagnosis -->
-                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div class="modal-body" style="padding: 1.25rem 1.5rem; max-height: calc(100vh - 180px); overflow-y: auto;">
+                    <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 1.5rem; align-items: start;">
+                        
+                        <!-- ==================== LEFT COLUMN (Exact Blueprint Layout) ==================== -->
+                        <div style="display: flex; flex-direction: column; gap: 1.15rem;">
+                            <!-- 1. Date of Visit -->
                             <div class="form-group">
-                                <label class="form-label">📅 Date of Visit</label>
-                                <input type="date" name="visit_date" class="form-control" value="{{ $record->visit_date ? $record->visit_date->format('Y-m-d') : ($record->created_at ? $record->created_at->format('Y-m-d') : date('Y-m-d')) }}">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-primary);">📅 Date of Visit <span class="req">*</span></label>
+                                <input type="date" name="visit_date" class="form-control" value="{{ $record->visit_date ? $record->visit_date->format('Y-m-d') : ($record->created_at ? $record->created_at->format('Y-m-d') : date('Y-m-d')) }}" required>
                             </div>
 
-                            <div style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem;">
+                            <!-- 2. Physical Vitals -->
+                            <div style="background: rgba(11, 25, 44, 0.45); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem;">
                                 <h5 style="color: var(--gold-primary); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
                                     🌡️ Physical Vitals
                                 </h5>
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
-                                    <div class="form-group">
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65rem;">
+                                    <div class="form-group" style="margin-bottom: 0;">
                                         <label class="form-label" style="font-size: 0.75rem;">Temp (°C)</label>
                                         <input type="text" name="temperature" class="form-control" value="{{ $record->temperature }}" placeholder="e.g. 38.5°C">
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" style="margin-bottom: 0;">
                                         <label class="form-label" style="font-size: 0.75rem;">Weight (BW)</label>
                                         <input type="text" name="body_weight" class="form-control" value="{{ $record->body_weight }}" placeholder="e.g. 5.2 kg">
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" style="margin-bottom: 0;">
                                         <label class="form-label" style="font-size: 0.75rem;">Body Score</label>
-                                        <input type="text" name="body_score" class="form-control" value="{{ $record->body_score }}" placeholder="e.g. 3/5 Ideal">
+                                        <input type="text" name="body_score" class="form-control" value="{{ $record->body_score }}" placeholder="e.g. 3/5">
                                     </div>
                                 </div>
                             </div>
 
+                            <!-- 3. Veterinarian Notes / Advice -->
                             <div class="form-group">
-                                <label class="form-label">📝 Purpose / Examination Notes / Complaint</label>
-                                <textarea name="history_taking" class="form-control" rows="3" placeholder="Symptoms, observed condition, patient history...">{{ $record->history_taking }}</textarea>
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-light);">👨‍⚕️ Veterinarian Notes / Advice</label>
+                                <textarea name="veterinarians_notes" class="form-control" rows="3" placeholder="Diet recommendations, home-care instructions, advice for pet owner...">{{ $record->veterinarians_notes }}</textarea>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">Clinical Diagnosis / Assessment <span class="req">*</span></label>
-                                <textarea name="diagnosis" class="form-control" rows="2" placeholder="e.g. Acute Gastroenteritis, Canine Parvovirus, Otitis Externa..." required>{{ $record->diagnosis }}</textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Veterinarian's Clinical Notes / Advice</label>
-                                <textarea name="veterinarians_notes" class="form-control" rows="2" placeholder="Diet recommendations, home-care instructions...">{{ $record->veterinarians_notes }}</textarea>
-                            </div>
-                        </div>
-
-                        <!-- RIGHT COLUMN: Treatment, Prescription, Fee & Billing -->
-                        <div style="display: flex; flex-direction: column; gap: 1rem;">
-                            <div class="form-group">
-                                <label class="form-label">💊 Medication / In-Clinic Treatment</label>
-                                <textarea name="medication_treatment" class="form-control" rows="3" placeholder="Injections, intravenous fluids, in-clinic administered drugs...">{{ $record->medication_treatment }}</textarea>
-                            </div>
-
-                            <!-- Prescription Area -->
-                            <div style="background: rgba(245, 186, 49, 0.05); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1rem;">
-                                <h5 style="color: var(--gold-light); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
-                                    <span>💊</span> Prescribe Take-Home Medications (Rx)
-                                </h5>
-                                <div class="form-group" style="margin-bottom: 0.75rem;">
-                                    <label class="form-label" style="font-size: 0.78rem;">Medication Name, Strength, Dosage & Frequency</label>
-                                    <textarea name="prescribe_rx" class="form-control" rows="3" placeholder="e.g. 1. Amoxicillin 250mg - 1 tab BID for 7 days&#10;2. Nutriplus Gel - 1 tsp daily">{{ $record->prescription ? $record->prescription->rx_details : '' }}</textarea>
+                            <!-- 4. Consultation Service Fee Input Banner -->
+                            <div style="background: rgba(245, 186, 49, 0.08); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1.15rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                                <div>
+                                    <label class="form-label" style="font-weight: 700; color: var(--gold-light); font-size: 0.88rem; margin-bottom: 2px; display: flex; align-items: center; gap: 0.4rem;">
+                                        <span>🩺</span> Consultation / Service Fee (₱) <span class="req">*</span>
+                                    </label>
+                                    <div style="font-size: 0.72rem; color: var(--text-muted);">
+                                        Ang halagang ito lamang ang ipapasa sa Cashier Billing.
+                                    </div>
                                 </div>
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label class="form-label" style="font-size: 0.78rem;">Rx Instructions / Precautions</label>
-                                    <input type="text" name="rx_instructions" class="form-control" placeholder="e.g. Give after meals. Keep refrigerated." value="{{ $record->prescription ? $record->prescription->instructions : '' }}">
+                                <input type="number" step="0.01" min="0" name="service_fee" class="form-control" value="{{ $record->service_fee ?? 450.00 }}" required style="max-width: 150px; font-weight: 800; text-align: right; color: var(--gold-primary); font-size: 1.1rem; border-color: var(--gold-border);">
+                            </div>
+
+                            <!-- 5. Prescribed Items & Supplies Advice Table (Clinical Notes only) -->
+                            <div style="background: var(--navy-dark); border: 1.5px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
+                                    <div>
+                                        <h5 style="color: var(--gold-light); font-size: 0.85rem; font-weight: 800; text-transform: uppercase; margin: 0; display: flex; align-items: center; gap: 0.35rem;">
+                                            <span>📋</span> Prescribed Items & Supplies Advice
+                                        </h5>
+                                        <span style="font-size: 0.72rem; color: var(--text-muted);">
+                                            Advice / notes para sa pet owner (hal. ULTRA DOG, Dewormer, Vitamins) — <em>Hindi isinasama sa cashier bill</em>
+                                        </span>
+                                    </div>
+                                    <button type="button" id="btn-add-exam-item" class="btn btn-gold btn-sm" style="font-size: 0.75rem; padding: 4px 10px; font-weight: 700;">
+                                        ➕ Add Advice Row
+                                    </button>
+                                </div>
+
+                                <div style="max-height: 220px; overflow-y: auto; margin-bottom: 0.75rem; border: 1px solid var(--black-border); border-radius: var(--radius-sm); background: rgba(4, 7, 13, 0.4);">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+                                        <thead style="position: sticky; top: 0; background: var(--navy-dark); z-index: 2; border-bottom: 1px solid var(--black-border);">
+                                            <tr>
+                                                <th style="padding: 8px; text-align: left; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Item / Recommended Supply</th>
+                                                <th style="padding: 8px; width: 85px; text-align: center; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Qty</th>
+                                                <th style="padding: 8px; width: 100px; text-align: right; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Est. Price (₱)</th>
+                                                <th style="padding: 8px; text-align: left; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Directions / Remarks</th>
+                                                <th style="padding: 8px; width: 35px; text-align: center;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="exam-items-tbody">
+                                            @php
+                                                $initialItems = !empty($record->prescribed_items) ? $record->prescribed_items : [];
+                                            @endphp
+
+                                            @forelse($initialItems as $idx => $it)
+                                                <tr class="exam-item-row" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                                    <td style="padding: 6px;">
+                                                        <input type="text" name="items[{{ $idx }}][name]" class="form-control form-control-sm item-name" placeholder="e.g. ULTRA DOG / Dewormer" value="{{ $it['name'] ?? '' }}" style="font-size: 0.82rem;" required>
+                                                    </td>
+                                                    <td style="padding: 6px; width: 85px;">
+                                                        <input type="text" name="items[{{ $idx }}][quantity]" class="form-control form-control-sm" placeholder="1 bag" value="{{ $it['quantity'] ?? '' }}" style="font-size: 0.82rem; text-align: center;">
+                                                    </td>
+                                                    <td style="padding: 6px; width: 100px;">
+                                                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][price]" class="form-control form-control-sm" placeholder="0.00" value="{{ $it['price'] ?? '' }}" style="font-size: 0.82rem; text-align: right;">
+                                                    </td>
+                                                    <td style="padding: 6px;">
+                                                        <input type="text" name="items[{{ $idx }}][remarks]" class="form-control form-control-sm" placeholder="e.g. Special diet / Daily with meal" value="{{ $it['instructions'] ?? ($it['remarks'] ?? '') }}" style="font-size: 0.82rem;">
+                                                    </td>
+                                                    <td style="padding: 6px; width: 35px; text-align: center;">
+                                                        <button type="button" class="btn btn-ghost btn-sm btn-remove-item" style="color: #ef4444; padding: 2px 4px; font-size: 0.85rem;" title="Remove row">
+                                                            🗑️
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <!-- Row will be added dynamically by JS -->
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div id="no-items-placeholder" style="{{ count($initialItems) > 0 ? 'display: none;' : '' }} text-align: center; padding: 0.6rem; color: var(--text-muted); font-size: 0.78rem; font-style: italic;">
+                                    No item recommendations added. Click <strong>"+ Add Advice Row"</strong> to record suggested supplies/food/medicines.
+                                </div>
+
+                                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.4rem;">
+                                    💡 <em>Tandaan: Ang mga items na ito ay masesave bilang clinical chart advice/notes para sa pet owner at hindi ipapasa sa cashier billing.</em>
                                 </div>
                             </div>
 
-                            <div style="background: rgba(11, 25, 44, 0.4); border: 1px dashed var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
-                                <label class="form-label" style="margin-bottom: 0.35rem;">🔬 Laboratory / Test Notes</label>
-                                <input type="text" name="laboratory_notes" class="form-control" placeholder="e.g. CBC Normal, Parvo Rapid Test Negative" value="{{ $record->laboratory_notes }}" style="margin-bottom: 0.5rem;">
-                                <label class="form-label" style="margin-bottom: 0.35rem; font-size: 0.75rem;">📎 Attach / Replace Lab Result File</label>
-                                <input type="file" name="lab_results" class="form-control" accept="image/*,.pdf,.doc,.docx" style="padding: 5px;">
-                            </div>
-
-                            <div style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+                            <!-- 6. Follow-Up Schedule -->
+                            <div style="background: rgba(11, 25, 44, 0.45); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
                                 <h5 style="color: var(--gold-light); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem;">
-                                    🗓️ Follow-Up Schedule (Optional)
+                                    🗓️ Follow-Up Schedule
                                 </h5>
                                 <div class="form-grid">
-                                    <div class="form-group">
+                                    <div class="form-group" style="margin-bottom: 0;">
                                         <label class="form-label" style="font-size: 0.75rem;">Follow Up Date</label>
                                         <input type="date" name="follow_up_date" class="form-control" value="{{ $record->follow_up_date ? $record->follow_up_date->format('Y-m-d') : '' }}">
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" style="margin-bottom: 0;">
                                         <label class="form-label" style="font-size: 0.75rem;">Purpose / Notes</label>
                                         <input type="text" name="follow_up_notes" class="form-control" placeholder="e.g. Re-evaluation / suture removal" value="{{ $record->follow_up_notes }}">
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Consultation Fee & Status / Cashier Route -->
-                            <div style="background: var(--navy-dark); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1rem;">
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label class="form-label" style="color: var(--gold-light); font-weight: 700;">Consultation / Service Fee (₱) <span class="req">*</span></label>
-                                        <input type="number" step="0.01" min="0" name="service_fee" class="form-control" value="{{ $record->service_fee ?? 350.00 }}" required style="font-size: 1.1rem; font-weight: 700; color: var(--gold-primary);">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label" style="color: var(--gold-light); font-weight: 700;">Consultation Status <span class="req">*</span></label>
-                                        <select name="status" class="form-select" required>
-                                            <option value="completed" {{ $record->status === 'completed' || $record->status === 'ongoing' ? 'selected' : '' }}>✅ Completed (Send to Cashier Billing)</option>
-                                            <option value="ongoing" {{ $record->status === 'ongoing' ? '' : '' }}>🟡 Ongoing / In-Progress</option>
-                                            <option value="billed" {{ $record->status === 'billed' ? 'selected' : '' }}>🟢 Billed / Settled</option>
-                                        </select>
-                                    </div>
+                            <!-- 7. STATUS Selector -->
+                            <div class="form-group">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-light);">🏷️ STATUS <span class="req">*</span></label>
+                                <select name="status" class="form-select" required style="font-weight: 600; font-size: 0.9rem;">
+                                    <option value="completed" {{ $record->status === 'completed' || $record->status === 'ongoing' ? 'selected' : '' }}>✅ Completed (Send to Cashier Billing)</option>
+                                    <option value="ongoing" {{ $record->status === 'ongoing' ? '' : '' }}>🟡 Ongoing / In-Progress</option>
+                                    <option value="billed" {{ $record->status === 'billed' ? 'selected' : '' }}>🟢 Billed / Settled</option>
+                                </select>
+                                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">
+                                    💡 Selecting <strong>"Completed"</strong> automatically routes the consultation fee to the Cashier Desk.
                                 </div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">
-                                    💡 Selecting <strong>"Completed"</strong> automatically generates or updates the Bill in the Cashier Queue for client checkout.
+                            </div>
+                        </div>
+
+                        <!-- ==================== RIGHT COLUMN (Exact Blueprint Layout) ==================== -->
+                        <div style="display: flex; flex-direction: column; gap: 1.15rem;">
+                            <!-- 1. Purpose / Exam Note / Complaint -->
+                            <div class="form-group">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-primary);">📝 Purpose / Exam Note / Complaint</label>
+                                <textarea name="history_taking" class="form-control" rows="4" placeholder="Symptoms, observed condition, patient history, client complaint...">{{ $record->history_taking }}</textarea>
+                            </div>
+
+                            <!-- 2. Clinical Assessment (Diagnosis) -->
+                            <div class="form-group">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-primary);">🩺 Clinical Assessment / Diagnosis <span class="req">*</span></label>
+                                <textarea name="diagnosis" class="form-control" rows="3" placeholder="e.g. Acute Gastroenteritis, Canine Parvovirus, Otitis Externa..." required>{{ $record->diagnosis }}</textarea>
+                            </div>
+
+                            <!-- In-Clinic Medication / Treatment (Optional) -->
+                            <div class="form-group">
+                                <label class="form-label" style="font-size: 0.8rem; color: var(--text-secondary);">💊 Medication / In-Clinic Treatment (Optional)</label>
+                                <textarea name="medication_treatment" class="form-control" rows="2" placeholder="Injections, intravenous fluids, administered treatments...">{{ $record->medication_treatment }}</textarea>
+                            </div>
+
+                            <!-- 3. Laboratory / Test Notes -->
+                            <div style="background: rgba(11, 25, 44, 0.45); border: 1px dashed var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-light); margin-bottom: 0.35rem;">🔬 Laboratory / Test Notes</label>
+                                <textarea name="laboratory_notes" class="form-control" rows="2" placeholder="e.g. CBC Normal, Parvo Rapid Test Negative, X-Ray clear" style="margin-bottom: 0.5rem;">{{ $record->laboratory_notes }}</textarea>
+                                
+                                <label class="form-label" style="margin-bottom: 0.25rem; font-size: 0.75rem; color: var(--text-muted);">📎 Attach / Replace Lab Result File</label>
+                                <input type="file" name="lab_results" class="form-control" accept="image/*,.pdf,.doc,.docx" style="padding: 4px; font-size: 0.8rem;">
+                                @if($record->attached_lab_results)
+                                    <div style="font-size: 0.72rem; color: var(--gold-light); margin-top: 3px;">
+                                        Current file: {{ basename($record->attached_lab_results) }}
+                                    </div>
+                                @endif
+                            </div>
+
+                            <!-- 4. Rx Prescribe Take-Home Medicine -->
+                            <div style="background: rgba(245, 186, 49, 0.05); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1rem;">
+                                <h5 style="color: var(--gold-light); font-size: 0.84rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>💊</span> Rx Prescribe Take-Home Medicine
+                                </h5>
+                                <div class="form-group" style="margin-bottom: 0.75rem;">
+                                    <label class="form-label" style="font-size: 0.78rem;">Medication Details, Strength, Dosage & Frequency</label>
+                                    <textarea name="prescribe_rx" class="form-control" rows="4" placeholder="e.g.&#10;1. Amoxicillin 250mg - 1 tab BID for 7 days&#10;2. Nutriplus Gel - 1 tsp daily&#10;3. Eye Drops - 2 drops TID">{{ $record->prescription ? $record->prescription->rx_details : '' }}</textarea>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label" style="font-size: 0.78rem;">Rx Instructions / Precautions</label>
+                                    <input type="text" name="rx_instructions" class="form-control" placeholder="e.g. Give after meals. Keep refrigerated. Finish full antibiotic course." value="{{ $record->prescription ? $record->prescription->instructions : '' }}">
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
-                    <button type="submit" class="btn btn-gold" style="font-weight: 700; padding: 0.65rem 1.25rem;">
-                        💾 Save Examination & Send to Cashier
+                <!-- Footer Action Buttons (Cancel & Save) -->
+                <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <button type="button" class="btn btn-ghost" data-modal-close style="font-size: 0.88rem; padding: 0.6rem 1.25rem;">Cancel</button>
+                    <button type="submit" class="btn btn-gold" style="font-weight: 700; font-size: 0.92rem; padding: 0.65rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        💾 SAVE Examination & Send to Cashier
                     </button>
                 </div>
             </form>
         </div>
     </div>
+
+    <!-- Script for Prescribed Items & Supplies Advice Table -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tableBody = document.getElementById('exam-items-tbody');
+        const addItemBtn = document.getElementById('btn-add-exam-item');
+        const noItemsPlaceholder = document.getElementById('no-items-placeholder');
+
+        if (!tableBody) return;
+
+        function updatePlaceholder() {
+            const rows = tableBody.querySelectorAll('tr.exam-item-row');
+            if (noItemsPlaceholder) {
+                noItemsPlaceholder.style.display = rows.length === 0 ? 'block' : 'none';
+            }
+        }
+
+        function createRow(name = '', qty = '', price = '', remarks = '') {
+            const index = tableBody.querySelectorAll('tr.exam-item-row').length + '_' + Date.now();
+            const tr = document.createElement('tr');
+            tr.className = 'exam-item-row';
+            tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            tr.innerHTML = `
+                <td style="padding: 6px;">
+                    <input type="text" name="items[${index}][name]" class="form-control form-control-sm item-name" placeholder="e.g. ULTRA DOG / Dewormer" value="${name.replace(/"/g, '&quot;')}" style="font-size: 0.82rem;" required autofocus>
+                </td>
+                <td style="padding: 6px; width: 85px;">
+                    <input type="text" name="items[${index}][quantity]" class="form-control form-control-sm" placeholder="1 bag" value="${qty}" style="font-size: 0.82rem; text-align: center;">
+                </td>
+                <td style="padding: 6px; width: 100px;">
+                    <input type="number" step="0.01" min="0" name="items[${index}][price]" class="form-control form-control-sm" placeholder="0.00" value="${price}" style="font-size: 0.82rem; text-align: right;">
+                </td>
+                <td style="padding: 6px;">
+                    <input type="text" name="items[${index}][remarks]" class="form-control form-control-sm" placeholder="e.g. Special diet / Daily with meal" value="${remarks.replace(/"/g, '&quot;')}" style="font-size: 0.82rem;">
+                </td>
+                <td style="padding: 6px; width: 35px; text-align: center;">
+                    <button type="button" class="btn btn-ghost btn-sm btn-remove-item" style="color: #ef4444; padding: 2px 4px; font-size: 0.85rem;" title="Remove row">
+                        🗑️
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+
+            tr.querySelector('.btn-remove-item').addEventListener('click', function () {
+                tr.remove();
+                updatePlaceholder();
+            });
+
+            updatePlaceholder();
+        }
+
+        if (addItemBtn) {
+            addItemBtn.addEventListener('click', function () {
+                createRow('', '1', '', '');
+            });
+        }
+
+        // Attach listeners to initial rendered rows
+        tableBody.querySelectorAll('tr.exam-item-row').forEach(function (row) {
+            const rmBtn = row.querySelector('.btn-remove-item');
+            if (rmBtn) {
+                rmBtn.addEventListener('click', function () {
+                    row.remove();
+                    updatePlaceholder();
+                });
+            }
+        });
+
+        updatePlaceholder();
+    });
+    </script>
 @endsection

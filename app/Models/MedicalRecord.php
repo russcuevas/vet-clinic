@@ -25,6 +25,7 @@ class MedicalRecord extends Model
         'diagnosis',
         'medication_treatment',
         'veterinarians_notes',
+        'prescribed_items',
         'service_fee',
         'follow_up_date',
         'follow_up_notes',
@@ -34,6 +35,7 @@ class MedicalRecord extends Model
     protected $casts = [
         'visit_date' => 'date',
         'follow_up_date' => 'date',
+        'prescribed_items' => 'array',
     ];
 
     public static function generateRecordCode(): string
