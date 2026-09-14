@@ -84,7 +84,7 @@
                             <th>EMP #</th>
                             <th>Staff & Position</th>
                             <th>Regular Pay</th>
-                            <th>OT Pay</th>
+                            <th>OT & Premiums</th>
                             <th>Incentives (₱)</th>
                             <th>Gross Pay (₱)</th>
                             <th>Deductions (₱)</th>
@@ -109,9 +109,17 @@
                                 </td>
                                 <td>₱{{ number_format($rec->regular_pay, 2) }}</td>
                                 <td>
-                                    @if($rec->ot_pay > 0)
-                                        <span style="color: var(--gold-light);">+₱{{ number_format($rec->ot_pay, 2) }}</span>
-                                        <div style="font-size: 0.68rem; color: var(--text-muted);">({{ $rec->ot_hours }} hrs)</div>
+                                    @php
+                                        $extraDutyPay = $rec->ot_pay + $rec->holiday_pay + $rec->special_holiday_pay + $rec->rest_day_pay;
+                                    @endphp
+                                    @if($extraDutyPay > 0)
+                                        <span style="color: var(--gold-light); font-weight: 700;">+₱{{ number_format($extraDutyPay, 2) }}</span>
+                                        <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
+                                            @if($rec->ot_pay > 0) <span>OT: ₱{{ number_format($rec->ot_pay, 2) }}</span> @endif
+                                            @if($rec->holiday_pay > 0) <span style="color: #f472b6;">• Hol: ₱{{ number_format($rec->holiday_pay, 2) }}</span> @endif
+                                            @if($rec->special_holiday_pay > 0) <span style="color: #38bdf8;">• SpHol: ₱{{ number_format($rec->special_holiday_pay, 2) }}</span> @endif
+                                            @if($rec->rest_day_pay > 0) <span style="color: #93c5fd;">• Rest: ₱{{ number_format($rec->rest_day_pay, 2) }}</span> @endif
+                                        </div>
                                     @else
                                         <span style="color: var(--text-muted);">₱0.00</span>
                                     @endif
@@ -186,6 +194,21 @@
                                                 <div class="form-group">
                                                     <label class="form-label">OT Pay (₱)</label>
                                                     <input type="number" step="0.01" name="ot_pay" class="form-control" value="{{ $rec->ot_pay }}" required>
+                                                </div>
+                                            </div>
+
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
+                                                <div class="form-group">
+                                                    <label class="form-label" style="color: #f472b6;">Holiday Pay (₱)</label>
+                                                    <input type="number" step="0.01" name="holiday_pay" class="form-control" value="{{ $rec->holiday_pay }}">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="form-label" style="color: #38bdf8;">Sp. Holiday Pay (₱)</label>
+                                                    <input type="number" step="0.01" name="special_holiday_pay" class="form-control" value="{{ $rec->special_holiday_pay }}">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="form-label" style="color: #93c5fd;">Rest Day Pay (₱)</label>
+                                                    <input type="number" step="0.01" name="rest_day_pay" class="form-control" value="{{ $rec->rest_day_pay }}">
                                                 </div>
                                             </div>
 

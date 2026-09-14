@@ -17,6 +17,9 @@
                 with automatic duty hours & undertime calculation.</p>
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-navy" data-modal-target="modal-payroll-multipliers" style="border: 1.5px solid var(--gold); color: var(--gold-light); font-weight: 700;">
+                <span>⚙️ Rate Multipliers</span>
+            </button>
             <button type="button" class="btn btn-navy" data-modal-target="modal-batch-dtr">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
@@ -52,20 +55,30 @@
                 </div>
 
                 <!-- Stats summary chips for active date -->
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.75rem;">
+                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; font-size: 0.75rem;">
                     @php
                         $dayPresent = $dayRecords->whereIn('status', ['present', 'late'])->count();
                         $dayLate = $dayRecords->where('late_minutes', '>', 0)->count();
                         $dayUndertime = $dayRecords->where('undertime_minutes', '>', 0)->count();
                         $dayAwaitingOut = $dayRecords->whereNotNull('time_in')->whereNull('time_out')->count();
                         $dayRestDay = $dayRecords->where('status', 'rest_day')->count();
+                        $dayHoliday = $dayRecords->whereIn('status', ['holiday', 'regular_holiday', 'special_holiday'])->count();
+                        $dayOvertime = $dayRecords->where('status', 'overtime')->count();
+                        $dayOffDuty = $dayRecords->where('status', 'off_duty')->count();
                     @endphp
                     <span class="badge badge-success">🟢 Present: {{ $dayPresent }}</span>
                     <span class="badge badge-warning">⚠️ Late: {{ $dayLate }}</span>
                     <span class="badge badge-danger">⏳ Undertime: {{ $dayUndertime }}</span>
-                    <span class="badge badge-blue">⏳ On Duty (No Out Yet): {{ $dayAwaitingOut }}</span>
-                    <span class="badge badge-navy" style="border: 1px solid rgba(59, 130, 246, 0.35); color: #93c5fd;">🏖️
-                        Rest Day: {{ $dayRestDay }}</span>
+                    <span class="badge badge-navy" style="border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd;">🏖️ Rest Day: {{ $dayRestDay }}</span>
+                    @if($dayHoliday > 0)
+                        <span class="badge" style="background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.35);">🎉 Holiday: {{ $dayHoliday }}</span>
+                    @endif
+                    @if($dayOvertime > 0)
+                        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);">⏱️ Overtime: {{ $dayOvertime }}</span>
+                    @endif
+                    @if($dayOffDuty > 0)
+                        <span class="badge" style="background: rgba(148, 163, 184, 0.12); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35);">💤 Off Duty: {{ $dayOffDuty }}</span>
+                    @endif
                 </div>
             </form>
         </div>
@@ -137,8 +150,13 @@
                                 @php
                                     $dtr = $dayRecords->firstWhere('employee_id', $emp->id);
                                     $hasTimedIn = $dtr && !empty($dtr->time_in);
-                                    $isRestDay = $dtr && $dtr->status === 'rest_day';
-                                    $isOnLeave = $dtr && $dtr->status === 'on_leave';
+                                    $currentStatus = $dtr ? $dtr->status : '';
+                                    $isRestDay = $currentStatus === 'rest_day';
+                                    $isOvertime = $currentStatus === 'overtime';
+                                    $isHoliday = in_array($currentStatus, ['holiday', 'regular_holiday']);
+                                    $isSpecialHoliday = $currentStatus === 'special_holiday';
+                                    $isOffDuty = $currentStatus === 'off_duty';
+                                    $isOnLeave = $currentStatus === 'on_leave';
                                     $shiftStartFormatted = $emp->shift_start
                                         ? \Carbon\Carbon::parse($emp->shift_start)->format('g:i A')
                                         : '9:00 AM';
@@ -147,11 +165,10 @@
                                         : '6:00 PM';
                                     $defaultTimeInVal = $hasTimedIn
                                         ? date('H:i', strtotime($dtr->time_in))
-                                        : ($emp->shift_start ?:
-                                        '09:00');
+                                        : ($emp->shift_start ?: '09:00');
                                 @endphp
                                 <tr
-                                    style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); {{ $hasTimedIn ? 'background: rgba(16, 185, 129, 0.03);' : ($isRestDay ? 'background: rgba(59, 130, 246, 0.03);' : '') }}">
+                                    style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); {{ $hasTimedIn ? 'background: rgba(16, 185, 129, 0.03);' : ($isRestDay ? 'background: rgba(59, 130, 246, 0.03);' : ($isHoliday ? 'background: rgba(236, 72, 153, 0.03);' : '')) }}">
                                     <td style="padding: 14px 16px; vertical-align: middle;">
                                         <span
                                             style="font-family: monospace; font-weight: 700; color: var(--gold-light); font-size: 0.88rem;">
@@ -178,7 +195,15 @@
                                                     🟢 {{ date('h:i A', strtotime($dtr->time_in)) }}
                                                 </span>
                                             </div>
-                                            @if ($dtr->late_minutes > 0)
+                                            @if ($isHoliday)
+                                                <div style="margin-top: 3px;"><span class="badge" style="background: rgba(236, 72, 153, 0.2); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.4); font-size: 0.72rem;">🎉 Holiday (x{{ $payrollSettings['holiday_multiplier']->multiplier ?? '2.0' }})</span></div>
+                                            @elseif ($isSpecialHoliday)
+                                                <div style="margin-top: 3px;"><span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.72rem;">✨ Special Holiday (x{{ $payrollSettings['special_holiday_multiplier']->multiplier ?? '1.3' }})</span></div>
+                                            @elseif ($isRestDay)
+                                                <div style="margin-top: 3px;"><span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); font-size: 0.72rem;">🏖️ Rest Day Duty (x{{ $payrollSettings['rest_day_multiplier']->multiplier ?? '1.3' }})</span></div>
+                                            @elseif ($isOvertime)
+                                                <div style="margin-top: 3px;"><span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.72rem;">⏱️ Overtime Tagged</span></div>
+                                            @elseif ($dtr->late_minutes > 0)
                                                 <div
                                                     style="font-size: 0.74rem; color: #f59e0b; font-weight: 700; margin-top: 3px;">
                                                     ⚠️ Late: {{ $dtr->formatted_late }}
@@ -190,7 +215,27 @@
                                         @elseif ($isRestDay)
                                             <span class="badge badge-navy"
                                                 style="font-size: 0.80rem; padding: 4px 8px; border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; background: rgba(59, 130, 246, 0.12);">
-                                                🏖️ Rest Day
+                                                🏖️ Rest Day (x{{ $payrollSettings['rest_day_multiplier']->multiplier ?? '1.3' }})
+                                            </span>
+                                        @elseif ($isOvertime)
+                                            <span class="badge badge-warning"
+                                                style="font-size: 0.80rem; padding: 4px 8px; border: 1px solid rgba(245, 158, 11, 0.4); color: #fef08a; background: rgba(245, 158, 11, 0.15);">
+                                                ⏱️ Overtime Tagged
+                                            </span>
+                                        @elseif ($isHoliday)
+                                            <span class="badge"
+                                                style="font-size: 0.80rem; padding: 4px 8px; border: 1px solid rgba(236, 72, 153, 0.4); color: #f472b6; background: rgba(236, 72, 153, 0.15);">
+                                                🎉 Regular Holiday (x{{ $payrollSettings['holiday_multiplier']->multiplier ?? '2.0' }})
+                                            </span>
+                                        @elseif ($isSpecialHoliday)
+                                            <span class="badge"
+                                                style="font-size: 0.80rem; padding: 4px 8px; border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; background: rgba(56, 189, 248, 0.15);">
+                                                ✨ Special Holiday (x{{ $payrollSettings['special_holiday_multiplier']->multiplier ?? '1.3' }})
+                                            </span>
+                                        @elseif ($isOffDuty)
+                                            <span class="badge"
+                                                style="font-size: 0.80rem; padding: 4px 8px; border: 1px solid rgba(148, 163, 184, 0.4); color: #cbd5e1; background: rgba(148, 163, 184, 0.12);">
+                                                💤 Off Duty
                                             </span>
                                         @elseif ($isOnLeave)
                                             <span class="badge badge-blue" style="font-size: 0.80rem; padding: 4px 8px;">
@@ -212,7 +257,7 @@
                                                 @csrf
                                                 <input type="hidden" name="employee_id" value="{{ $emp->id }}">
                                                 <input type="hidden" name="record_date" value="{{ $selectedDate }}">
-                                                <input type="hidden" name="status" value="present">
+                                                <input type="hidden" name="status" value="{{ in_array($currentStatus, ['holiday', 'special_holiday', 'overtime', 'rest_day']) ? $currentStatus : 'present' }}">
                                                 @if ($dtr && $dtr->time_out)
                                                     <input type="hidden" name="time_out" value="{{ $dtr->time_out }}">
                                                 @endif
@@ -237,21 +282,31 @@
                                                 </button>
                                             </form>
 
-                                            <!-- Rest Day Quick Tag Button -->
-                                            <form action="{{ route('admin.payroll.dtr.store') }}" method="POST"
-                                                style="margin: 0;">
+                                            <!-- Status Tag Dropdown (Rest Day, Overtime, Holiday, Special Holiday, Off Duty) -->
+                                            <form action="{{ route('admin.payroll.dtr.store') }}" method="POST" id="tag_form_{{ $emp->id }}" style="margin: 0; display: inline-flex; align-items: center;">
                                                 @csrf
                                                 <input type="hidden" name="employee_id" value="{{ $emp->id }}">
                                                 <input type="hidden" name="record_date" value="{{ $selectedDate }}">
-                                                <input type="hidden" name="status" value="rest_day">
-                                                <input type="hidden" name="notes" value="Official Rest Day">
-                                                <button type="submit"
-                                                    class="btn {{ $isRestDay ? 'btn-ghost' : 'btn-navy' }}"
-                                                    style="height: 38px; padding: 0 10px; font-size: 0.78rem; font-weight: 700; white-space: nowrap; {{ $isRestDay ? 'border-color: #3b82f6; color: #93c5fd; background: rgba(59, 130, 246, 0.18);' : '' }}"
-                                                    onclick="return confirm('Tag {{ addslashes($emp->full_name) }} as REST DAY for {{ \Carbon\Carbon::parse($selectedDate)->format('M d, Y') }}?');"
-                                                    title="Tag this employee as Rest Day">
-                                                    🏖️ Rest Day
-                                                </button>
+                                                <input type="hidden" name="status" id="tag_status_{{ $emp->id }}" value="{{ $currentStatus }}">
+
+                                                <div style="position: relative; display: inline-block;">
+                                                    <select class="status-tag-dropdown"
+                                                        id="status_select_{{ $emp->id }}"
+                                                        data-emp-name="{{ addslashes($emp->full_name) }}"
+                                                        data-original-val="{{ $currentStatus }}"
+                                                        onchange="handleDtrStatusDropdownChange(this, '{{ addslashes($emp->full_name) }}', 'tag_form_{{ $emp->id }}', 'tag_status_{{ $emp->id }}')"
+                                                        style="height: 38px; font-size: 0.80rem; font-weight: 700; border-radius: 6px; padding: 0 28px 0 10px; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; background: #071322; border: 1.5px solid {{ $isRestDay || $isHoliday || $isSpecialHoliday || $isOvertime || $isOffDuty ? '#d4af37' : 'rgba(212, 175, 55, 0.4)' }}; color: {{ $isHoliday ? '#f472b6' : ($isSpecialHoliday ? '#38bdf8' : ($isRestDay ? '#93c5fd' : ($isOvertime ? '#fbbf24' : ($isOffDuty ? '#94a3b8' : '#e2e8f0')))) }}; background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23d4af37'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E&quot;); background-repeat: no-repeat; background-position: right 8px center; background-size: 13px;">
+                                                        <option value="" disabled {{ empty($currentStatus) || in_array($currentStatus, ['present', 'late']) ? 'selected' : '' }} style="background: #0d1e33; color: #64748b;">🏷️ Duty Tag...</option>
+                                                        <option value="rest_day" {{ $currentStatus === 'rest_day' ? 'selected' : '' }} style="background: #0d1e33; color: #93c5fd;">🏖️ Rest Day</option>
+                                                        <option value="overtime" {{ $currentStatus === 'overtime' ? 'selected' : '' }} style="background: #0d1e33; color: #fbbf24;">⏱️ Overtime</option>
+                                                        <option value="holiday" {{ in_array($currentStatus, ['holiday', 'regular_holiday']) ? 'selected' : '' }} style="background: #0d1e33; color: #f472b6;">🎉 Holiday</option>
+                                                        <option value="special_holiday" {{ $currentStatus === 'special_holiday' ? 'selected' : '' }} style="background: #0d1e33; color: #38bdf8;">✨ Special Holiday</option>
+                                                        <option value="off_duty" {{ $currentStatus === 'off_duty' ? 'selected' : '' }} style="background: #0d1e33; color: #cbd5e1;">💤 Off Duty</option>
+                                                        @if(!empty($currentStatus) && !in_array($currentStatus, ['present', 'late']))
+                                                            <option value="present" style="background: #0d1e33; color: #10b981;">🔄 Clear Tag (Normal Present)</option>
+                                                        @endif
+                                                    </select>
+                                                </div>
                                             </form>
                                         </div>
                                     </td>
@@ -863,6 +918,97 @@
         </div>
     </div>
 
+    <!-- Modal: Payroll Rate Multipliers & Settings (Admin Only) -->
+    <div class="modal-backdrop" id="modal-payroll-multipliers">
+        <div class="modal-dialog" style="max-width: 540px;">
+            <div class="modal-header" style="background: rgba(212, 175, 55, 0.08); border-bottom: 1px solid var(--gold-border);">
+                <div class="modal-title-group">
+                    <h4 class="modal-title" style="color: var(--gold-light); display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem;">
+                        <span>⚙️</span> Payroll Multipliers & Computation Settings
+                    </h4>
+                    <span style="font-size: 0.72rem; color: var(--gold-light);">Editable strictly by Admin & Manager. Stored directly in the database.</span>
+                </div>
+                <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
+            </div>
+            <form action="{{ route('admin.payroll.settings.multipliers.update') }}" method="POST">
+                @csrf
+                <div class="modal-body" style="padding: 1.5rem;">
+                    <div style="background: rgba(59, 130, 246, 0.08); border-left: 3px solid #3b82f6; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1.25rem; font-size: 0.8rem; color: #93c5fd;">
+                        ℹ️ <strong>Direct Database Settings:</strong> When generating payroll, every tagged duty day (Holiday, Special Holiday, Rest Day, Overtime) is automatically multiplied by these rates into Gross Pay.
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 1.15rem;">
+                        <!-- Regular Holiday Multiplier -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="display: flex; justify-content: space-between; font-weight: 700; color: #f472b6; font-size: 0.85rem; margin-bottom: 0.35rem;">
+                                <span>🎉 Regular Holiday Multiplier</span>
+                                <span style="font-weight: 600; color: var(--text-muted); font-size: 0.75rem;">Default: x2.00 (200%)</span>
+                            </label>
+                            <div style="position: relative;">
+                                <input type="number" step="0.01" min="0" max="10" name="holiday_multiplier" class="form-control"
+                                    value="{{ number_format($payrollSettings['holiday_multiplier']->multiplier ?? 2.00, 2) }}"
+                                    style="padding-left: 2rem; font-weight: 700; font-size: 1rem; color: #fff; background: #071322; border-color: rgba(236, 72, 153, 0.5);" required>
+                                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #f472b6; font-weight: 700;">×</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; display: block;">Formula: Daily Rate × Multiplier (e.g. ₱500 × 2.0 = ₱1,000)</span>
+                        </div>
+
+                        <!-- Special Holiday Multiplier -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="display: flex; justify-content: space-between; font-weight: 700; color: #38bdf8; font-size: 0.85rem; margin-bottom: 0.35rem;">
+                                <span>✨ Special Holiday Multiplier</span>
+                                <span style="font-weight: 600; color: var(--text-muted); font-size: 0.75rem;">Default: x1.30 (130%)</span>
+                            </label>
+                            <div style="position: relative;">
+                                <input type="number" step="0.01" min="0" max="10" name="special_holiday_multiplier" class="form-control"
+                                    value="{{ number_format($payrollSettings['special_holiday_multiplier']->multiplier ?? 1.30, 2) }}"
+                                    style="padding-left: 2rem; font-weight: 700; font-size: 1rem; color: #fff; background: #071322; border-color: rgba(56, 189, 248, 0.5);" required>
+                                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #38bdf8; font-weight: 700;">×</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; display: block;">Formula: Daily Rate × Multiplier (e.g. ₱500 × 1.3 = ₱650)</span>
+                        </div>
+
+                        <!-- Rest Day Multiplier -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="display: flex; justify-content: space-between; font-weight: 700; color: #93c5fd; font-size: 0.85rem; margin-bottom: 0.35rem;">
+                                <span>🏖️ Rest Day Multiplier</span>
+                                <span style="font-weight: 600; color: var(--text-muted); font-size: 0.75rem;">Default: x1.30 (130%)</span>
+                            </label>
+                            <div style="position: relative;">
+                                <input type="number" step="0.01" min="0" max="10" name="rest_day_multiplier" class="form-control"
+                                    value="{{ number_format($payrollSettings['rest_day_multiplier']->multiplier ?? 1.30, 2) }}"
+                                    style="padding-left: 2rem; font-weight: 700; font-size: 1rem; color: #fff; background: #071322; border-color: rgba(59, 130, 246, 0.5);" required>
+                                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #93c5fd; font-weight: 700;">×</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; display: block;">Formula: Daily Rate × Multiplier for duty performed on scheduled rest day</span>
+                        </div>
+
+                        <!-- Overtime Multiplier -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="display: flex; justify-content: space-between; font-weight: 700; color: #fbbf24; font-size: 0.85rem; margin-bottom: 0.35rem;">
+                                <span>⏱️ Overtime (OT) Multiplier</span>
+                                <span style="font-weight: 600; color: var(--text-muted); font-size: 0.75rem;">Default: x1.30 (130%)</span>
+                            </label>
+                            <div style="position: relative;">
+                                <input type="number" step="0.01" min="0" max="10" name="overtime_multiplier" class="form-control"
+                                    value="{{ number_format($payrollSettings['overtime_multiplier']->multiplier ?? 1.30, 2) }}"
+                                    style="padding-left: 2rem; font-weight: 700; font-size: 1rem; color: #fff; background: #071322; border-color: rgba(245, 158, 11, 0.5);" required>
+                                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #fbbf24; font-weight: 700;">×</span>
+                            </div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; display: block;">Formula: Hourly Rate × Multiplier × OT Hours</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--navy-border); padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn btn-gold" style="font-weight: 700;">
+                        💾 Save Multipliers to Database
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <style>
         .tab-btn.active {
             background: var(--navy-dark) !important;
@@ -877,6 +1023,32 @@
     </style>
 
     <script>
+        function handleDtrStatusDropdownChange(selectElem, empName, formId, hiddenInputId) {
+            const selectedVal = selectElem.value;
+            const originalVal = selectElem.getAttribute('data-original-val') || '';
+            
+            if (!selectedVal || selectedVal === originalVal) return;
+
+            const labels = {
+                'rest_day': 'Rest Day',
+                'overtime': 'Overtime',
+                'holiday': 'Holiday',
+                'special_holiday': 'Special Holiday',
+                'off_duty': 'Off Duty',
+                'present': 'Normal Present Duty'
+            };
+
+            const targetLabel = labels[selectedVal] || selectedVal;
+            const confirmMsg = `Do you want to update ${empName} as ${targetLabel}?`;
+            
+            if (confirm(confirmMsg)) {
+                document.getElementById(hiddenInputId).value = selectedVal;
+                document.getElementById(formId).submit();
+            } else {
+                selectElem.value = originalVal;
+            }
+        }
+
         function switchDtrTab(tabKey) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.dtr-tab-pane').forEach(pane => pane.style.display = 'none');

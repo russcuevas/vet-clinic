@@ -87,9 +87,15 @@ class DtrController extends Controller
             'late' => $dayRecords->where('late_minutes', '>', 0)->count(),
             'absent' => $dayRecords->where('status', 'absent')->count(),
             'on_leave' => $dayRecords->where('status', 'on_leave')->count(),
+            'rest_day' => $dayRecords->where('status', 'rest_day')->count(),
+            'holiday' => $dayRecords->whereIn('status', ['holiday', 'regular_holiday', 'special_holiday'])->count(),
+            'overtime' => $dayRecords->where('status', 'overtime')->count(),
+            'off_duty' => $dayRecords->where('status', 'off_duty')->count(),
         ];
 
-        return view('manager.payroll.dtr.index', compact('records', 'dayRecords', 'employees', 'selectedDate', 'selectedEmployeeId', 'summary'));
+        $payrollSettings = \App\Models\PayrollSetting::all()->keyBy('key');
+
+        return view('manager.payroll.dtr.index', compact('records', 'dayRecords', 'employees', 'selectedDate', 'selectedEmployeeId', 'summary', 'payrollSettings'));
     }
 
     public function store(Request $request)
@@ -100,12 +106,16 @@ class DtrController extends Controller
             'time_in' => 'nullable|string',
             'time_out' => 'nullable|string',
             'ot_hours' => 'nullable|numeric|min:0',
-            'status' => 'nullable|in:present,late,absent,on_leave,rest_day',
+            'status' => 'nullable|string|in:present,late,absent,on_leave,rest_day,overtime,holiday,regular_holiday,special_holiday,off_duty',
             'undertime_reason' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:255',
         ]);
 
         $employee = Employee::findOrFail($validated['employee_id']);
+        $existingRecord = DtrRecord::where('employee_id', $employee->id)
+            ->whereDate('record_date', $validated['record_date'])
+            ->first();
+
         $shiftStartStr = $employee->shift_start ?: '09:00';
         $shiftEndStr = $employee->shift_end ?: '18:00';
 
@@ -117,14 +127,46 @@ class DtrController extends Controller
         $undertimeMinutes = 0;
         $otHours = !empty($validated['ot_hours']) ? floatval($validated['ot_hours']) : 0.00;
         $status = $validated['status'] ?? 'present';
+        $notes = $validated['notes'] ?? null;
 
-        if ($status === 'absent' || $status === 'on_leave' || $status === 'rest_day') {
+        // Handle Quick Tagging from Dropdown (no explicit time_in provided)
+        if (empty($timeIn) && in_array($status, ['off_duty', 'absent', 'on_leave'])) {
             $timeIn = null;
             $timeOut = null;
             $regularHours = 0.00;
             $lateMinutes = 0;
             $undertimeMinutes = 0;
             $otHours = 0.00;
+            if (empty($notes)) {
+                $notes = match ($status) {
+                    'off_duty' => 'Official Off Duty',
+                    'absent' => 'Marked Absent',
+                    'on_leave' => 'Filed Leave',
+                    default => null,
+                };
+            }
+        } elseif (empty($timeIn) && in_array($status, ['holiday', 'regular_holiday', 'special_holiday', 'overtime', 'rest_day'])) {
+            // Keep existing times if available, otherwise apply standard duty hours
+            if ($existingRecord && $existingRecord->time_in) {
+                $timeIn = $existingRecord->time_in;
+                $timeOut = $existingRecord->time_out;
+                $regularHours = $existingRecord->regular_hours;
+                $lateMinutes = $existingRecord->late_minutes;
+                $undertimeMinutes = $existingRecord->undertime_minutes;
+                $otHours = $otHours ?: $existingRecord->ot_hours;
+            } else {
+                $regularHours = ($status === 'rest_day') ? 0.00 : 8.00;
+            }
+            if (empty($notes) && $status === 'rest_day') {
+                $notes = 'Rest Day';
+            } elseif (empty($notes)) {
+                $notes = match ($status) {
+                    'holiday', 'regular_holiday' => 'Regular Holiday Duty',
+                    'special_holiday' => 'Special Holiday Duty',
+                    'overtime' => 'Overtime Duty Tagged',
+                    default => null,
+                };
+            }
         } elseif ($timeIn) {
             $in = Carbon::createFromFormat('H:i', $timeIn);
             $shiftStart = Carbon::createFromFormat('H:i', $shiftStartStr);
@@ -133,7 +175,9 @@ class DtrController extends Controller
             // 1. Calculate Tardiness (Late)
             if ($in->gt($shiftStart)) {
                 $lateMinutes = (int) abs($shiftStart->diffInMinutes($in, true));
-                $status = 'late';
+                if (!in_array($status, ['holiday', 'regular_holiday', 'special_holiday', 'overtime', 'rest_day'])) {
+                    $status = 'late';
+                }
             }
 
             // 2. If Time Out is provided, calculate duty hours, undertime, and overtime
@@ -175,7 +219,7 @@ class DtrController extends Controller
             'undertime_reason' => $validated['undertime_reason'] ?? $request->input('undertime_reason', null),
             'ot_hours' => $otHours,
             'status' => $status,
-            'notes' => $validated['notes'] ?? null,
+            'notes' => $notes,
         ];
 
         DtrRecord::updateOrCreate(
@@ -183,7 +227,25 @@ class DtrController extends Controller
             $data
         );
 
-        return redirect()->back()->with('success', "DTR log for {$employee->full_name} saved successfully!");
+        $statusLabel = match ($status) {
+            'rest_day' => 'Rest Day',
+            'overtime' => 'Overtime',
+            'holiday', 'regular_holiday' => 'Regular Holiday',
+            'special_holiday' => 'Special Holiday',
+            'off_duty' => 'Off Duty',
+            default => ucfirst($status),
+        };
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Updated {$employee->full_name} as {$statusLabel} for {$validated['record_date']}!",
+                'status' => $status,
+                'status_label' => $statusLabel,
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Updated {$employee->full_name} as {$statusLabel} successfully!");
     }
 
     public function batchGenerate(Request $request)

@@ -382,6 +382,39 @@
                             <td>Regular Period Salary</td>
                             <td class="amt">₱{{ number_format($record->regular_pay, 2) }}</td>
                         </tr>
+                        @if($record->holiday_pay > 0)
+                            <tr>
+                                <td>
+                                    <strong style="color: #db2777;">🎉 Regular Holiday Pay</strong>
+                                    <div style="font-size: 0.68rem; color: #64748b;">
+                                        {{ $record->holiday_days }} day(s) worked on regular holiday
+                                    </div>
+                                </td>
+                                <td class="amt" style="color: #db2777; font-weight: 700;">+₱{{ number_format($record->holiday_pay, 2) }}</td>
+                            </tr>
+                        @endif
+                        @if($record->special_holiday_pay > 0)
+                            <tr>
+                                <td>
+                                    <strong style="color: #0284c7;">✨ Special Holiday Pay</strong>
+                                    <div style="font-size: 0.68rem; color: #64748b;">
+                                        {{ $record->special_holiday_days }} day(s) worked on special holiday
+                                    </div>
+                                </td>
+                                <td class="amt" style="color: #0284c7; font-weight: 700;">+₱{{ number_format($record->special_holiday_pay, 2) }}</td>
+                            </tr>
+                        @endif
+                        @if($record->rest_day_pay > 0)
+                            <tr>
+                                <td>
+                                    <strong style="color: #2563eb;">🏖️ Rest Day Duty Pay</strong>
+                                    <div style="font-size: 0.68rem; color: #64748b;">
+                                        {{ $record->rest_day_days }} day(s) worked on scheduled rest day
+                                    </div>
+                                </td>
+                                <td class="amt" style="color: #2563eb; font-weight: 700;">+₱{{ number_format($record->rest_day_pay, 2) }}</td>
+                            </tr>
+                        @endif
                         <tr>
                             <td>
                                 Overtime Pay

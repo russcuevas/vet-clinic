@@ -84,7 +84,7 @@
                             <th>EMP #</th>
                             <th>Staff & Position</th>
                             <th>Regular Pay</th>
-                            <th>OT Pay</th>
+                            <th>OT & Premiums</th>
                             <th>Incentives (₱)</th>
                             <th>Gross Pay (₱)</th>
                             <th>Deductions (₱)</th>
@@ -109,9 +109,17 @@
                                 </td>
                                 <td>₱{{ number_format($rec->regular_pay, 2) }}</td>
                                 <td>
-                                    @if($rec->ot_pay > 0)
-                                        <span style="color: var(--gold-light);">+₱{{ number_format($rec->ot_pay, 2) }}</span>
-                                        <div style="font-size: 0.68rem; color: var(--text-muted);">({{ $rec->ot_hours }} hrs)</div>
+                                    @php
+                                        $extraDutyPay = $rec->ot_pay + $rec->holiday_pay + $rec->special_holiday_pay + $rec->rest_day_pay;
+                                    @endphp
+                                    @if($extraDutyPay > 0)
+                                        <span style="color: var(--gold-light); font-weight: 700;">+₱{{ number_format($extraDutyPay, 2) }}</span>
+                                        <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
+                                            @if($rec->ot_pay > 0) <span>OT: ₱{{ number_format($rec->ot_pay, 2) }}</span> @endif
+                                            @if($rec->holiday_pay > 0) <span style="color: #f472b6;">• Hol: ₱{{ number_format($rec->holiday_pay, 2) }}</span> @endif
+                                            @if($rec->special_holiday_pay > 0) <span style="color: #38bdf8;">• SpHol: ₱{{ number_format($rec->special_holiday_pay, 2) }}</span> @endif
+                                            @if($rec->rest_day_pay > 0) <span style="color: #93c5fd;">• Rest: ₱{{ number_format($rec->rest_day_pay, 2) }}</span> @endif
+                                        </div>
                                     @else
                                         <span style="color: var(--text-muted);">₱0.00</span>
                                     @endif
@@ -128,144 +136,150 @@
                                 </td>
                                 <td>
                                     <span style="color: #ef4444; font-weight: 600;">-₱{{ number_format($rec->total_deductions, 2) }}</span>
-                                    <div style="font-size: 0.68rem; color: var(--text-muted);">
-                                        Gov: ₱{{ number_format($rec->sss_deduction + $rec->philhealth_deduction + $rec->pagibig_deduction, 2) }}
-                                        @if($rec->loan_deduction > 0) | Loan: ₱{{ number_format($rec->loan_deduction, 2) }} @endif
-                                        @if($rec->cash_advance_deduction > 0) | CA: ₱{{ number_format($rec->cash_advance_deduction, 2) }} @endif
-                                    </div>
                                 </td>
                                 <td>
-                                    <strong style="font-size: 1.05rem; color: var(--gold-light);">
+                                    <span style="font-weight: 700; color: var(--gold-light); font-size: 0.95rem;">
                                         ₱{{ number_format($rec->net_pay, 2) }}
-                                    </strong>
+                                    </span>
                                 </td>
                                 <td>
-                                    @if($rec->payment_status === 'paid')
-                                        <span class="badge badge-success" style="font-size: 0.7rem;">Paid</span>
-                                    @else
-                                        <span class="badge badge-warning" style="font-size: 0.7rem;">Unpaid</span>
-                                    @endif
+                                    <span class="badge {{ $rec->payment_status === 'paid' ? 'badge-success' : 'badge-warning' }}">
+                                        {{ ucfirst($rec->payment_status) }}
+                                    </span>
                                 </td>
                                 <td>
                                     <div style="display: flex; gap: 0.35rem;">
-                                        <a href="{{ route('manager.payroll.payslip.print', $rec) }}" target="_blank"
-                                            class="btn btn-navy btn-sm" style="padding: 0.25rem 0.5rem;" title="Print Employee Payslip">
-                                            📄 Payslip
+                                        <a href="{{ route('manager.payroll.payslip.print', $rec) }}" target="_blank" class="btn btn-navy btn-sm" title="Print Payslip">
+                                            🖨️
                                         </a>
-                                        <button type="button" class="btn btn-ghost btn-sm" style="padding: 0.25rem 0.5rem;"
-                                            data-modal-target="modal-edit-rec-{{ $rec->id }}" title="Edit Overrides">
+                                        <button type="button" class="btn btn-ghost btn-sm" data-modal-target="modal-edit-rec-{{ $rec->id }}" title="Edit Figures">
                                             ✏️
                                         </button>
                                     </div>
+
+                                    <!-- Edit Record Modal -->
+                                    <div class="modal-backdrop" id="modal-edit-rec-{{ $rec->id }}">
+                                        <div class="modal-dialog" style="max-width: 600px;">
+                                            <div class="modal-header">
+                                                <div class="modal-title-group">
+                                                    <h4 class="modal-title">Edit Payroll Record</h4>
+                                                    <span style="font-size: 0.75rem; color: var(--gold-light);">{{ $rec->employee->full_name }} ({{ $rec->employee->employee_code }})</span>
+                                                </div>
+                                                <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
+                                            </div>
+                                            <form action="{{ route('manager.payroll.records.update', $rec) }}" method="POST" id="form-rec-{{ $rec->id }}">
+                                                @csrf
+                                                @method('PUT')
+                                                <div class="modal-body" style="padding: 1.5rem;">
+                                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Days Worked</label>
+                                                            <input type="number" step="0.5" name="days_worked" class="form-control" value="{{ $rec->days_worked }}" required>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="form-label">Regular Pay (₱)</label>
+                                                            <input type="number" step="0.01" name="regular_pay" class="form-control" value="{{ $rec->regular_pay }}" required>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="form-label">OT Pay (₱)</label>
+                                                            <input type="number" step="0.01" name="ot_pay" class="form-control" value="{{ $rec->ot_pay }}" required>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
+                                                        <div class="form-group">
+                                                            <label class="form-label" style="color: #f472b6;">Holiday Pay (₱)</label>
+                                                            <input type="number" step="0.01" name="holiday_pay" class="form-control" value="{{ $rec->holiday_pay }}">
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="form-label" style="color: #38bdf8;">Sp. Holiday Pay (₱)</label>
+                                                            <input type="number" step="0.01" name="special_holiday_pay" class="form-control" value="{{ $rec->special_holiday_pay }}">
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="form-label" style="color: #93c5fd;">Rest Day Pay (₱)</label>
+                                                            <input type="number" step="0.01" name="rest_day_pay" class="form-control" value="{{ $rec->rest_day_pay }}">
+                                                        </div>
+                                                    </div>
+
+                                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Role Incentives (₱) *</label>
+                                                            <input type="number" step="0.01" name="incentives_total" class="form-control" value="{{ $rec->incentives_total }}" required>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="form-label">Gross Pay (₱) *</label>
+                                                            <input type="number" step="0.01" name="gross_pay" class="form-control" value="{{ $rec->gross_pay }}" required>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--navy-border); border-radius: 8px; padding: 0.75rem; margin-top: 0.75rem;">
+                                                        <span style="font-size: 0.75rem; color: var(--gold-light); font-weight: 700; display: block; margin-bottom: 0.5rem;">Deductions Breakdown</span>
+                                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+                                                            <div>
+                                                                <label style="font-size: 0.7rem; color: var(--text-muted);">SSS (₱)</label>
+                                                                <input type="number" step="0.01" name="sss_deduction" class="form-control" value="{{ $rec->sss_deduction }}">
+                                                            </div>
+                                                            <div>
+                                                                <label style="font-size: 0.7rem; color: var(--text-muted);">PhilHealth (₱)</label>
+                                                                <input type="number" step="0.01" name="philhealth_deduction" class="form-control" value="{{ $rec->philhealth_deduction }}">
+                                                            </div>
+                                                            <div>
+                                                                <label style="font-size: 0.7rem; color: var(--text-muted);">Pag-IBIG (₱)</label>
+                                                                <input type="number" step="0.01" name="pagibig_deduction" class="form-control" value="{{ $rec->pagibig_deduction }}">
+                                                            </div>
+                                                            <div>
+                                                                <label style="font-size: 0.7rem; color: var(--text-muted);">Loan (₱)</label>
+                                                                <input type="number" step="0.01" name="loan_deduction" class="form-control" value="{{ $rec->loan_deduction }}">
+                                                            </div>
+                                                            <div>
+                                                                <label style="font-size: 0.7rem; color: var(--text-muted);">Cash Adv (₱)</label>
+                                                                <input type="number" step="0.01" name="cash_advance_deduction" class="form-control" value="{{ $rec->cash_advance_deduction }}">
+                                                            </div>
+                                                            <div>
+                                                                <label style="font-size: 0.7rem; color: var(--text-muted);">Absence/Late (₱)</label>
+                                                                <input type="number" step="0.01" name="absence_tardiness_deduction" class="form-control" value="{{ $rec->absence_tardiness_deduction }}">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Tax (₱)</label>
+                                                            <input type="number" step="0.01" name="tax_deduction" class="form-control" value="{{ $rec->tax_deduction }}">
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="form-label">Total Deductions (₱) *</label>
+                                                            <input type="number" step="0.01" name="total_deductions" class="form-control" value="{{ $rec->total_deductions }}" required>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="form-label">Net Pay (₱) *</label>
+                                                            <input type="number" step="0.01" name="net_pay" class="form-control" value="{{ $rec->net_pay }}" required style="font-weight: 700; color: #10b981;">
+                                                        </div>
+                                                    </div>
+
+                                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Payment Status *</label>
+                                                            <select name="payment_status" class="form-control" required>
+                                                                <option value="unpaid" {{ $rec->payment_status === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
+                                                                <option value="paid" {{ $rec->payment_status === 'paid' ? 'selected' : '' }}>Paid</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="form-label">Notes</label>
+                                                            <input type="text" name="notes" class="form-control" value="{{ $rec->notes }}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
+                                                    <button type="submit" class="btn btn-gold">Save Overrides</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
-
-                            <!-- Modal: Edit Single Record Override -->
-                            <div class="modal-backdrop" id="modal-edit-rec-{{ $rec->id }}">
-                                <div class="modal-dialog modal-lg" style="max-width: 900px; width: 95%;">
-                                    <div class="modal-header">
-                                        <div class="modal-title-group">
-                                            <h4 class="modal-title">Edit Payroll Record: {{ $rec->employee->full_name }}</h4>
-                                            <span style="font-size: 0.72rem; color: var(--gold-light);">Manual adjust regular pay, incentives, deductions, or payment status</span>
-                                        </div>
-                                        <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
-                                    </div>
-                                    <form action="{{ route('manager.payroll.records.update', $rec) }}" method="POST" id="form-rec-{{ $rec->id }}">
-                                        @csrf
-                                        @method('PUT')
-                                        <div class="modal-body" style="padding: 1.5rem;">
-                                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
-                                                <div class="form-group">
-                                                    <label class="form-label">Days Worked</label>
-                                                    <input type="number" step="0.5" name="days_worked" class="form-control" value="{{ $rec->days_worked }}" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label class="form-label">Regular Pay (₱)</label>
-                                                    <input type="number" step="0.01" name="regular_pay" class="form-control" value="{{ $rec->regular_pay }}" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label class="form-label">OT Pay (₱)</label>
-                                                    <input type="number" step="0.01" name="ot_pay" class="form-control" value="{{ $rec->ot_pay }}" required>
-                                                </div>
-                                            </div>
-
-                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-                                                <div class="form-group">
-                                                    <label class="form-label">Role Incentives (₱) *</label>
-                                                    <input type="number" step="0.01" name="incentives_total" class="form-control" value="{{ $rec->incentives_total }}" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label class="form-label">Gross Pay (₱) *</label>
-                                                    <input type="number" step="0.01" name="gross_pay" class="form-control" value="{{ $rec->gross_pay }}" required>
-                                                </div>
-                                            </div>
-
-                                            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--navy-border); border-radius: 8px; padding: 0.75rem; margin-top: 0.75rem;">
-                                                <span style="font-size: 0.75rem; color: var(--gold-light); font-weight: 700; display: block; margin-bottom: 0.5rem;">Deductions Breakdown</span>
-                                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
-                                                    <div>
-                                                        <label style="font-size: 0.7rem; color: var(--text-muted);">SSS (₱)</label>
-                                                        <input type="number" step="0.01" name="sss_deduction" class="form-control" value="{{ $rec->sss_deduction }}">
-                                                    </div>
-                                                    <div>
-                                                        <label style="font-size: 0.7rem; color: var(--text-muted);">PhilHealth (₱)</label>
-                                                        <input type="number" step="0.01" name="philhealth_deduction" class="form-control" value="{{ $rec->philhealth_deduction }}">
-                                                    </div>
-                                                    <div>
-                                                        <label style="font-size: 0.7rem; color: var(--text-muted);">Pag-IBIG (₱)</label>
-                                                        <input type="number" step="0.01" name="pagibig_deduction" class="form-control" value="{{ $rec->pagibig_deduction }}">
-                                                    </div>
-                                                    <div>
-                                                        <label style="font-size: 0.7rem; color: var(--text-muted);">Loan (₱)</label>
-                                                        <input type="number" step="0.01" name="loan_deduction" class="form-control" value="{{ $rec->loan_deduction }}">
-                                                    </div>
-                                                    <div>
-                                                        <label style="font-size: 0.7rem; color: var(--text-muted);">Cash Adv (₱)</label>
-                                                        <input type="number" step="0.01" name="cash_advance_deduction" class="form-control" value="{{ $rec->cash_advance_deduction }}">
-                                                    </div>
-                                                    <div>
-                                                        <label style="font-size: 0.7rem; color: var(--text-muted);">Absence/Late (₱)</label>
-                                                        <input type="number" step="0.01" name="absence_tardiness_deduction" class="form-control" value="{{ $rec->absence_tardiness_deduction }}">
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
-                                                <div class="form-group">
-                                                    <label class="form-label">Tax (₱)</label>
-                                                    <input type="number" step="0.01" name="tax_deduction" class="form-control" value="{{ $rec->tax_deduction }}">
-                                                </div>
-                                                <div class="form-group">
-                                                    <label class="form-label">Total Deductions (₱) *</label>
-                                                    <input type="number" step="0.01" name="total_deductions" class="form-control" value="{{ $rec->total_deductions }}" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label class="form-label">Net Pay (₱) *</label>
-                                                    <input type="number" step="0.01" name="net_pay" class="form-control" value="{{ $rec->net_pay }}" required style="font-weight: 700; color: #10b981;">
-                                                </div>
-                                            </div>
-
-                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-                                                <div class="form-group">
-                                                    <label class="form-label">Payment Status *</label>
-                                                    <select name="payment_status" class="form-control" required>
-                                                        <option value="unpaid" {{ $rec->payment_status === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
-                                                        <option value="paid" {{ $rec->payment_status === 'paid' ? 'selected' : '' }}>Paid</option>
-                                                    </select>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label class="form-label">Notes</label>
-                                                    <input type="text" name="notes" class="form-control" value="{{ $rec->notes }}">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
-                                            <button type="submit" class="btn btn-gold">Save Overrides</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
                         @endforeach
                     </tbody>
                 </table>

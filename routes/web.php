@@ -154,6 +154,9 @@ Route::group(['prefix' => 'admin/payroll', 'as' => 'admin.payroll.', 'middleware
     Route::get('/payslip/{record}/print', [\App\Http\Controllers\Admin\Payroll\PayrollController::class, 'printPayslip'])->name('payslip.print');
     Route::get('/periods/{period}/print', [\App\Http\Controllers\Admin\Payroll\PayrollController::class, 'printSummary'])->name('summary.print');
     Route::get('/annual', [\App\Http\Controllers\Admin\Payroll\PayrollController::class, 'annual'])->name('annual');
+
+    // Multipliers & Computation Settings (Admin Editable)
+    Route::post('/settings/multipliers', [\App\Http\Controllers\Admin\Payroll\SettingsController::class, 'updateMultipliers'])->name('settings.multipliers.update');
 });
 
 // ==========================================
@@ -285,6 +288,9 @@ Route::group(['prefix' => 'manager/payroll', 'as' => 'manager.payroll.', 'middle
     Route::get('/payslip/{record}/print', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'printPayslip'])->name('payslip.print');
     Route::get('/periods/{period}/print', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'printSummary'])->name('summary.print');
     Route::get('/annual', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'annual'])->name('annual');
+
+    // Multipliers & Computation Settings (Manager Editable)
+    Route::post('/settings/multipliers', [\App\Http\Controllers\Manager\Payroll\SettingsController::class, 'updateMultipliers'])->name('settings.multipliers.update');
 });
 
 // ==========================================

@@ -58,14 +58,34 @@ class PayrollController extends Controller
                 // Base regular salary for this period
                 $basePeriodPay = round($monthlySalary * $factor, 2);
 
-                // 2. DTR Attendance & Overtime
+                // Multipliers from Database Settings (Admin / Manager configurable)
+                $holidayMultiplier = \App\Models\PayrollSetting::getMultiplier('holiday_multiplier', 2.00);
+                $specialHolidayMultiplier = \App\Models\PayrollSetting::getMultiplier('special_holiday_multiplier', 1.30);
+                $restDayMultiplier = \App\Models\PayrollSetting::getMultiplier('rest_day_multiplier', 1.30);
+                $otMultiplier = \App\Models\PayrollSetting::getMultiplier('overtime_multiplier', 1.30);
+
+                // 2. DTR Attendance, Holidays, Rest Days & Overtime
                 $dtrs = DtrRecord::where('employee_id', $emp->id)
                     ->whereBetween('record_date', [$validated['start_date'], $validated['end_date']])
                     ->get();
 
-                $daysWorked = $dtrs->whereIn('status', ['present', 'late'])->count();
+                $daysWorked = $dtrs->whereIn('status', ['present', 'late', 'holiday', 'regular_holiday', 'special_holiday', 'overtime', 'rest_day'])->count();
+                
+                // Overtime calculation (x1.3 default multiplier)
                 $otHours = $dtrs->sum('ot_hours');
-                $otPay = round($otHours * $hourlyRate * 1.25, 2);
+                $otPay = round($otHours * $hourlyRate * $otMultiplier, 2);
+
+                // Regular Holiday calculation (x2.0 default multiplier)
+                $holidayDays = $dtrs->whereIn('status', ['holiday', 'regular_holiday'])->count();
+                $holidayPay = round($holidayDays * $dailyRate * $holidayMultiplier, 2);
+
+                // Special Holiday calculation (x1.3 default multiplier)
+                $specialHolidayDays = $dtrs->where('status', 'special_holiday')->count();
+                $specialHolidayPay = round($specialHolidayDays * $dailyRate * $specialHolidayMultiplier, 2);
+
+                // Rest Day Duty calculation (x1.3 default multiplier)
+                $restDayDays = $dtrs->where('status', 'rest_day')->count();
+                $restDayPay = round($restDayDays * $dailyRate * $restDayMultiplier, 2);
 
                 // Absences / Tardiness / Undertime
                 $absentDays = $dtrs->where('status', 'absent')->count();
@@ -84,8 +104,8 @@ class PayrollController extends Controller
                     ->whereBetween('date_earned', [$validated['start_date'], $validated['end_date']])
                     ->sum('total_incentive'));
 
-                // 4. Gross Pay
-                $grossPay = round($regularPay + $otPay + $incentivesTotal, 2);
+                // 4. Gross Pay (Regular + OT + Holiday + Special Holiday + Rest Day + Incentives)
+                $grossPay = round($regularPay + $otPay + $holidayPay + $specialHolidayPay + $restDayPay + $incentivesTotal, 2);
 
                 // 5. Deductions
                 // A. Government Contributions (half if 15 days, full if 30 days)
@@ -140,6 +160,12 @@ class PayrollController extends Controller
                     'regular_pay' => $regularPay,
                     'ot_hours' => $otHours,
                     'ot_pay' => $otPay,
+                    'holiday_days' => $holidayDays,
+                    'holiday_pay' => $holidayPay,
+                    'special_holiday_days' => $specialHolidayDays,
+                    'special_holiday_pay' => $specialHolidayPay,
+                    'rest_day_days' => $restDayDays,
+                    'rest_day_pay' => $restDayPay,
                     'incentives_total' => $incentivesTotal,
                     'gross_pay' => $grossPay,
                     'sss_deduction' => $sss,
@@ -176,6 +202,12 @@ class PayrollController extends Controller
             'regular_pay' => 'required|numeric|min:0',
             'ot_hours' => 'required|numeric|min:0',
             'ot_pay' => 'required|numeric|min:0',
+            'holiday_days' => 'nullable|numeric|min:0',
+            'holiday_pay' => 'nullable|numeric|min:0',
+            'special_holiday_days' => 'nullable|numeric|min:0',
+            'special_holiday_pay' => 'nullable|numeric|min:0',
+            'rest_day_days' => 'nullable|numeric|min:0',
+            'rest_day_pay' => 'nullable|numeric|min:0',
             'incentives_total' => 'required|numeric|min:0',
             'gross_pay' => 'required|numeric|min:0',
             'sss_deduction' => 'required|numeric|min:0',
@@ -211,6 +243,11 @@ class PayrollController extends Controller
         $absentDays = $dtrs->where('status', 'absent')->count();
         $lateMins = $dtrs->sum('late_minutes');
         $onLeaveDays = $dtrs->where('status', 'on_leave')->count();
+        $holidayDays = $dtrs->whereIn('status', ['holiday', 'regular_holiday'])->count();
+        $specialHolidayDays = $dtrs->where('status', 'special_holiday')->count();
+        $restDayDays = $dtrs->where('status', 'rest_day')->count();
+        $overtimeDays = $dtrs->where('status', 'overtime')->count();
+        $offDutyDays = $dtrs->where('status', 'off_duty')->count();
 
         // If no DTR records in range, calculate based on days worked
         if ($dtrs->isEmpty()) {
@@ -219,7 +256,19 @@ class PayrollController extends Controller
             $absentDays = max(0, $expectedDays - $presentDays);
         }
 
-        return view('manager.payroll.records.payslip_print', compact('record', 'incentives', 'dtrs', 'presentDays', 'absentDays', 'lateMins', 'onLeaveDays'));
+        return view('manager.payroll.records.payslip_print', compact(
+            'record',
+            'incentives',
+            'presentDays',
+            'absentDays',
+            'lateMins',
+            'onLeaveDays',
+            'holidayDays',
+            'specialHolidayDays',
+            'restDayDays',
+            'overtimeDays',
+            'offDutyDays'
+        ));
     }
 
     public function printSummary(PayrollPeriod $period)
