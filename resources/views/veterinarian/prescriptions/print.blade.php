@@ -253,7 +253,8 @@
                 </div>
                 <div style="font-size: 0.78rem; color: var(--gold-light);">Veterinarian</div>
                 <div style="font-size: 0.78rem; color: #94A3B8;">License No:
-                    <strong>{{ $prescription->license_no ?? 'PRC-VET-009821' }}</strong></div>
+                    <strong>{{ $prescription->license_no ?? 'PRC-VET-009821' }}</strong>
+                </div>
             </div>
         </div>
     </div>

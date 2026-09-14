@@ -99,25 +99,21 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     Route::post('/users', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
-
-    // ==========================================
-    // PAYROLL MANAGEMENT SYSTEM (Admin Exclusive)
-    // ==========================================
-    Route::group(['prefix' => 'payroll', 'as' => 'payroll.'], function () {
-        // Payroll Dashboard
-        Route::get('/dashboard', [\App\Http\Controllers\Admin\Payroll\DashboardController::class, 'index'])->name('dashboard');
-
-        // Employee Management
-        Route::get('/employees', [\App\Http\Controllers\Admin\Payroll\EmployeeController::class, 'index'])->name('employees.index');
-        Route::post('/employees', [\App\Http\Controllers\Admin\Payroll\EmployeeController::class, 'store'])->name('employees.store');
-        Route::put('/employees/{employee}', [\App\Http\Controllers\Admin\Payroll\EmployeeController::class, 'update'])->name('employees.update');
-        Route::delete('/employees/{employee}', [\App\Http\Controllers\Admin\Payroll\EmployeeController::class, 'destroy'])->name('employees.destroy');
-
-        // Timekeeping (DTR) & Leave Applications (Accessible by Admin and Receptionist)
-    });
 });
 
+// ==========================================
+// PAYROLL MANAGEMENT SYSTEM (Admin Exclusive)
+// ==========================================
 Route::group(['prefix' => 'admin/payroll', 'as' => 'admin.payroll.', 'middleware' => ['auth', 'role:admin']], function () {
+    // Payroll Dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\Payroll\DashboardController::class, 'index'])->name('dashboard');
+
+    // Employee Management
+    Route::get('/employees', [\App\Http\Controllers\Admin\Payroll\EmployeeController::class, 'index'])->name('employees.index');
+    Route::post('/employees', [\App\Http\Controllers\Admin\Payroll\EmployeeController::class, 'store'])->name('employees.store');
+    Route::put('/employees/{employee}', [\App\Http\Controllers\Admin\Payroll\EmployeeController::class, 'update'])->name('employees.update');
+    Route::delete('/employees/{employee}', [\App\Http\Controllers\Admin\Payroll\EmployeeController::class, 'destroy'])->name('employees.destroy');
+
     // Timekeeping (DTR)
     Route::get('/dtr', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'index'])->name('dtr.index');
     Route::post('/dtr', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'store'])->name('dtr.store');
@@ -132,9 +128,7 @@ Route::group(['prefix' => 'admin/payroll', 'as' => 'admin.payroll.', 'middleware
     Route::get('/leaves/archives/{year}/print', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'printLedger'])->name('leaves.print_ledger');
     Route::put('/leaves/{leave}/status', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'updateStatus'])->name('leaves.status');
     Route::delete('/leaves/{leave}', [\App\Http\Controllers\Admin\Payroll\LeaveController::class, 'destroy'])->name('leaves.destroy');
-});
 
-Route::group(['prefix' => 'admin/payroll', 'as' => 'admin.payroll.', 'middleware' => ['auth', 'role:admin']], function () {
     // Deductions & Loans
     Route::get('/deductions', [\App\Http\Controllers\Admin\Payroll\DeductionController::class, 'index'])->name('deductions.index');
     Route::post('/deductions', [\App\Http\Controllers\Admin\Payroll\DeductionController::class, 'store'])->name('deductions.store');
@@ -227,6 +221,70 @@ Route::group(['prefix' => 'manager', 'as' => 'manager.', 'middleware' => ['auth'
     Route::get('/leaves/archives/{year}/print', [\App\Http\Controllers\Manager\LeaveController::class, 'printLedger'])->name('leaves.print_ledger');
     Route::put('/leaves/{leave}/status', [\App\Http\Controllers\Manager\LeaveController::class, 'updateStatus'])->name('leaves.status');
     Route::delete('/leaves/{leave}', [\App\Http\Controllers\Manager\LeaveController::class, 'destroy'])->name('leaves.destroy');
+
+    // Manager Payroll Quick Redirect
+    Route::get('/payroll', function () {
+        return redirect()->route('manager.payroll.dashboard');
+    })->name('payroll');
+});
+
+// ==========================================
+// MANAGER PAYROLL SYSTEM (Standalone)
+// ==========================================
+Route::group(['prefix' => 'manager/payroll', 'as' => 'manager.payroll.', 'middleware' => ['auth', 'role:manager']], function () {
+    Route::get('/', function () {
+        return redirect()->route('manager.payroll.dashboard');
+    });
+
+    // Payroll Dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\Manager\Payroll\DashboardController::class, 'index'])->name('dashboard');
+
+    // Employee Management
+    Route::get('/employees', [\App\Http\Controllers\Manager\Payroll\EmployeeController::class, 'index'])->name('employees.index');
+    Route::post('/employees', [\App\Http\Controllers\Manager\Payroll\EmployeeController::class, 'store'])->name('employees.store');
+    Route::put('/employees/{employee}', [\App\Http\Controllers\Manager\Payroll\EmployeeController::class, 'update'])->name('employees.update');
+    Route::delete('/employees/{employee}', [\App\Http\Controllers\Manager\Payroll\EmployeeController::class, 'destroy'])->name('employees.destroy');
+
+    // Timekeeping (DTR)
+    Route::get('/dtr', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'index'])->name('dtr.index');
+    Route::post('/dtr', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'store'])->name('dtr.store');
+    Route::post('/dtr/batch', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'batchGenerate'])->name('dtr.batch');
+    Route::delete('/dtr/{dtr}', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'destroy'])->name('dtr.destroy');
+
+    // Leave Applications & Annual Ledgers (File Keeping)
+    Route::get('/leaves', [\App\Http\Controllers\Manager\Payroll\LeaveController::class, 'index'])->name('leaves.index');
+    Route::post('/leaves', [\App\Http\Controllers\Manager\Payroll\LeaveController::class, 'store'])->name('leaves.store');
+    Route::post('/leaves/convert-sl', [\App\Http\Controllers\Manager\Payroll\LeaveController::class, 'convertSlToIncentive'])->name('leaves.convert_sl');
+    Route::post('/leaves/archive', [\App\Http\Controllers\Manager\Payroll\LeaveController::class, 'archiveYear'])->name('leaves.archive');
+    Route::get('/leaves/archives/{year}/print', [\App\Http\Controllers\Manager\Payroll\LeaveController::class, 'printLedger'])->name('leaves.print_ledger');
+    Route::put('/leaves/{leave}/status', [\App\Http\Controllers\Manager\Payroll\LeaveController::class, 'updateStatus'])->name('leaves.status');
+    Route::delete('/leaves/{leave}', [\App\Http\Controllers\Manager\Payroll\LeaveController::class, 'destroy'])->name('leaves.destroy');
+
+    // Deductions & Loans
+    Route::get('/deductions', [\App\Http\Controllers\Manager\Payroll\DeductionController::class, 'index'])->name('deductions.index');
+    Route::post('/deductions', [\App\Http\Controllers\Manager\Payroll\DeductionController::class, 'store'])->name('deductions.store');
+    Route::put('/deductions/{deduction}', [\App\Http\Controllers\Manager\Payroll\DeductionController::class, 'update'])->name('deductions.update');
+    Route::delete('/deductions/{deduction}', [\App\Http\Controllers\Manager\Payroll\DeductionController::class, 'destroy'])->name('deductions.destroy');
+
+    // Incentives Management (Editable rules and records)
+    Route::get('/incentives', [\App\Http\Controllers\Manager\Payroll\IncentiveController::class, 'index'])->name('incentives.index');
+    Route::post('/incentives/rules', [\App\Http\Controllers\Manager\Payroll\IncentiveController::class, 'storeRule'])->name('incentives.rules.store');
+    Route::put('/incentives/rules/{rule}', [\App\Http\Controllers\Manager\Payroll\IncentiveController::class, 'updateRule'])->name('incentives.rules.update');
+    Route::post('/incentives/records', [\App\Http\Controllers\Manager\Payroll\IncentiveController::class, 'storeEmployeeIncentive'])->name('incentives.records.store');
+    Route::get('/incentives/suggest-stats', [\App\Http\Controllers\Manager\Payroll\IncentiveController::class, 'suggestStats'])->name('incentives.suggest');
+    Route::delete('/incentives/records/{incentive}', [\App\Http\Controllers\Manager\Payroll\IncentiveController::class, 'destroy'])->name('incentives.destroy');
+
+    // Payroll Periods & Processing (15-day, 30-day, Annual)
+    Route::get('/periods', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'index'])->name('periods.index');
+    Route::post('/periods/generate', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'generate'])->name('periods.generate');
+    Route::get('/periods/{period}', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'show'])->name('periods.show');
+    Route::delete('/periods/{period}', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'destroyPeriod'])->name('periods.destroy');
+    Route::put('/records/{record}', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'updateRecord'])->name('records.update');
+
+    // Print & Reporting
+    Route::get('/payslip/{record}/print', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'printPayslip'])->name('payslip.print');
+    Route::get('/periods/{period}/print', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'printSummary'])->name('summary.print');
+    Route::get('/annual', [\App\Http\Controllers\Manager\Payroll\PayrollController::class, 'annual'])->name('annual');
 });
 
 // ==========================================

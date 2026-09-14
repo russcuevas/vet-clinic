@@ -77,15 +77,32 @@
                             </a>
                         </div>
                     </div>
+                @elseif (auth()->user()->role === 'manager')
+                    @php
+                        $isPayrollPortal = request()->routeIs('manager.payroll.*');
+                    @endphp
+                    <!-- Manager Mode Switcher -->
+                    <div style="padding: 0.5rem 1rem; margin-bottom: 0.5rem;">
+                        <div
+                            style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 9999px; padding: 3px; display: flex; gap: 3px;">
+                            <a href="{{ route('manager.dashboard') }}"
+                                style="flex: 1; text-align: center; font-size: 0.72rem; font-weight: 700; padding: 6px 6px; border-radius: 9999px; text-decoration: none; transition: all 0.2s; {{ !$isPayrollPortal ? 'background: #d4af37; color: #111; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.4);' : 'color: rgba(255, 255, 255, 0.7);' }}">
+                                📊 Management
+                            </a>
+                            <a href="{{ route('manager.payroll.dashboard') }}"
+                                style="flex: 1; text-align: center; font-size: 0.72rem; font-weight: 700; padding: 6px 6px; border-radius: 9999px; text-decoration: none; transition: all 0.2s; {{ $isPayrollPortal ? 'background: #2563eb; color: #fff; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);' : 'color: rgba(255, 255, 255, 0.7);' }}">
+                                💼 Payroll
+                            </a>
+                        </div>
+                    </div>
                 @endif
             @endauth
 
             <!-- Navigation Links Based on Role -->
             <nav class="sidebar-nav">
                 @auth
-                    @if (auth()->user()->role === 'admin')
-                        @if (request()->routeIs('admin.payroll.*'))
-                            <!-- Payroll Portal Navigation (Admin Only) -->
+                    @if (request()->routeIs('admin.payroll.*') && auth()->user()->role === 'admin')
+                        <!-- Payroll Portal Navigation (Admin) -->
                             <div class="nav-section-title">Payroll Command</div>
                             <a href="{{ route('admin.payroll.dashboard') }}"
                                 class="nav-link-item {{ request()->routeIs('admin.payroll.dashboard') ? 'active' : '' }}">
@@ -163,8 +180,8 @@
                                 </svg>
                                 <span>Annual Records</span>
                             </a>
-                        @else
-                            <!-- Admin Navigation (Full Clinic Access) -->
+                    @elseif (auth()->user()->role === 'admin')
+                        <!-- Admin Navigation (Full Clinic Access) -->
                             <div class="nav-section-title">Core Management</div>
                             <a href="{{ route('admin.dashboard') }}"
                                 class="nav-link-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
@@ -289,7 +306,6 @@
                                 </svg>
                                 <span>Account Management</span>
                             </a>
-                        @endif
                     @elseif(auth()->user()->role === 'cashier')
                         <!-- Cashier Navigation -->
                         <div class="nav-section-title">Cashier Desk</div>
@@ -378,46 +394,138 @@
                             <span>Grooming</span>
                         </a>
                     @elseif(auth()->user()->role === 'manager')
-                        <!-- Manager Navigation -->
-                        <div class="nav-section-title">Manager Center</div>
-                        <a href="{{ route('manager.dashboard') }}"
-                            class="nav-link-item {{ request()->routeIs('manager.dashboard') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            <span>Dashboard</span>
-                        </a>
-                        <a href="{{ route('manager.reports.sales') }}"
-                            class="nav-link-item {{ request()->routeIs('manager.reports.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                            <span>Sales Reports</span>
-                        </a>
-                        <a href="{{ route('manager.inventory.audit') }}"
-                            class="nav-link-item {{ request()->routeIs('manager.inventory.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span>Inventory Valuation</span>
-                        </a>
+                        @if (request()->routeIs('manager.payroll.*'))
+                            <!-- Manager Payroll Portal Navigation (Standalone) -->
+                            <div class="nav-section-title">Payroll Command</div>
+                            <a href="{{ route('manager.payroll.dashboard') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.payroll.dashboard') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span>Payroll Dashboard</span>
+                            </a>
+                            <a href="{{ route('manager.payroll.employees.index') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.payroll.employees.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                <span>Employee Database</span>
+                            </a>
+                            <a href="{{ route('manager.payroll.dtr.index') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.payroll.dtr.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Timekeeping (DTR)</span>
+                            </a>
 
-                        <div class="nav-section-title">Staff Management</div>
-                        <a href="{{ route('manager.leaves.index') }}"
-                            class="nav-link-item {{ request()->routeIs('manager.leaves.*') ? 'active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span>Leave Applications</span>
-                        </a>
+                            <div class="nav-section-title">Leaves & Deductions</div>
+                            <a href="{{ route('manager.payroll.leaves.index') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.payroll.leaves.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>Leave Applications</span>
+                            </a>
+                            <a href="{{ route('manager.payroll.deductions.index') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.payroll.deductions.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Financial & Deductions</span>
+                            </a>
+                            <a href="{{ route('manager.payroll.incentives.index') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.payroll.incentives.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                                <span>Role Incentives</span>
+                            </a>
+
+                            <div class="nav-section-title">Payroll Processing</div>
+                            <a href="{{ route('manager.payroll.periods.index') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.payroll.periods.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                <span>15 & 30-Day Payroll</span>
+                            </a>
+                            <a href="{{ route('manager.payroll.annual') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.payroll.annual') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>Annual Records</span>
+                            </a>
+                        @else
+                            <!-- Manager Navigation -->
+                            <div class="nav-section-title">Manager Center</div>
+                            <a href="{{ route('manager.dashboard') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.dashboard') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="{{ route('manager.reports.sales') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.reports.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span>Sales Reports</span>
+                            </a>
+                            <a href="{{ route('manager.inventory.audit') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.inventory.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>Inventory Valuation</span>
+                            </a>
+
+                            <div class="nav-section-title">Staff Management</div>
+                            <a href="{{ route('manager.leaves.index') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.leaves.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>Leave Applications</span>
+                            </a>
+
+                            <div class="nav-section-title">Payroll System</div>
+                            <a href="{{ route('manager.payroll.dashboard') }}"
+                                class="nav-link-item {{ request()->routeIs('manager.payroll.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Payroll Portal</span>
+                            </a>
+                        @endif
                     @elseif(auth()->user()->role === 'inventory_officer')
                         <!-- Inventory Officer Navigation -->
                         <div class="nav-section-title">Stock Command</div>
@@ -552,6 +660,18 @@
                                 </a>
                             @else
                                 <a href="{{ route('admin.payroll.dashboard') }}" class="btn btn-sm"
+                                    style="background: #1d4ed8; color: #fff; border: 1px solid #3b82f6; border-radius: 9999px; text-decoration: none; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 0.35rem 0.85rem; box-shadow: 0 2px 6px rgba(29, 78, 216, 0.3);">
+                                    <span>💼 Switch to Payroll</span>
+                                </a>
+                            @endif
+                        @elseif (auth()->user()->role === 'manager')
+                            @if (request()->routeIs('manager.payroll.*'))
+                                <a href="{{ route('manager.dashboard') }}" class="btn btn-sm btn-outline-gold"
+                                    style="border-radius: 9999px; text-decoration: none; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 0.35rem 0.85rem;">
+                                    <span>📊 Switch to Management</span>
+                                </a>
+                            @else
+                                <a href="{{ route('manager.payroll.dashboard') }}" class="btn btn-sm"
                                     style="background: #1d4ed8; color: #fff; border: 1px solid #3b82f6; border-radius: 9999px; text-decoration: none; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 0.35rem 0.85rem; box-shadow: 0 2px 6px rgba(29, 78, 216, 0.3);">
                                     <span>💼 Switch to Payroll</span>
                                 </a>
