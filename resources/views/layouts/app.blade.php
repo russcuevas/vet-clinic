@@ -819,6 +819,7 @@
 
     <!-- Modular JS Files in public/js/ -->
     <script src="{{ asset('js/jquery.min.js') }}"></script>
+    <script src="{{ asset('js/sweetalert2.all.min.js') }}"></script>
     <script src="{{ asset('js/select2.min.js') }}"></script>
     <script src="{{ asset('js/datatables.min.js') }}"></script>
     <script src="{{ asset('js/modal.js') }}?v={{ time() }}"></script>

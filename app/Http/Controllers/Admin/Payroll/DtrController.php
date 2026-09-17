@@ -301,4 +301,210 @@ class DtrController extends Controller
         $dtr->delete();
         return redirect()->back()->with('success', 'DTR entry removed successfully.');
     }
+
+    public function report(Request $request, Employee $employee)
+    {
+        $year = (int) $request->input('year', Carbon::today()->year);
+        $month = (int) $request->input('month', Carbon::today()->month);
+        $cutoff = $request->input('cutoff', '15'); // '15', '30', or 'full'
+
+        $baseDate = Carbon::createFromDate($year, $month, 1);
+
+        if ($cutoff === '15') {
+            $startDate = $baseDate->copy()->startOfMonth();
+            $endDate = $baseDate->copy()->startOfMonth()->addDays(14); // 1st to 15th
+            $periodLabel = '1st Cutoff (1st - 15th)';
+        } elseif ($cutoff === '30') {
+            $startDate = $baseDate->copy()->startOfMonth()->addDays(15); // 16th
+            $endDate = $baseDate->copy()->endOfMonth(); // 16th to end of month
+            $periodLabel = '2nd Cutoff (16th - ' . $endDate->format('jS') . ')';
+        } else {
+            $startDate = $baseDate->copy()->startOfMonth();
+            $endDate = $baseDate->copy()->endOfMonth();
+            $periodLabel = 'Full Month (1st - ' . $endDate->format('jS') . ')';
+        }
+
+        $existingRecords = DtrRecord::where('employee_id', $employee->id)
+            ->whereDate('record_date', '>=', $startDate->toDateString())
+            ->whereDate('record_date', '<=', $endDate->toDateString())
+            ->get()
+            ->keyBy(function ($record) {
+                return $record->record_date->format('Y-m-d');
+            });
+
+        $dailyLogs = collect();
+        $curr = $startDate->copy();
+
+        $totalRegularHours = 0;
+        $totalLateMinutes = 0;
+        $totalUndertimeMinutes = 0;
+        $totalOtHours = 0;
+        $daysPresent = 0;
+        $daysAbsent = 0;
+        $daysRestDay = 0;
+        $daysHoliday = 0;
+
+        while ($curr->lte($endDate)) {
+            $dateStr = $curr->toDateString();
+            $rec = $existingRecords->get($dateStr);
+
+            $dayLog = [
+                'date' => $curr->copy(),
+                'date_str' => $dateStr,
+                'day_name' => $curr->format('D'),
+                'full_day_name' => $curr->format('l'),
+                'is_sunday' => $curr->isSunday(),
+                'record_id' => $rec ? $rec->id : null,
+                'time_in' => $rec && $rec->time_in ? $rec->time_in : null,
+                'time_out' => $rec && $rec->time_out ? $rec->time_out : null,
+                'regular_hours' => $rec ? (float) $rec->regular_hours : 0.00,
+                'late_minutes' => $rec ? (int) $rec->late_minutes : 0,
+                'undertime_minutes' => $rec ? (int) $rec->undertime_minutes : 0,
+                'undertime_reason' => $rec ? $rec->undertime_reason : null,
+                'ot_hours' => $rec ? (float) $rec->ot_hours : 0.00,
+                'status' => $rec ? $rec->status : ($curr->isSunday() ? 'rest_day' : 'no_record'),
+                'notes' => $rec ? $rec->notes : null,
+            ];
+
+            if ($rec) {
+                $totalRegularHours += (float) $rec->regular_hours;
+                $totalLateMinutes += (int) $rec->late_minutes;
+                $totalUndertimeMinutes += (int) $rec->undertime_minutes;
+                $totalOtHours += (float) $rec->ot_hours;
+
+                if (in_array($rec->status, ['present', 'late'])) {
+                    $daysPresent++;
+                } elseif ($rec->status === 'absent') {
+                    $daysAbsent++;
+                } elseif ($rec->status === 'rest_day') {
+                    $daysRestDay++;
+                } elseif (in_array($rec->status, ['holiday', 'regular_holiday', 'special_holiday'])) {
+                    $daysHoliday++;
+                    if (!empty($rec->time_in)) {
+                        $daysPresent++;
+                    }
+                }
+            } elseif ($curr->isSunday()) {
+                $daysRestDay++;
+            }
+
+            $dailyLogs->push((object) $dayLog);
+            $curr->addDay();
+        }
+
+        $summaryTotals = [
+            'total_regular_hours' => $totalRegularHours,
+            'total_late_minutes' => $totalLateMinutes,
+            'total_undertime_minutes' => $totalUndertimeMinutes,
+            'total_ot_hours' => $totalOtHours,
+            'days_present' => $daysPresent,
+            'days_absent' => $daysAbsent,
+            'days_rest_day' => $daysRestDay,
+            'days_holiday' => $daysHoliday,
+            'formatted_late' => DtrRecord::formatMinutesToHuman($totalLateMinutes),
+            'formatted_undertime' => DtrRecord::formatMinutesToHuman($totalUndertimeMinutes),
+        ];
+
+        return view('admin.payroll.dtr.report', compact(
+            'employee',
+            'year',
+            'month',
+            'cutoff',
+            'startDate',
+            'endDate',
+            'periodLabel',
+            'dailyLogs',
+            'summaryTotals'
+        ));
+    }
+
+    public function quickUpdate(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'record_date' => 'required|date',
+            'time_in' => 'nullable|string',
+            'time_out' => 'nullable|string',
+            'status' => 'required|string|in:present,late,absent,on_leave,rest_day,overtime,holiday,regular_holiday,special_holiday,off_duty',
+            'ot_hours' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        $employee = Employee::findOrFail($validated['employee_id']);
+        $shiftStartStr = $employee->shift_start ?: '09:00';
+        $shiftEndStr = $employee->shift_end ?: '18:00';
+
+        $timeIn = !empty($validated['time_in']) ? Carbon::parse($validated['time_in'])->format('H:i') : null;
+        $timeOut = !empty($validated['time_out']) ? Carbon::parse($validated['time_out'])->format('H:i') : null;
+
+        $regularHours = 0.00;
+        $lateMinutes = 0;
+        $undertimeMinutes = 0;
+        $otHours = !empty($validated['ot_hours']) ? floatval($validated['ot_hours']) : 0.00;
+        $status = $validated['status'];
+        $notes = $validated['notes'] ?? null;
+
+        if (empty($timeIn) && in_array($status, ['holiday', 'regular_holiday', 'special_holiday'])) {
+            $regularHours = 8.00;
+            $notes = $notes ?: 'Holiday';
+        } elseif (empty($timeIn) && in_array($status, ['off_duty', 'absent', 'on_leave', 'rest_day'])) {
+            $regularHours = 0.00;
+            $notes = $notes ?: match ($status) {
+                'rest_day' => 'Rest Day',
+                'off_duty' => 'Off Duty',
+                'absent' => 'Marked Absent',
+                'on_leave' => 'Filed Leave',
+                default => null,
+            };
+        } elseif ($timeIn) {
+            $in = Carbon::createFromFormat('H:i', $timeIn);
+            $shiftStart = Carbon::createFromFormat('H:i', $shiftStartStr);
+            $shiftEnd = Carbon::createFromFormat('H:i', $shiftEndStr);
+
+            if ($in->gt($shiftStart)) {
+                $lateMinutes = (int) abs($shiftStart->diffInMinutes($in, true));
+                if ($status === 'present') {
+                    $status = 'late';
+                }
+            }
+
+            if ($timeOut) {
+                $out = Carbon::createFromFormat('H:i', $timeOut);
+                if ($out->lt($shiftEnd)) {
+                    $undertimeMinutes = (int) abs($shiftEnd->diffInMinutes($out, true));
+                }
+                if ($out->gt($shiftEnd) && $otHours == 0) {
+                    $otHours = round(abs($shiftEnd->diffInMinutes($out, true)) / 60, 2);
+                }
+
+                $diffMinutes = (int) abs($in->diffInMinutes($out, true));
+                if ($diffMinutes >= 300) {
+                    $workedMinutes = max(0, $diffMinutes - 60);
+                    $regularHours = min(8.00, round($workedMinutes / 60, 2));
+                } else {
+                    $regularHours = round($diffMinutes / 60, 2);
+                }
+            }
+        }
+
+        DtrRecord::updateOrCreate(
+            ['employee_id' => $employee->id, 'record_date' => $validated['record_date']],
+            [
+                'time_in' => $timeIn,
+                'time_out' => $timeOut,
+                'regular_hours' => $regularHours,
+                'late_minutes' => $lateMinutes,
+                'undertime_minutes' => $undertimeMinutes,
+                'ot_hours' => $otHours,
+                'status' => $status,
+                'notes' => $notes,
+            ]
+        );
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => "Record for {$validated['record_date']} updated successfully!"]);
+        }
+
+        return redirect()->back()->with('success', "Record for {$validated['record_date']} updated successfully!");
+    }
 }

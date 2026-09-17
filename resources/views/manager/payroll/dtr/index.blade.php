@@ -636,6 +636,12 @@
                                     </td>
                                     <td>
                                         <div style="display: flex; gap: 0.35rem; align-items: center;">
+                                            <button type="button" class="btn btn-navy btn-sm"
+                                                style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; border: 1.5px solid var(--gold); color: var(--gold-light);"
+                                                onclick="openGenerateDtrModal('{{ $emp->id }}', '{{ addslashes($emp->full_name) }}', '{{ addslashes($emp->position) }}', '{{ $dtr->record_date->format('m') }}', '{{ $dtr->record_date->format('Y') }}')"
+                                                title="Generate DTR for {{ $emp->full_name }}">
+                                                <span>📄 Generate DTR</span>
+                                            </button>
                                             <button type="button" class="btn btn-ghost btn-sm"
                                                 style="padding: 0.25rem 0.45rem;"
                                                 data-modal-target="modal-edit-dtr-{{ $dtr->id }}"
@@ -1111,6 +1117,111 @@
             } else {
                 tipElem.style.display = 'none';
             }
+        }
+
+        function openGenerateDtrModal(employeeId, employeeName, employeePosition, defaultMonth, defaultYear) {
+            const months = [
+                { val: '1', name: 'January' },
+                { val: '2', name: 'February' },
+                { val: '3', name: 'March' },
+                { val: '4', name: 'April' },
+                { val: '5', name: 'May' },
+                { val: '6', name: 'June' },
+                { val: '7', name: 'July' },
+                { val: '8', name: 'August' },
+                { val: '9', name: 'September' },
+                { val: '10', name: 'October' },
+                { val: '11', name: 'November' },
+                { val: '12', name: 'December' }
+            ];
+
+            const currentYear = new Date().getFullYear();
+            const curMonth = parseInt(defaultMonth || (new Date().getMonth() + 1), 10);
+            const curYear = parseInt(defaultYear || currentYear, 10);
+
+            let monthOptions = '';
+            months.forEach(m => {
+                const sel = parseInt(m.val, 10) === curMonth ? 'selected' : '';
+                monthOptions += `<option value="${m.val}" ${sel}>${m.name}</option>`;
+            });
+
+            let yearOptions = '';
+            for (let y = currentYear - 2; y <= currentYear + 2; y++) {
+                const sel = y === curYear ? 'selected' : '';
+                yearOptions += `<option value="${y}" ${sel}>${y}</option>`;
+            }
+
+            Swal.fire({
+                title: '<span style="color: #d4af37; font-size: 1.25rem; font-weight: 800;">📄 Generate DTR (15th / 30th)</span>',
+                html: `
+                    <div style="text-align: left; background: #071322; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                        <div style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">👤 ${employeeName}</div>
+                        <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">💼 ${employeePosition}</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; text-align: left;">
+                        <div>
+                            <label style="font-size: 0.80rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 5px;">📅 Month:</label>
+                            <select id="swal_month" style="width: 100%; height: 38px; border-radius: 6px; background: #071322; border: 1.5px solid rgba(212, 175, 55, 0.5); color: #fff; font-weight: 700; padding: 0 8px;">
+                                ${monthOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.80rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 5px;">🗓️ Year:</label>
+                            <select id="swal_year" style="width: 100%; height: 38px; border-radius: 6px; background: #071322; border: 1.5px solid rgba(212, 175, 55, 0.5); color: #fff; font-weight: 700; padding: 0 8px;">
+                                ${yearOptions}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="text-align: left; margin-bottom: 10px;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 8px;">⏱️ Select Cutoff Period:</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #071322; border: 1.5px solid rgba(212, 175, 55, 0.4); border-radius: 6px; cursor: pointer;">
+                                <input type="radio" name="swal_cutoff" value="15" checked style="accent-color: #d4af37; width: 18px; height: 18px;">
+                                <div>
+                                    <strong style="color: #ffffff; font-size: 0.88rem;">15th Cutoff (1st - 15th)</strong>
+                                    <div style="font-size: 0.72rem; color: #94a3b8;">Days 1 to 15 (First Half of Month)</div>
+                                </div>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #071322; border: 1.5px solid rgba(212, 175, 55, 0.4); border-radius: 6px; cursor: pointer;">
+                                <input type="radio" name="swal_cutoff" value="30" style="accent-color: #d4af37; width: 18px; height: 18px;">
+                                <div>
+                                    <strong style="color: #ffffff; font-size: 0.88rem;">30th Cutoff (16th - End of Month)</strong>
+                                    <div style="font-size: 0.72rem; color: #94a3b8;">Days 16 to 30/31 (Second Half of Month)</div>
+                                </div>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: #071322; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; cursor: pointer;">
+                                <input type="radio" name="swal_cutoff" value="full" style="accent-color: #d4af37; width: 16px; height: 16px;">
+                                <div>
+                                    <strong style="color: #cbd5e1; font-size: 0.84rem;">Full Month (1st - End of Month)</strong>
+                                    <div style="font-size: 0.70rem; color: #64748b;">Entire month comprehensive DTR</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                `,
+                background: '#0d1e33',
+                showCancelButton: true,
+                confirmButtonText: '⚡ Generate DTR Card',
+                confirmButtonColor: '#d4af37',
+                cancelButtonText: 'Cancel',
+                cancelButtonColor: '#475569',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const m = document.getElementById('swal_month').value;
+                    const y = document.getElementById('swal_year').value;
+                    const cutoffElem = document.querySelector('input[name="swal_cutoff"]:checked');
+                    const cutoff = cutoffElem ? cutoffElem.value : '15';
+                    return { month: m, year: y, cutoff: cutoff };
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const baseUrl = "{{ route('manager.payroll.dtr.report', ['employee' => ':id']) }}".replace(':id', employeeId);
+                    const reportUrl = `${baseUrl}?month=${result.value.month}&year=${result.value.year}&cutoff=${result.value.cutoff}`;
+                    window.open(reportUrl, '_blank');
+                }
+            });
         }
     </script>
 @endsection

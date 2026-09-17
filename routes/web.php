@@ -118,6 +118,8 @@ Route::group(['prefix' => 'admin/payroll', 'as' => 'admin.payroll.', 'middleware
     Route::get('/dtr', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'index'])->name('dtr.index');
     Route::post('/dtr', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'store'])->name('dtr.store');
     Route::post('/dtr/batch', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'batchGenerate'])->name('dtr.batch');
+    Route::get('/dtr/employee/{employee}/report', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'report'])->name('dtr.report');
+    Route::post('/dtr/quick-update', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'quickUpdate'])->name('dtr.quick_update');
     Route::delete('/dtr/{dtr}', [\App\Http\Controllers\Admin\Payroll\DtrController::class, 'destroy'])->name('dtr.destroy');
 
     // Leave Applications & Annual Ledgers (File Keeping)
@@ -252,6 +254,8 @@ Route::group(['prefix' => 'manager/payroll', 'as' => 'manager.payroll.', 'middle
     Route::get('/dtr', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'index'])->name('dtr.index');
     Route::post('/dtr', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'store'])->name('dtr.store');
     Route::post('/dtr/batch', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'batchGenerate'])->name('dtr.batch');
+    Route::get('/dtr/employee/{employee}/report', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'report'])->name('dtr.report');
+    Route::post('/dtr/quick-update', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'quickUpdate'])->name('dtr.quick_update');
     Route::delete('/dtr/{dtr}', [\App\Http\Controllers\Manager\Payroll\DtrController::class, 'destroy'])->name('dtr.destroy');
 
     // Leave Applications & Annual Ledgers (File Keeping)
