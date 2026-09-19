@@ -205,12 +205,15 @@ Route::group(['prefix' => 'veterinarian', 'as' => 'vet.', 'middleware' => ['auth
     Route::get('/medical/{record}', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'show'])->name('medical.show');
     Route::put('/medical/{record}', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'update'])->name('medical.update');
     Route::get('/follow-ups', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'followUps'])->name('followups.index');
+    Route::post('/follow-ups/perform', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'performFollowUp'])->name('followups.perform');
+    Route::get('/follow-ups/{record}/history', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'getFollowUpHistory'])->name('followups.history');
     Route::put('/follow-ups/{record}', [\App\Http\Controllers\Veterinarian\MedicalRecordController::class, 'updateFollowUp'])->name('followups.update');
 
-    Route::get('/grooming', [\App\Http\Controllers\Veterinarian\GroomingController::class, 'index'])->name('grooming.index');
-    Route::post('/grooming', [\App\Http\Controllers\Veterinarian\GroomingController::class, 'store'])->name('grooming.store');
-    Route::put('/grooming/{grooming}', [\App\Http\Controllers\Veterinarian\GroomingController::class, 'update'])->name('grooming.update');
-    Route::delete('/grooming/{grooming}', [\App\Http\Controllers\Veterinarian\GroomingController::class, 'destroy'])->name('grooming.destroy');
+    // Pet Admission / Inpatient Confinement Desk
+    Route::get('/admission', [\App\Http\Controllers\Veterinarian\AdmissionController::class, 'index'])->name('admission.index');
+    Route::post('/admission', [\App\Http\Controllers\Veterinarian\AdmissionController::class, 'store'])->name('admission.store');
+    Route::put('/admission/{appointment}', [\App\Http\Controllers\Veterinarian\AdmissionController::class, 'update'])->name('admission.update');
+    Route::delete('/admission/{appointment}', [\App\Http\Controllers\Veterinarian\AdmissionController::class, 'destroy'])->name('admission.destroy');
 
     // Clients & Patient History Database
     Route::get('/clients', [\App\Http\Controllers\Veterinarian\ClientHistoryController::class, 'index'])->name('clients.index');

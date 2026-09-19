@@ -37,11 +37,11 @@
 
         <div class="stat-card">
             <div class="stat-header">
-                <span class="stat-title">Grooming Sessions</span>
-                <div class="stat-icon-wrapper" style="color: var(--gold-primary);">✂️</div>
+                <span class="stat-title">Pet Admissions</span>
+                <div class="stat-icon-wrapper" style="color: var(--gold-primary);">🏥</div>
             </div>
-            <div class="stat-value">{{ $stats['total_grooming'] }}</div>
-            <div class="stat-desc">Active, queued & completed</div>
+            <div class="stat-value">{{ $stats['total_admissions'] }}</div>
+            <div class="stat-desc">Active inpatient confinement</div>
         </div>
     </div>
 
@@ -51,9 +51,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
             <span>+ New Patient Examination</span>
         </a>
-        <a href="{{ route('vet.grooming.index') }}" class="btn btn-navy">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L10.758 7.758a3 3 0 014.242 4.242z" /></svg>
-            <span>Grooming Services</span>
+        <a href="{{ route('vet.admission.index') }}" class="btn btn-navy">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+            <span>Pet Admission Desk</span>
         </a>
     </div>
 
@@ -196,14 +196,14 @@
         </div>
     </div>
 
-    <!-- Recent Grooming Sessions -->
+    <!-- Recent Pet Admissions -->
     <div class="card">
         <div class="card-header">
             <div class="card-title-group">
-                <h3 class="card-title">Recent Grooming Queue & Sessions</h3>
-                <span class="card-subtitle">Styling, bathing, and care status</span>
+                <h3 class="card-title">Recent Inpatient Admissions & Stays</h3>
+                <span class="card-subtitle">Confinement, cage care, and discharge monitoring</span>
             </div>
-            <a href="{{ route('vet.grooming.index') }}" class="btn btn-ghost btn-sm">Full Grooming Center →</a>
+            <a href="{{ route('vet.admission.index') }}" class="btn btn-ghost btn-sm">Full Admission Desk →</a>
         </div>
 
         <div class="card-body" style="padding: 0;">
@@ -214,29 +214,37 @@
                             <th>Code</th>
                             <th>Patient / Pet</th>
                             <th>Owner</th>
-                            <th>Style</th>
-                            <th>Price</th>
+                            <th>Stay / Duration</th>
+                            <th>Total Rate</th>
+                            <th>Attending Staff</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($recentGrooming as $groom)
+                        @forelse($recentAdmissions as $adm)
                             <tr>
-                                <td><strong style="color: var(--gold-primary);">{{ $groom->grooming_code }}</strong></td>
+                                <td><strong style="color: var(--gold-primary);">{{ $adm->appointment_code }}</strong></td>
                                 <td>
-                                    <div style="font-weight: 700; color: var(--white);">{{ $groom->pet->name ?? 'N/A' }}</div>
-                                    <div style="font-size: 0.72rem; color: var(--gold-light);">{{ $groom->pet->species ?? '' }} ({{ $groom->pet->breed ?? '' }})</div>
+                                    <div style="font-weight: 700; color: var(--white);">🐾 {{ $adm->pet->name ?? 'N/A' }}</div>
+                                    <div style="font-size: 0.72rem; color: var(--gold-light);">{{ $adm->pet->species ?? '' }} ({{ $adm->pet->breed ?? '' }})</div>
                                 </td>
-                                <td>{{ $groom->owner->full_name ?? 'N/A' }}</td>
-                                <td><strong>{{ $groom->style }}</strong></td>
-                                <td><strong>₱{{ number_format($groom->price, 2) }}</strong></td>
+                                <td>{{ $adm->owner->full_name ?? 'N/A' }}</td>
+                                <td><strong>{{ $adm->boarding_days ?? 1 }} Day(s)</strong> ({{ $adm->appointment_date ? $adm->appointment_date->format('M d') : '' }})</td>
+                                <td><strong>₱{{ number_format($adm->total_price, 2) }}</strong></td>
+                                <td>{{ $adm->assignedEmployee->full_name ?? 'Attending Vet' }}</td>
                                 <td>
-                                    <span class="badge {{ $groom->status === 'completed' || $groom->status === 'billed' ? 'badge-success' : ($groom->status === 'in_progress' ? 'badge-info' : 'badge-warning') }}">
-                                        {{ ucfirst(str_replace('_', ' ', $groom->status)) }}
+                                    <span class="badge {{ $adm->status === 'completed' ? 'badge-success' : ($adm->status === 'checked_in' ? 'badge-warning' : 'badge-navy') }}">
+                                        {{ $adm->status === 'checked_in' ? 'In Confinement' : ucfirst($adm->status) }}
                                     </span>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 1.5rem; color: var(--text-muted);">
+                                    No active admissions recorded.
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

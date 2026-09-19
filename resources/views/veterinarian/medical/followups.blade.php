@@ -104,7 +104,7 @@
         <div class="card-header">
             <div class="card-title-group">
                 <h3 class="card-title">Incoming Patient Follow-ups</h3>
-                <span class="card-subtitle">Monitor scheduled checkups, catheter removals, post-op monitoring, and repeat laboratory tests</span>
+                <span class="card-subtitle">Perform follow-up re-examinations, pull medical record history, administer services, and queue to cashier</span>
             </div>
             <span class="badge badge-gold" style="font-size: 0.78rem;">
                 {{ $followUps->count() }} Records Found
@@ -121,7 +121,7 @@
                             <th style="min-width: 170px;">Client / Owner Contact</th>
                             <th style="min-width: 200px;">Purpose & Clinical Notes</th>
                             <th style="min-width: 150px;">Origin Examination</th>
-                            <th class="no-sort" data-orderable="false" style="text-align: right; min-width: 140px;">Actions</th>
+                            <th class="no-sort" data-orderable="false" style="text-align: right; min-width: 180px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -158,35 +158,23 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div style="font-weight: 800; color: var(--white); font-size: 0.96rem;">
+                                    <div style="font-weight: 800; color: var(--white); font-size: 0.95rem;">
                                         🐾 {{ $record->pet->name ?? 'N/A' }}
                                     </div>
-                                    <div style="font-size: 0.78rem; color: var(--gold-light);">
-                                        {{ $record->pet->species ?? '' }} • {{ $record->pet->breed ?? 'Mixed' }}
-                                        @if($record->pet?->sex) ({{ $record->pet->sex }}) @endif
+                                    <div style="font-size: 0.75rem; color: var(--gold-light);">
+                                        {{ $record->pet->species ?? '' }} @if($record->pet?->breed) • {{ $record->pet->breed }} @endif
                                     </div>
                                     <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
-                                        ID: {{ $record->pet->pet_code ?? 'N/A' }}
+                                        Code: <strong>{{ $record->pet->pet_code ?? '' }}</strong>
                                     </div>
                                 </td>
                                 <td>
                                     <div style="font-weight: 700; color: var(--white); font-size: 0.9rem;">
                                         👤 {{ $record->owner->full_name ?? 'N/A' }}
                                     </div>
-                                    @if($record->owner?->contact_number)
-                                        <div style="margin-top: 4px;">
-                                            <a href="tel:{{ $record->owner->contact_number }}" class="btn btn-sm btn-navy" style="font-size: 0.75rem; padding: 2px 8px; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                                📞 {{ $record->owner->contact_number }}
-                                            </a>
-                                        </div>
-                                    @else
-                                        <span style="font-size: 0.75rem; color: var(--text-muted);">No contact number</span>
-                                    @endif
-                                    @if($record->owner?->address)
-                                        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
-                                            📍 {{ Str::limit($record->owner->address, 25) }}
-                                        </div>
-                                    @endif
+                                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+                                        📞 {{ $record->owner->contact_number ?? 'No contact' }}
+                                    </div>
                                 </td>
                                 <td>
                                     <div style="background: rgba(11, 25, 44, 0.5); border-left: 3px solid var(--gold-primary); padding: 0.45rem 0.65rem; border-radius: var(--radius-sm);">
@@ -222,14 +210,15 @@
                                 </td>
                                 <td style="text-align: right;">
                                     <div style="display: flex; gap: 0.35rem; justify-content: flex-end; flex-wrap: wrap;">
-                                        <a href="{{ route('vet.medical.show', $record->id) }}" class="btn btn-sm btn-navy" title="View Medical Details">
-                                            View Exam
-                                        </a>
+                                        <!-- Primary Action: Start Examination / Perform Follow-up -->
+                                        <button type="button" class="btn btn-sm btn-gold" style="font-weight: 700;"
+                                            data-modal-target="modal-perform-fu-{{ $record->id }}">
+                                            🩺 Start Examination
+                                        </button>
 
-                                        <!-- Quick Edit/Reschedule Schedule -->
+                                        <!-- Quick Reschedule -->
                                         <button type="button" class="btn btn-sm btn-navy" title="Reschedule or Update Note" data-modal-target="modal-vet-edit-fu-{{ $record->id }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 14px; height: 14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                            <span>Reschedule</span>
                                         </button>
                                     </div>
                                 </td>
@@ -260,9 +249,259 @@
         </div>
     </div>
 
-    <!-- MODALS CONTAINER (Placed outside of table for proper DOM rendering) -->
+    <!-- ==================== MODALS CONTAINER ==================== -->
     @foreach($followUps as $record)
-        <!-- RESCHEDULE MODAL -->
+        <!-- 1. FULL FOLLOW-UP EXAMINATION MODAL (Pull Up Full History -> Exam -> Services -> Cashier -> Next Follow-up) -->
+        <div class="modal-backdrop" id="modal-perform-fu-{{ $record->id }}">
+            <div class="modal-dialog modal-xl" style="max-width: 1200px;">
+                <div class="modal-header">
+                    <div class="modal-title-group">
+                        <div class="modal-icon">🩺</div>
+                        <div>
+                            <h4 class="modal-title">Perform Follow-Up Examination — Patient: {{ $record->pet->name ?? 'Pet' }}</h4>
+                            <span style="font-size: 0.75rem; color: var(--gold-light);">
+                                Client: <strong>{{ $record->owner->full_name ?? 'Client' }}</strong> • Pet: <strong>{{ $record->pet->name ?? '' }}</strong> ({{ $record->pet->species ?? '' }} - {{ $record->pet->breed ?? '' }}) • Origin: {{ $record->record_code }}
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
+                </div>
+
+                <form action="{{ route('vet.followups.perform') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="origin_record_id" value="{{ $record->id }}">
+                    <input type="hidden" name="owner_id" value="{{ $record->owner_id }}">
+                    <input type="hidden" name="pet_id" value="{{ $record->pet_id }}">
+
+                    <div class="modal-body" style="padding: 1.25rem 1.5rem; max-height: calc(100vh - 170px); overflow-y: auto;">
+                        
+                        <!-- SECTION 1: PULL UP MEDICAL RECORD FULL HISTORY -->
+                        <div style="background: rgba(11, 25, 44, 0.6); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.25rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <h5 style="color: var(--gold-primary); font-size: 0.88rem; font-weight: 800; text-transform: uppercase; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>📋</span> Medical Record History for {{ $record->pet->name ?? 'Patient' }}
+                                </h5>
+                                <span class="badge badge-navy" style="font-size: 0.75rem;">
+                                    {{ $record->pet ? $record->pet->medicalRecords->count() : 0 }} Past Visit(s) Recorded
+                                </span>
+                            </div>
+
+                            <div style="max-height: 180px; overflow-y: auto; border: 1px solid var(--navy-border); border-radius: 4px; background: rgba(4, 7, 13, 0.5);">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                                    <thead style="position: sticky; top: 0; background: var(--navy-dark); z-index: 1;">
+                                        <tr style="border-bottom: 1px solid var(--navy-border);">
+                                            <th style="padding: 6px 10px; text-align: left; color: var(--gold-light);">Visit Date & Code</th>
+                                            <th style="padding: 6px 10px; text-align: left; color: var(--gold-light);">Vitals</th>
+                                            <th style="padding: 6px 10px; text-align: left; color: var(--gold-light);">Past Diagnosis / Complaint</th>
+                                            <th style="padding: 6px 10px; text-align: left; color: var(--gold-light);">Medications & Treatment</th>
+                                            <th style="padding: 6px 10px; text-align: left; color: var(--gold-light);">Attending Vet</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if($record->pet && $record->pet->medicalRecords)
+                                            @foreach($record->pet->medicalRecords->sortByDesc('created_at') as $pastRec)
+                                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); {{ $pastRec->id === $record->id ? 'background: rgba(212,175,55,0.08);' : '' }}">
+                                                    <td style="padding: 6px 10px;">
+                                                        <strong style="color: var(--gold-light);">{{ $pastRec->visit_date ? $pastRec->visit_date->format('m/d/Y') : $pastRec->created_at->format('m/d/Y') }}</strong>
+                                                        <div style="font-size: 0.7rem; color: var(--text-muted);">{{ $pastRec->record_code }}</div>
+                                                    </td>
+                                                    <td style="padding: 6px 10px; color: var(--white);">
+                                                        {{ $pastRec->temperature ?: '—' }} • {{ $pastRec->body_weight ?: '—' }}
+                                                    </td>
+                                                    <td style="padding: 6px 10px; color: var(--text-secondary);">
+                                                        <strong style="color: var(--white);">{{ $pastRec->diagnosis ?: 'N/A' }}</strong>
+                                                        <div style="font-size: 0.72rem; color: var(--text-muted);">{{ Str::limit($pastRec->history_taking, 45) }}</div>
+                                                    </td>
+                                                    <td style="padding: 6px 10px; color: var(--text-secondary);">
+                                                        {{ Str::limit($pastRec->medication_treatment ?: ($pastRec->prescription?->rx_details ?? '—'), 50) }}
+                                                    </td>
+                                                    <td style="padding: 6px 10px; color: var(--text-muted);">
+                                                        {{ $pastRec->veterinarian->name ?? 'Vet' }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: 2-COLUMN PERFORM FOLLOW-UP EXAMINATION FORM -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start;">
+                            
+                            <!-- LEFT COLUMN -->
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <!-- 1. Visit Date & Physical Vitals -->
+                                <div style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem;">
+                                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                                        <label class="form-label" style="font-weight: 700; color: var(--gold-primary);">📅 Follow-Up Visit Date <span class="req">*</span></label>
+                                        <input type="date" name="visit_date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                                    </div>
+
+                                    <h5 style="color: var(--gold-light); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem;">
+                                        🌡️ Physical Vitals (Today)
+                                    </h5>
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65rem;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label" style="font-size: 0.75rem;">Temp (°C)</label>
+                                            <input type="text" name="temperature" class="form-control" placeholder="e.g. 38.3 °C" value="{{ $record->temperature }}">
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label" style="font-size: 0.75rem;">Weight (BW)</label>
+                                            <input type="text" name="body_weight" class="form-control" placeholder="e.g. 4.2 kg" value="{{ $record->body_weight }}">
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label" style="font-size: 0.75rem;">Body Score</label>
+                                            <input type="text" name="body_score" class="form-control" placeholder="e.g. 3/5" value="{{ $record->body_score }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Follow-Up Progress & Exam Findings -->
+                                <div class="form-group">
+                                    <label class="form-label" style="font-weight: 700; color: var(--gold-primary);">📝 Follow-Up Examination Notes / Progress Evaluation <span class="req">*</span></label>
+                                    <textarea name="history_taking" class="form-control" rows="3" placeholder="Symptoms response, catheter check, wound recovery, client observations..." required>{{ $record->follow_up_notes ? "Re-evaluation for: {$record->follow_up_notes}" : '' }}</textarea>
+                                </div>
+
+                                <!-- 3. Diagnosis / Assessment -->
+                                <div class="form-group">
+                                    <label class="form-label" style="font-weight: 700; color: var(--gold-primary);">🩺 Follow-Up Diagnosis / Assessment <span class="req">*</span></label>
+                                    <input type="text" name="diagnosis" class="form-control" value="{{ $record->diagnosis ?: 'Follow-up re-evaluation' }}" required>
+                                </div>
+
+                                <!-- 4. Follow-up Service Fee -->
+                                <div style="background: rgba(245, 186, 49, 0.08); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1.15rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                                    <div>
+                                        <label class="form-label" style="font-weight: 700; color: var(--gold-light); font-size: 0.88rem; margin-bottom: 2px;">
+                                            🩺 Follow-up Consultation Fee (₱) <span class="req">*</span>
+                                        </label>
+                                        <div style="font-size: 0.72rem; color: var(--text-muted);">
+                                            Ipapasa sa Cashier Billing.
+                                        </div>
+                                    </div>
+                                    <input type="number" step="0.01" min="0" name="service_fee" id="fu_service_fee_{{ $record->id }}" class="form-control fu-fee-input" value="350.00" required style="max-width: 140px; font-weight: 800; text-align: right; color: var(--gold-primary); font-size: 1.1rem; border-color: var(--gold-border);">
+                                </div>
+
+                                <!-- 5. Next Follow-Up Schedule -->
+                                <div style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+                                    <h5 style="color: var(--gold-light); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem;">
+                                        🗓️ Next Follow-Up Schedule (If Needed)
+                                    </h5>
+                                    <div class="form-grid">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label" style="font-size: 0.75rem;">Next Follow Up Date</label>
+                                            <input type="date" name="next_follow_up_date" class="form-control">
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label" style="font-size: 0.75rem;">Purpose / Next Goal</label>
+                                            <input type="text" name="next_follow_up_notes" class="form-control" placeholder="e.g. final checkup / suture removal">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- RIGHT COLUMN -->
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <!-- 1. Medication / Treatment Administered -->
+                                <div class="form-group">
+                                    <label class="form-label" style="font-size: 0.8rem; color: var(--text-secondary);">💊 In-Clinic Medication / Treatment Administered</label>
+                                    <textarea name="medication_treatment" class="form-control" rows="2" placeholder="Injections, catheter flush, cleaning, IV fluids..."></textarea>
+                                </div>
+
+                                <!-- 2. Laboratory / Medical Services Performed -->
+                                <div style="background: var(--navy-dark); border: 1.5px solid var(--navy-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.35rem;">
+                                        <div>
+                                            <h5 style="color: var(--gold-light); font-size: 0.82rem; font-weight: 800; text-transform: uppercase; margin: 0;">
+                                                🔬 LABORATORY TEST & MEDICAL SERVICES
+                                            </h5>
+                                            <span style="font-size: 0.72rem; color: var(--text-muted);">
+                                                Awtomatikong ipapasa sa Cashier Billing ang bawat line item.
+                                            </span>
+                                        </div>
+                                        <button type="button" class="btn btn-gold btn-sm btn-add-fu-item" data-target="fu-tbody-{{ $record->id }}" style="font-size: 0.72rem; padding: 3px 8px; font-weight: 700;">
+                                            ➕ Add Service
+                                        </button>
+                                    </div>
+
+                                    <!-- Quick suggestion buttons -->
+                                    <div style="display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                                        <button type="button" class="btn btn-navy btn-sm btn-quick-fu-svc" data-target="fu-tbody-{{ $record->id }}" data-name="Repeat CBC (Blood Count)" data-price="450.00" style="font-size: 0.68rem; padding: 2px 6px;">+ Repeat CBC (₱450)</button>
+                                        <button type="button" class="btn btn-navy btn-sm btn-quick-fu-svc" data-target="fu-tbody-{{ $record->id }}" data-name="Catheter Removal & Flush" data-price="350.00" style="font-size: 0.68rem; padding: 2px 6px;">+ Catheter Removal (₱350)</button>
+                                        <button type="button" class="btn btn-navy btn-sm btn-quick-fu-svc" data-target="fu-tbody-{{ $record->id }}" data-name="Suture Removal & Wound Dressing" data-price="300.00" style="font-size: 0.68rem; padding: 2px 6px;">+ Suture Removal (₱300)</button>
+                                        <button type="button" class="btn btn-navy btn-sm btn-quick-fu-svc" data-target="fu-tbody-{{ $record->id }}" data-name="Blood Chem Re-check" data-price="850.00" style="font-size: 0.68rem; padding: 2px 6px;">+ Blood Chem (₱850)</button>
+                                    </div>
+
+                                    <div style="max-height: 180px; overflow-y: auto; border: 1px solid var(--black-border); border-radius: var(--radius-sm); background: rgba(4, 7, 13, 0.4);">
+                                        <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                                            <thead style="position: sticky; top: 0; background: var(--navy-dark); z-index: 2;">
+                                                <tr style="border-bottom: 1px solid var(--black-border);">
+                                                    <th style="padding: 6px 8px; text-align: left; color: var(--gold-light); font-size: 0.72rem; text-transform: uppercase;">Service / Test</th>
+                                                    <th style="padding: 6px 8px; width: 60px; text-align: center; color: var(--gold-light); font-size: 0.72rem; text-transform: uppercase;">Qty</th>
+                                                    <th style="padding: 6px 8px; width: 85px; text-align: right; color: var(--gold-light); font-size: 0.72rem; text-transform: uppercase;">Price (₱)</th>
+                                                    <th style="padding: 6px 8px; width: 85px; text-align: right; color: var(--gold-light); font-size: 0.72rem; text-transform: uppercase;">Total</th>
+                                                    <th style="padding: 6px 8px; width: 30px;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="fu-tbody-{{ $record->id }}">
+                                                <!-- Dynamic items added here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Computed cashier sum -->
+                                    <div style="background: rgba(4, 7, 13, 0.6); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem;">
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                            Total Queued to Cashier:
+                                        </div>
+                                        <div style="font-weight: 800; color: var(--gold-primary); font-size: 1rem;" id="fu_grand_total_{{ $record->id }}">
+                                            ₱350.00
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Prescription Take-Home Meds -->
+                                <div style="background: rgba(245, 186, 49, 0.05); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+                                    <h5 style="color: var(--gold-light); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.4rem;">
+                                        💊 Take-Home Prescription (Rx)
+                                    </h5>
+                                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Medication Details, Strength & Dosage</label>
+                                        <textarea name="prescribe_rx" class="form-control" rows="2" placeholder="e.g. 1. Continue Co-Amoxiclav 250mg - 1 tab BID for 5 days"></textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Rx Instructions</label>
+                                        <input type="text" name="rx_instructions" class="form-control" placeholder="e.g. Give after meals">
+                                    </div>
+                                </div>
+
+                                <!-- 4. Attach Lab Results / Doctor Notes -->
+                                <div class="form-grid">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Doctor's Advice / Notes</label>
+                                        <input type="text" name="veterinarians_notes" class="form-control" placeholder="e.g. Patient is active, clear for discharge">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Attach Lab File (Optional)</label>
+                                        <input type="file" name="lab_results" class="form-control" accept="image/*,.pdf,.doc,.docx" style="padding: 3px; font-size: 0.75rem;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
+                        <button type="submit" class="btn btn-gold" style="font-weight: 700; font-size: 0.92rem; padding: 0.65rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                            💾 Save Follow-Up Medical Record & Transfer to Cashier Billing
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2. RESCHEDULE MODAL -->
         <div class="modal-backdrop" id="modal-vet-edit-fu-{{ $record->id }}">
             <div class="modal-dialog modal-md">
                 <div class="modal-header">
@@ -296,4 +535,102 @@
             </div>
         </div>
     @endforeach
+
+    <!-- JavaScript for Dynamic Follow-up Items & Total Calculation -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function recalculateFUTotal(containerId) {
+            const tableBody = document.getElementById(containerId);
+            if (!tableBody) return;
+            const modalId = containerId.replace('fu-tbody-', '');
+            const feeInput = document.getElementById('fu_service_fee_' + modalId);
+            const totalDisplay = document.getElementById('fu_grand_total_' + modalId);
+
+            let total = parseFloat(feeInput ? feeInput.value : 0) || 0;
+            tableBody.querySelectorAll('tr.fu-item-row').forEach(function (row) {
+                const qty = parseFloat(row.querySelector('.fu-item-qty')?.value || 1) || 1;
+                const price = parseFloat(row.querySelector('.fu-item-price')?.value || 0) || 0;
+                const rowTot = qty * price;
+                const totCell = row.querySelector('.fu-item-row-tot');
+                if (totCell) totCell.textContent = '₱' + rowTot.toFixed(2);
+                total += rowTot;
+            });
+
+            if (totalDisplay) {
+                totalDisplay.textContent = '₱' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+        }
+
+        function createFURow(targetTbodyId, name = '', qty = '1', price = '') {
+            const tableBody = document.getElementById(targetTbodyId);
+            if (!tableBody) return;
+
+            const index = tableBody.querySelectorAll('tr.fu-item-row').length + '_' + Date.now();
+            const tr = document.createElement('tr');
+            tr.className = 'fu-item-row';
+            tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            const q = parseFloat(qty) || 1;
+            const p = parseFloat(price) || 0;
+            const t = q * p;
+
+            tr.innerHTML = `
+                <td style="padding: 4px 6px;">
+                    <input type="text" name="items[${index}][name]" class="form-control form-control-sm fu-item-name" placeholder="Service / Test name" value="${name.replace(/"/g, '&quot;')}" style="font-size: 0.78rem; padding: 3px 6px;" required autofocus>
+                </td>
+                <td style="padding: 4px 6px; width: 60px;">
+                    <input type="number" step="0.01" min="0.01" name="items[${index}][quantity]" class="form-control form-control-sm fu-item-qty" placeholder="1" value="${qty}" style="font-size: 0.78rem; padding: 3px 4px; text-align: center;">
+                </td>
+                <td style="padding: 4px 6px; width: 85px;">
+                    <input type="number" step="0.01" min="0" name="items[${index}][price]" class="form-control form-control-sm fu-item-price" placeholder="0.00" value="${price}" style="font-size: 0.78rem; padding: 3px 4px; text-align: right;">
+                </td>
+                <td style="padding: 4px 6px; width: 85px; text-align: right; font-weight: 700; color: var(--gold-primary); font-size: 0.78rem;" class="fu-item-row-tot">
+                    ₱${t.toFixed(2)}
+                </td>
+                <td style="padding: 4px 6px; width: 30px; text-align: center;">
+                    <button type="button" class="btn btn-ghost btn-sm btn-remove-fu-row" style="color: #ef4444; padding: 1px 3px; font-size: 0.8rem;" title="Remove">
+                        🗑️
+                    </button>
+                </td>
+            `;
+
+            tableBody.appendChild(tr);
+
+            tr.querySelector('.btn-remove-fu-row').addEventListener('click', function () {
+                tr.remove();
+                recalculateFUTotal(targetTbodyId);
+            });
+
+            tr.querySelector('.fu-item-qty').addEventListener('input', () => recalculateFUTotal(targetTbodyId));
+            tr.querySelector('.fu-item-price').addEventListener('input', () => recalculateFUTotal(targetTbodyId));
+
+            recalculateFUTotal(targetTbodyId);
+        }
+
+        // Add service buttons
+        document.querySelectorAll('.btn-add-fu-item').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const target = btn.getAttribute('data-target');
+                createFURow(target, '', '1', '');
+            });
+        });
+
+        // Quick service buttons
+        document.querySelectorAll('.btn-quick-fu-svc').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const target = btn.getAttribute('data-target');
+                const name = btn.getAttribute('data-name');
+                const price = btn.getAttribute('data-price');
+                createFURow(target, name, '1', price);
+            });
+        });
+
+        // Listen for base fee changes
+        document.querySelectorAll('.fu-fee-input').forEach(function (inp) {
+            inp.addEventListener('input', function () {
+                const modalId = inp.id.replace('fu_service_fee_', '');
+                recalculateFUTotal('fu-tbody-' + modalId);
+            });
+        });
+    });
+    </script>
 @endsection

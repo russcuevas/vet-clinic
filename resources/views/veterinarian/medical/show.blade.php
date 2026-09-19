@@ -202,15 +202,15 @@
                         </div>
                     @endif
 
-                    <!-- Prescribed Take-Home Supplies & Clinical Advice (Doctor's Notes) -->
+                    <!-- Laboratory Tests & Medical Services Performed -->
                     @if(!empty($record->prescribed_items) && is_array($record->prescribed_items) && count($record->prescribed_items) > 0)
                         <div style="margin-top: 1.5rem; background: var(--navy-dark); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1.25rem;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
                                 <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.05em; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
-                                    <span>📋</span> Prescribed Supplies & Advice Notes
+                                    <span>🔬</span> Laboratory Tests & Medical Services Performed
                                 </h4>
-                                <span class="badge badge-navy" style="font-size: 0.72rem; color: var(--text-muted);">
-                                    Clinical Chart Notes
+                                <span class="badge badge-gold" style="font-size: 0.72rem;">
+                                    Queued to Cashier Billing
                                 </span>
                             </div>
 
@@ -218,22 +218,33 @@
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                                     <thead>
                                         <tr style="background: rgba(11, 25, 44, 0.8); border-bottom: 1px solid var(--black-border);">
-                                            <th style="padding: 10px 14px; text-align: left; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Item / Recommended Supply</th>
+                                            <th style="padding: 10px 14px; text-align: left; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Laboratory Test / Medical Service</th>
                                             <th style="padding: 10px 14px; text-align: center; width: 90px; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Qty</th>
-                                            <th style="padding: 10px 14px; text-align: right; width: 120px; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Est. Price</th>
+                                            <th style="padding: 10px 14px; text-align: right; width: 120px; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Rate / Price</th>
+                                            <th style="padding: 10px 14px; text-align: right; width: 120px; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Total</th>
                                             <th style="padding: 10px 14px; text-align: left; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase;">Directions / Remarks</th>
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        @php $servSum = 0; @endphp
                                         @foreach($record->prescribed_items as $pItem)
+                                            @php
+                                                $q = floatval($pItem['quantity'] ?? 1);
+                                                $p = floatval($pItem['price'] ?? 0);
+                                                $tot = $q * $p;
+                                                $servSum += $tot;
+                                            @endphp
                                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
                                                 <td style="padding: 9px 14px; font-weight: 600; color: var(--white); display: flex; align-items: center; gap: 0.4rem;">
-                                                    <span>📦</span>
+                                                    <span>🔬</span>
                                                     <span>{{ $pItem['name'] ?? '' }}</span>
                                                 </td>
                                                 <td style="padding: 9px 14px; text-align: center; color: var(--gold-light);">{{ $pItem['quantity'] ?? '1' }}</td>
                                                 <td style="padding: 9px 14px; text-align: right; color: var(--text-secondary);">
-                                                    {{ !empty($pItem['price']) ? '₱' . number_format($pItem['price'], 2) : '—' }}
+                                                    {{ !empty($pItem['price']) ? '₱' . number_format($pItem['price'], 2) : '₱0.00' }}
+                                                </td>
+                                                <td style="padding: 9px 14px; text-align: right; font-weight: 700; color: var(--gold-primary);">
+                                                    ₱{{ number_format($tot, 2) }}
                                                 </td>
                                                 <td style="padding: 9px 14px; color: var(--text-secondary); font-size: 0.82rem;">
                                                     {{ $pItem['instructions'] ?? ($pItem['remarks'] ?? '—') }}
@@ -241,6 +252,13 @@
                                             </tr>
                                         @endforeach
                                     </tbody>
+                                    <tfoot>
+                                        <tr style="background: rgba(212, 175, 55, 0.08); border-top: 1px solid var(--gold-border);">
+                                            <td colspan="3" style="padding: 8px 14px; font-weight: 700; color: var(--gold-light); text-align: right;">Tests & Services Subtotal:</td>
+                                            <td style="padding: 8px 14px; text-align: right; font-weight: 800; color: var(--gold-primary); font-size: 0.95rem;">₱{{ number_format($servSum, 2) }}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
@@ -564,38 +582,51 @@
                             <div style="background: rgba(245, 186, 49, 0.08); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1.15rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                                 <div>
                                     <label class="form-label" style="font-weight: 700; color: var(--gold-light); font-size: 0.88rem; margin-bottom: 2px; display: flex; align-items: center; gap: 0.4rem;">
-                                        <span>🩺</span> Consultation / Service Fee (₱) <span class="req">*</span>
+                                        <span>🩺</span> Base Consultation / Examination Fee (₱) <span class="req">*</span>
                                     </label>
                                     <div style="font-size: 0.72rem; color: var(--text-muted);">
-                                        Ang halagang ito lamang ang ipapasa sa Cashier Billing.
+                                        Ipapasa sa Cashier Billing kasama ang laboratory tests & services sa ibaba.
                                     </div>
                                 </div>
-                                <input type="number" step="0.01" min="0" name="service_fee" class="form-control" value="{{ $record->service_fee ?? 450.00 }}" required style="max-width: 150px; font-weight: 800; text-align: right; color: var(--gold-primary); font-size: 1.1rem; border-color: var(--gold-border);">
+                                <input type="number" step="0.01" min="0" name="service_fee" id="exam_modal_service_fee" class="form-control" value="{{ $record->service_fee ?? 450.00 }}" required style="max-width: 150px; font-weight: 800; text-align: right; color: var(--gold-primary); font-size: 1.1rem; border-color: var(--gold-border);">
                             </div>
 
-                            <!-- 5. Prescribed Items & Supplies Advice Table (Clinical Notes only) -->
+                            <!-- 5. LABORATORY TEST & MEDICAL SERVICES (Itemized Bill passed to Cashier) -->
                             <div style="background: var(--navy-dark); border: 1.5px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
                                     <div>
                                         <h5 style="color: var(--gold-light); font-size: 0.85rem; font-weight: 800; text-transform: uppercase; margin: 0; display: flex; align-items: center; gap: 0.35rem;">
-                                            <span>📋</span> Prescribed Items & Supplies Advice
+                                            <span>🔬</span> LABORATORY TEST & MEDICAL SERVICES
                                         </h5>
                                         <span style="font-size: 0.72rem; color: var(--text-muted);">
-                                            Advice / notes para sa pet owner (hal. ULTRA DOG, Dewormer, Vitamins) — <em>Hindi isinasama sa cashier bill</em>
+                                            Lahat ng ilalagay dito ay <strong>awtomatikong ipapasa sa Cashier Billing</strong>. Pwede rin burahin ni Cashier kung hindi naisagawa ang serbisyo.
                                         </span>
                                     </div>
                                     <button type="button" id="btn-add-exam-item" class="btn btn-gold btn-sm" style="font-size: 0.75rem; padding: 4px 10px; font-weight: 700;">
-                                        ➕ Add Advice Row
+                                        ➕ Add Lab / Service
                                     </button>
                                 </div>
 
-                                <div style="max-height: 220px; overflow-y: auto; margin-bottom: 0.75rem; border: 1px solid var(--black-border); border-radius: var(--radius-sm); background: rgba(4, 7, 13, 0.4);">
+                                <!-- Quick Service Suggestion Pills -->
+                                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.65rem;">
+                                    <span style="font-size: 0.72rem; color: var(--text-muted); align-self: center;">Quick Add:</span>
+                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Complete Blood Count (CBC)" data-price="550.00" style="font-size: 0.7rem; padding: 2px 7px;">+ CBC (₱550)</button>
+                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Blood Chemistry Panel" data-price="1200.00" style="font-size: 0.7rem; padding: 2px 7px;">+ Blood Chem (₱1.2k)</button>
+                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Parvo / Distemper Ag Rapid Test" data-price="650.00" style="font-size: 0.7rem; padding: 2px 7px;">+ Parvo Test (₱650)</button>
+                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Ultrasound Examination" data-price="900.00" style="font-size: 0.7rem; padding: 2px 7px;">+ Ultrasound (₱900)</button>
+                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Digital X-Ray (1 View)" data-price="850.00" style="font-size: 0.7rem; padding: 2px 7px;">+ X-Ray (₱850)</button>
+                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Urinary Catheterization" data-price="800.00" style="font-size: 0.7rem; padding: 2px 7px;">+ Catheter (₱800)</button>
+                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="IV Fluid Therapy & Cannulation" data-price="450.00" style="font-size: 0.7rem; padding: 2px 7px;">+ IV Therapy (₱450)</button>
+                                </div>
+
+                                <div style="max-height: 250px; overflow-y: auto; margin-bottom: 0.75rem; border: 1px solid var(--black-border); border-radius: var(--radius-sm); background: rgba(4, 7, 13, 0.4);">
                                     <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
                                         <thead style="position: sticky; top: 0; background: var(--navy-dark); z-index: 2; border-bottom: 1px solid var(--black-border);">
                                             <tr>
-                                                <th style="padding: 8px; text-align: left; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Item / Recommended Supply</th>
-                                                <th style="padding: 8px; width: 85px; text-align: center; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Qty</th>
-                                                <th style="padding: 8px; width: 100px; text-align: right; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Est. Price (₱)</th>
+                                                <th style="padding: 8px; text-align: left; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Laboratory Test / Medical Service</th>
+                                                <th style="padding: 8px; width: 80px; text-align: center; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Qty</th>
+                                                <th style="padding: 8px; width: 100px; text-align: right; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Price (₱)</th>
+                                                <th style="padding: 8px; width: 100px; text-align: right; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Total</th>
                                                 <th style="padding: 8px; text-align: left; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Directions / Remarks</th>
                                                 <th style="padding: 8px; width: 35px; text-align: center;"></th>
                                             </tr>
@@ -606,18 +637,26 @@
                                             @endphp
 
                                             @forelse($initialItems as $idx => $it)
+                                                @php
+                                                    $q = floatval($it['quantity'] ?? 1);
+                                                    $p = floatval($it['price'] ?? 0);
+                                                    $t = $q * $p;
+                                                @endphp
                                                 <tr class="exam-item-row" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                                                     <td style="padding: 6px;">
-                                                        <input type="text" name="items[{{ $idx }}][name]" class="form-control form-control-sm item-name" placeholder="e.g. ULTRA DOG / Dewormer" value="{{ $it['name'] ?? '' }}" style="font-size: 0.82rem;" required>
+                                                        <input type="text" name="items[{{ $idx }}][name]" class="form-control form-control-sm item-name" placeholder="e.g. Complete Blood Count (CBC)" value="{{ $it['name'] ?? '' }}" style="font-size: 0.82rem;" required>
                                                     </td>
-                                                    <td style="padding: 6px; width: 85px;">
-                                                        <input type="text" name="items[{{ $idx }}][quantity]" class="form-control form-control-sm" placeholder="1 bag" value="{{ $it['quantity'] ?? '' }}" style="font-size: 0.82rem; text-align: center;">
+                                                    <td style="padding: 6px; width: 80px;">
+                                                        <input type="number" step="0.01" min="0.01" name="items[{{ $idx }}][quantity]" class="form-control form-control-sm item-qty" placeholder="1" value="{{ $it['quantity'] ?? '1' }}" style="font-size: 0.82rem; text-align: center;">
                                                     </td>
                                                     <td style="padding: 6px; width: 100px;">
-                                                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][price]" class="form-control form-control-sm" placeholder="0.00" value="{{ $it['price'] ?? '' }}" style="font-size: 0.82rem; text-align: right;">
+                                                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][price]" class="form-control form-control-sm item-price" placeholder="0.00" value="{{ $it['price'] ?? '' }}" style="font-size: 0.82rem; text-align: right;">
+                                                    </td>
+                                                    <td style="padding: 6px; width: 100px; text-align: right; font-weight: 700; color: var(--gold-primary);" class="item-row-total">
+                                                        ₱{{ number_format($t, 2) }}
                                                     </td>
                                                     <td style="padding: 6px;">
-                                                        <input type="text" name="items[{{ $idx }}][remarks]" class="form-control form-control-sm" placeholder="e.g. Special diet / Daily with meal" value="{{ $it['instructions'] ?? ($it['remarks'] ?? '') }}" style="font-size: 0.82rem;">
+                                                        <input type="text" name="items[{{ $idx }}][remarks]" class="form-control form-control-sm" placeholder="e.g. In-house STAT / Normal findings" value="{{ $it['instructions'] ?? ($it['remarks'] ?? '') }}" style="font-size: 0.82rem;">
                                                     </td>
                                                     <td style="padding: 6px; width: 35px; text-align: center;">
                                                         <button type="button" class="btn btn-ghost btn-sm btn-remove-item" style="color: #ef4444; padding: 2px 4px; font-size: 0.85rem;" title="Remove row">
@@ -633,11 +672,17 @@
                                 </div>
 
                                 <div id="no-items-placeholder" style="{{ count($initialItems) > 0 ? 'display: none;' : '' }} text-align: center; padding: 0.6rem; color: var(--text-muted); font-size: 0.78rem; font-style: italic;">
-                                    No item recommendations added. Click <strong>"+ Add Advice Row"</strong> to record suggested supplies/food/medicines.
+                                    No laboratory tests or special medical services added yet. Click <strong>"+ Add Lab / Service"</strong> or use quick add above.
                                 </div>
 
-                                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.4rem;">
-                                    💡 <em>Tandaan: Ang mga items na ito ay masesave bilang clinical chart advice/notes para sa pet owner at hindi ipapasa sa cashier billing.</em>
+                                <!-- Estimated Cashier Total Banner -->
+                                <div style="background: rgba(4, 7, 13, 0.6); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                                    <div style="font-size: 0.78rem; color: var(--text-muted);">
+                                        Total Amount Queued to Cashier:
+                                    </div>
+                                    <div style="font-weight: 800; color: var(--gold-primary); font-size: 1.1rem;" id="modal_exam_grand_total">
+                                        ₱0.00
+                                    </div>
                                 </div>
                             </div>
 
@@ -667,7 +712,7 @@
                                     <option value="billed" {{ $record->status === 'billed' ? 'selected' : '' }}>🟢 Billed / Settled</option>
                                 </select>
                                 <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">
-                                    💡 Selecting <strong>"Completed"</strong> automatically routes the consultation fee to the Cashier Desk.
+                                    💡 Selecting <strong>"Completed"</strong> automatically routes the consultation fee and itemized services to the Cashier Desk.
                                 </div>
                             </div>
                         </div>
@@ -735,39 +780,66 @@
         </div>
     </div>
 
-    <!-- Script for Prescribed Items & Supplies Advice Table -->
+    <!-- Script for Laboratory Tests & Medical Services Table -->
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const tableBody = document.getElementById('exam-items-tbody');
         const addItemBtn = document.getElementById('btn-add-exam-item');
         const noItemsPlaceholder = document.getElementById('no-items-placeholder');
+        const feeInput = document.getElementById('exam_modal_service_fee');
+        const grandTotalDisplay = document.getElementById('modal_exam_grand_total');
 
         if (!tableBody) return;
+
+        function recalcGrandTotal() {
+            let total = parseFloat(feeInput ? feeInput.value : 0) || 0;
+            tableBody.querySelectorAll('tr.exam-item-row').forEach(function (row) {
+                const qty = parseFloat(row.querySelector('.item-qty')?.value || 1) || 1;
+                const price = parseFloat(row.querySelector('.item-price')?.value || 0) || 0;
+                const rowTotal = qty * price;
+                const totalCell = row.querySelector('.item-row-total');
+                if (totalCell) {
+                    totalCell.textContent = '₱' + rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+                total += rowTotal;
+            });
+
+            if (grandTotalDisplay) {
+                grandTotalDisplay.textContent = '₱' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+        }
 
         function updatePlaceholder() {
             const rows = tableBody.querySelectorAll('tr.exam-item-row');
             if (noItemsPlaceholder) {
                 noItemsPlaceholder.style.display = rows.length === 0 ? 'block' : 'none';
             }
+            recalcGrandTotal();
         }
 
-        function createRow(name = '', qty = '', price = '', remarks = '') {
+        function createRow(name = '', qty = '1', price = '', remarks = '') {
             const index = tableBody.querySelectorAll('tr.exam-item-row').length + '_' + Date.now();
             const tr = document.createElement('tr');
             tr.className = 'exam-item-row';
             tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            const q = parseFloat(qty) || 1;
+            const p = parseFloat(price) || 0;
+            const rowTot = q * p;
             tr.innerHTML = `
                 <td style="padding: 6px;">
-                    <input type="text" name="items[${index}][name]" class="form-control form-control-sm item-name" placeholder="e.g. ULTRA DOG / Dewormer" value="${name.replace(/"/g, '&quot;')}" style="font-size: 0.82rem;" required autofocus>
+                    <input type="text" name="items[${index}][name]" class="form-control form-control-sm item-name" placeholder="e.g. Complete Blood Count (CBC)" value="${name.replace(/"/g, '&quot;')}" style="font-size: 0.82rem;" required autofocus>
                 </td>
-                <td style="padding: 6px; width: 85px;">
-                    <input type="text" name="items[${index}][quantity]" class="form-control form-control-sm" placeholder="1 bag" value="${qty}" style="font-size: 0.82rem; text-align: center;">
+                <td style="padding: 6px; width: 80px;">
+                    <input type="number" step="0.01" min="0.01" name="items[${index}][quantity]" class="form-control form-control-sm item-qty" placeholder="1" value="${qty}" style="font-size: 0.82rem; text-align: center;">
                 </td>
                 <td style="padding: 6px; width: 100px;">
-                    <input type="number" step="0.01" min="0" name="items[${index}][price]" class="form-control form-control-sm" placeholder="0.00" value="${price}" style="font-size: 0.82rem; text-align: right;">
+                    <input type="number" step="0.01" min="0" name="items[${index}][price]" class="form-control form-control-sm item-price" placeholder="0.00" value="${price}" style="font-size: 0.82rem; text-align: right;">
+                </td>
+                <td style="padding: 6px; width: 100px; text-align: right; font-weight: 700; color: var(--gold-primary);" class="item-row-total">
+                    ₱${rowTot.toFixed(2)}
                 </td>
                 <td style="padding: 6px;">
-                    <input type="text" name="items[${index}][remarks]" class="form-control form-control-sm" placeholder="e.g. Special diet / Daily with meal" value="${remarks.replace(/"/g, '&quot;')}" style="font-size: 0.82rem;">
+                    <input type="text" name="items[${index}][remarks]" class="form-control form-control-sm" placeholder="e.g. In-house STAT / Normal findings" value="${remarks.replace(/"/g, '&quot;')}" style="font-size: 0.82rem;">
                 </td>
                 <td style="padding: 6px; width: 35px; text-align: center;">
                     <button type="button" class="btn btn-ghost btn-sm btn-remove-item" style="color: #ef4444; padding: 2px 4px; font-size: 0.85rem;" title="Remove row">
@@ -782,6 +854,9 @@
                 updatePlaceholder();
             });
 
+            tr.querySelector('.item-qty').addEventListener('input', recalcGrandTotal);
+            tr.querySelector('.item-price').addEventListener('input', recalcGrandTotal);
+
             updatePlaceholder();
         }
 
@@ -790,6 +865,15 @@
                 createRow('', '1', '', '');
             });
         }
+
+        // Quick service buttons
+        document.querySelectorAll('.btn-quick-service').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const sName = btn.getAttribute('data-name');
+                const sPrice = btn.getAttribute('data-price');
+                createRow(sName, '1', sPrice, '');
+            });
+        });
 
         // Attach listeners to initial rendered rows
         tableBody.querySelectorAll('tr.exam-item-row').forEach(function (row) {
@@ -800,7 +884,15 @@
                     updatePlaceholder();
                 });
             }
+            const q = row.querySelector('.item-qty');
+            const p = row.querySelector('.item-price');
+            if (q) q.addEventListener('input', recalcGrandTotal);
+            if (p) p.addEventListener('input', recalcGrandTotal);
         });
+
+        if (feeInput) {
+            feeInput.addEventListener('input', recalcGrandTotal);
+        }
 
         updatePlaceholder();
     });

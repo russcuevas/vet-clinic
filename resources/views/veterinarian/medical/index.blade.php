@@ -362,13 +362,68 @@
                                     </label>
                                 </div>
                             </div>
+
+                            <!-- ADMISSION TAB / INPATIENT CONFINEMENT SECTION -->
+                            <div style="background: rgba(14, 165, 233, 0.08); border: 1.5px solid rgba(14, 165, 233, 0.4); border-radius: var(--radius-sm); padding: 1rem;" id="admission-toggle-card">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0; cursor: pointer;">
+                                        <input type="checkbox" name="is_admission" id="toggle_is_admission" value="1" style="accent-color: #38bdf8; width: 18px; height: 18px; cursor: pointer;">
+                                        <div>
+                                            <div style="font-weight: 800; color: #38bdf8; font-size: 0.88rem; display: flex; align-items: center; gap: 0.35rem;">
+                                                <span>🏥</span> Pet Admission / Confinement
+                                            </div>
+                                            <div style="font-size: 0.72rem; color: var(--text-muted);">
+                                                Admit patient to inpatient clinic ward / cage
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; font-size: 0.72rem;">Admission Tab</span>
+                                </div>
+
+                                <div id="admission-fields-container" style="display: none; padding-top: 0.75rem; border-top: 1px dashed rgba(14, 165, 233, 0.3); margin-top: 0.5rem;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label" style="font-size: 0.75rem; color: #38bdf8;">Stay Duration (Days)</label>
+                                            <input type="number" name="admission_days" id="exam_adm_days" class="form-control" value="1" min="1">
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label" style="font-size: 0.75rem; color: #38bdf8;">Daily Inpatient Rate (₱)</label>
+                                            <input type="number" step="0.01" name="daily_rate" id="exam_adm_rate" class="form-control" value="450.00">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                                        <label class="form-label" style="font-size: 0.75rem; color: #38bdf8;">Assigned Kennel / Attending Staff (Incentive)</label>
+                                        <select name="assigned_employee_id" class="form-select">
+                                            <option value="">-- Select Personnel (Optional) --</option>
+                                            @if(isset($staffMembers))
+                                                @foreach($staffMembers as $staff)
+                                                    <option value="{{ $staff->id }}">{{ $staff->full_name }} ({{ $staff->position }})</option>
+                                                @endforeach
+                                            @endif
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label" style="font-size: 0.75rem; color: #38bdf8;">Admission / Cage Monitoring Notes</label>
+                                        <input type="text" name="admission_notes" class="form-control" placeholder="e.g. Cage 1, IV fluid maintenance, observation">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer">
+                <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                     <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
-                    <button type="submit" class="btn btn-gold">Save Examination & Transfer to Billing</button>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-gold" id="btn-submit-exam">
+                            💾 Save Examination & Transfer to Billing
+                        </button>
+                        <button type="button" class="btn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff; font-weight: 700; border: none; padding: 0.65rem 1.25rem; border-radius: var(--radius-sm);" id="btn-admit-pet-submit">
+                            🏥 Save Examination & Admit Pet
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -505,4 +560,28 @@
             </form>
         </div>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleAdm = document.getElementById('toggle_is_admission');
+        const admContainer = document.getElementById('admission-fields-container');
+        const btnAdmitSubmit = document.getElementById('btn-admit-pet-submit');
+
+        if (toggleAdm && admContainer) {
+            toggleAdm.addEventListener('change', function () {
+                admContainer.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+
+        if (btnAdmitSubmit && toggleAdm) {
+            btnAdmitSubmit.addEventListener('click', function () {
+                toggleAdm.checked = true;
+                if (admContainer) admContainer.style.display = 'block';
+                // Trigger form submission
+                const form = btnAdmitSubmit.closest('form');
+                if (form) form.requestSubmit();
+            });
+        }
+    });
+    </script>
 @endsection

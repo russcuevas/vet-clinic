@@ -404,14 +404,14 @@
                             </svg>
                             <span>Clients & Pet History</span>
                         </a>
-                        <a href="{{ route('vet.grooming.index') }}"
-                            class="nav-link-item {{ request()->routeIs('vet.grooming.*') ? 'active' : '' }}">
+                        <a href="{{ route('vet.admission.index') }}"
+                            class="nav-link-item {{ request()->routeIs('vet.admission.*') ? 'active' : '' }}">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L10.758 7.758a3 3 0 014.242 4.242z" />
+                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                            <span>Grooming</span>
+                            <span>Pet Admission</span>
                         </a>
                     @elseif(auth()->user()->role === 'manager')
                         @if (request()->routeIs('manager.payroll.*'))

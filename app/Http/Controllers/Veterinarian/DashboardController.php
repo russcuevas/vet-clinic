@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Veterinarian;
 
 use App\Http\Controllers\Controller;
 use App\Models\MedicalRecord;
-use App\Models\GroomingRecord;
+use App\Models\Appointment;
 use App\Models\Pet;
 use Carbon\Carbon;
 
@@ -18,7 +18,7 @@ class DashboardController extends Controller
             'today_consultations' => MedicalRecord::whereDate('created_at', $today)->where('service_type', 'consultation')->count(),
             'today_followups' => MedicalRecord::whereDate('created_at', $today)->where('service_type', 'follow_up')->count(),
             'today_wellness' => MedicalRecord::whereDate('created_at', $today)->where('service_type', 'wellness')->count(),
-            'total_grooming' => GroomingRecord::count(),
+            'total_admissions' => Appointment::where('service_category', 'boarding')->whereIn('status', ['confirmed', 'checked_in'])->count(),
         ];
 
         $activeQueue = MedicalRecord::with(['owner', 'pet', 'prescription'])
@@ -31,11 +31,12 @@ class DashboardController extends Controller
             ->take(8)
             ->get();
 
-        $recentGrooming = GroomingRecord::with(['owner', 'pet'])
+        $recentAdmissions = Appointment::where('service_category', 'boarding')
+            ->with(['owner', 'pet', 'assignedEmployee'])
             ->latest()
             ->take(6)
             ->get();
 
-        return view('veterinarian.dashboard', compact('stats', 'activeQueue', 'recentRecords', 'recentGrooming'));
+        return view('veterinarian.dashboard', compact('stats', 'activeQueue', 'recentRecords', 'recentAdmissions'));
     }
 }
