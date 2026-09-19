@@ -167,9 +167,18 @@ Route::group(['prefix' => 'admin/payroll', 'as' => 'admin.payroll.', 'middleware
 Route::group(['prefix' => 'cashier', 'as' => 'cashier.', 'middleware' => ['auth', 'role:cashier']], function () {
     Route::get('/dashboard', [\App\Http\Controllers\Cashier\DashboardController::class, 'index'])->name('dashboard');
 
+    // Central Billing & Checkout
     Route::get('/billing', [\App\Http\Controllers\Cashier\BillingController::class, 'index'])->name('billing.index');
+    Route::post('/billing', [\App\Http\Controllers\Cashier\BillingController::class, 'store'])->name('billing.store');
     Route::post('/billing/{bill}/pay', [\App\Http\Controllers\Cashier\BillingController::class, 'processPayment'])->name('billing.pay');
+    Route::delete('/billing/{bill}', [\App\Http\Controllers\Cashier\BillingController::class, 'destroy'])->name('billing.destroy');
     Route::get('/billing/{bill}/invoice', [\App\Http\Controllers\Cashier\BillingController::class, 'invoice'])->name('billing.invoice');
+
+    // Pet Boarding Module for Cashier Desk
+    Route::get('/boarding', [\App\Http\Controllers\Cashier\BoardingController::class, 'index'])->name('boarding.index');
+    Route::post('/boarding', [\App\Http\Controllers\Cashier\BoardingController::class, 'store'])->name('boarding.store');
+    Route::put('/boarding/{appointment}', [\App\Http\Controllers\Cashier\BoardingController::class, 'update'])->name('boarding.update');
+    Route::delete('/boarding/{appointment}', [\App\Http\Controllers\Cashier\BoardingController::class, 'destroy'])->name('boarding.destroy');
 
     Route::get('/pos', [\App\Http\Controllers\Cashier\SuppliesPOSController::class, 'index'])->name('pos.index');
     Route::post('/pos', [\App\Http\Controllers\Cashier\SuppliesPOSController::class, 'store'])->name('pos.store');
@@ -179,6 +188,10 @@ Route::group(['prefix' => 'cashier', 'as' => 'cashier.', 'middleware' => ['auth'
     Route::post('/grooming', [\App\Http\Controllers\Cashier\GroomingController::class, 'store'])->name('grooming.store');
     Route::put('/grooming/{grooming}', [\App\Http\Controllers\Cashier\GroomingController::class, 'update'])->name('grooming.update');
     Route::delete('/grooming/{grooming}', [\App\Http\Controllers\Cashier\GroomingController::class, 'destroy'])->name('grooming.destroy');
+
+    // Sales Summary Report with Customizable Date Filters
+    Route::get('/sales-summary', [\App\Http\Controllers\Cashier\SalesSummaryController::class, 'index'])->name('sales.summary');
+    Route::get('/sales-summary/print', [\App\Http\Controllers\Cashier\SalesSummaryController::class, 'print'])->name('sales.summary.print');
 });
 
 // ==========================================

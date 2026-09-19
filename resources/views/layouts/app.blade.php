@@ -327,14 +327,14 @@
                             </svg>
                             <span>Checkout & Billing</span>
                         </a>
-                        <a href="{{ route('cashier.pos.index') }}"
-                            class="nav-link-item {{ request()->routeIs('cashier.pos.*') ? 'active' : '' }}">
+                        <a href="{{ route('cashier.boarding.index') }}"
+                            class="nav-link-item {{ request()->routeIs('cashier.boarding.*') ? 'active' : '' }}">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
-                            <span>Pet Supplies POS</span>
+                            <span>Boarding Services</span>
                         </a>
                         <a href="{{ route('cashier.grooming.index') }}"
                             class="nav-link-item {{ request()->routeIs('cashier.grooming.*') ? 'active' : '' }}">
@@ -344,6 +344,26 @@
                                     d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L10.758 7.758a3 3 0 014.242 4.242z" />
                             </svg>
                             <span>Grooming Services</span>
+                        </a>
+                        <a href="{{ route('cashier.pos.index') }}"
+                            class="nav-link-item {{ request()->routeIs('cashier.pos.*') ? 'active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            <span>Pet Supplies POS</span>
+                        </a>
+
+                        <div class="nav-section-title">Reports & Summaries</div>
+                        <a href="{{ route('cashier.sales.summary') }}"
+                            class="nav-link-item {{ request()->routeIs('cashier.sales.*') ? 'active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            <span>Sales Summary</span>
                         </a>
                     @elseif(auth()->user()->role === 'veterinarian')
                         <!-- Veterinarian Navigation -->

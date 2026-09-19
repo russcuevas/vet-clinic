@@ -164,17 +164,22 @@
         </table>
 
         <!-- Totals -->
-        <div style="margin-left: auto; max-width: 250px; font-size: 0.9rem;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
                 <span>Subtotal:</span>
                 <strong>₱{{ number_format($bill->subtotal, 2) }}</strong>
             </div>
+            @if($bill->discount > 0)
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; color: #ef4444;">
+                    <span>Discount:</span>
+                    <strong>- ₱{{ number_format($bill->discount, 2) }}</strong>
+                </div>
+            @endif
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 1.15rem; color: var(--gold-primary); border-top: 1px solid var(--gold-border); padding-top: 0.5rem;">
-                <span>Total Amount:</span>
+                <span>Total Due:</span>
                 <strong>₱{{ number_format($bill->total_amount, 2) }}</strong>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #94A3B8;">
-                <span>Paid via {{ strtoupper($bill->payment_method) }}:</span>
+                <span>Paid via {{ strtoupper(str_replace('_', ' ', $bill->payment_method)) }}:</span>
                 <span>₱{{ number_format($bill->paid_amount, 2) }}</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #94A3B8;">
