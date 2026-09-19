@@ -50,6 +50,19 @@
 
         <div class="stat-card">
             <div class="stat-header">
+                <span class="stat-title">🏨 Pet Boarding</span>
+                <div class="stat-icon-wrapper" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                </div>
+            </div>
+            <div class="stat-value" style="color: #c4b5fd;">{{ $todayBoarding ?? 0 }} <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Stays</span></div>
+            <div class="stat-desc">Kennel care & day boarding</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
                 <span class="stat-title">Checked In & In Clinic</span>
                 <div class="stat-icon-wrapper" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -58,7 +71,7 @@
                 </div>
             </div>
             <div class="stat-value" style="color: #60a5fa;">{{ $todayCheckedIn }} <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Active</span></div>
-            <div class="stat-desc">Transferred to Vet / Grooming queue</div>
+            <div class="stat-desc">Transferred to Vet / Grooming / Kennel queue</div>
         </div>
     </div>
 
@@ -67,11 +80,11 @@
         <!-- Left Filter Group -->
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
             <a href="{{ route('receptionist.appointments.index', ['date_filter' => 'today']) }}" 
-               class="btn btn-sm {{ $dateFilter === 'today' ? 'btn-gold' : 'btn-ghost' }}">
+               class="btn btn-sm {{ $dateFilter === 'today' && !$category ? 'btn-gold' : 'btn-ghost' }}">
                📅 Today
             </a>
             <a href="{{ route('receptionist.appointments.index', ['date_filter' => 'upcoming']) }}" 
-               class="btn btn-sm {{ $dateFilter === 'upcoming' ? 'btn-gold' : 'btn-ghost' }}">
+               class="btn btn-sm {{ $dateFilter === 'upcoming' && !$category ? 'btn-gold' : 'btn-ghost' }}">
                ⏳ Upcoming
             </a>
             <a href="{{ route('receptionist.appointments.index', ['category' => 'clinic', 'date_filter' => $dateFilter]) }}" 
@@ -81,6 +94,10 @@
             <a href="{{ route('receptionist.appointments.index', ['category' => 'grooming', 'date_filter' => $dateFilter]) }}" 
                class="btn btn-sm {{ $category === 'grooming' ? 'btn-gold' : 'btn-ghost' }}">
                ✂️ Grooming
+            </a>
+            <a href="{{ route('receptionist.appointments.index', ['category' => 'boarding', 'date_filter' => $dateFilter]) }}" 
+               class="btn btn-sm {{ $category === 'boarding' ? 'btn-gold' : 'btn-ghost' }}">
+               🏨 Boarding
             </a>
             <a href="{{ route('receptionist.appointments.index', ['date_filter' => 'all']) }}" 
                class="btn btn-sm {{ $dateFilter === 'all' && !$category ? 'btn-gold' : 'btn-ghost' }}">
@@ -93,7 +110,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            <span>+ Book New Appointment (Clinic / Grooming)</span>
+            <span>+ Book New Appointment (Clinic / Grooming / Boarding)</span>
         </button>
     </div>
 
@@ -102,7 +119,7 @@
         <div class="card-header">
             <div class="card-title-group">
                 <h3 class="card-title">Appointments & Booking Schedule</h3>
-                <span class="card-subtitle">Showing scheduled client appointments, service categories, and check-in status</span>
+                <span class="card-subtitle">Showing scheduled client appointments, service categories, boarding stays, and check-in status</span>
             </div>
 
             <!-- Search form -->
@@ -171,6 +188,20 @@
                                         <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.72rem;">
                                             🏥 Clinic: {{ ucfirst(str_replace('_', ' ', $apt->service_type)) }}
                                         </span>
+                                    @elseif($apt->service_category === 'boarding')
+                                        <div>
+                                            <span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); font-size: 0.72rem;">
+                                                🏨 Boarding ({{ $apt->boarding_days ?? 1 }} Day{{ ($apt->boarding_days ?? 1) > 1 ? 's' : '' }})
+                                            </span>
+                                            <div style="font-size: 0.72rem; color: #a78bfa; font-weight: 600; margin-top: 3px;">
+                                                ₱{{ number_format($apt->daily_rate ?? 350, 2) }}/day = <strong style="color: var(--gold-light);">₱{{ number_format($apt->total_price ?? (($apt->daily_rate ?? 350) * ($apt->boarding_days ?? 1)), 2) }}</strong>
+                                            </div>
+                                            @if($apt->assignedEmployee)
+                                                <div style="font-size: 0.68rem; color: #94a3b8; margin-top: 2px;">
+                                                    🧹 Staff: <strong style="color: #cbd5e1;">{{ $apt->assignedEmployee->full_name }}</strong>
+                                                </div>
+                                            @endif
+                                        </div>
                                     @else
                                         <span class="badge" style="background: rgba(245, 186, 49, 0.15); color: #fbbf24; border: 1px solid rgba(245, 186, 49, 0.3); font-size: 0.72rem;">
                                             ✂️ Grooming
@@ -201,7 +232,7 @@
                                                 @csrf
                                                 @method('PUT')
                                                 <input type="hidden" name="status" value="checked_in">
-                                                <button type="submit" class="btn btn-gold btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.72rem;" title="Check in patient to Vet / Grooming queue">
+                                                <button type="submit" class="btn btn-gold btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.72rem;" title="Check in patient to queue">
                                                     ✓ Check-In
                                                 </button>
                                             </form>
@@ -251,7 +282,7 @@
                                                 </select>
                                             </div>
                                             <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.35;">
-                                                💡 <em>Selecting "Checked In" will automatically transfer this patient to the active doctor's or groomer's queue for today.</em>
+                                                💡 <em>Selecting "Checked In" will automatically transfer this patient to the active doctor, groomer, or kennel queue for today.</em>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
@@ -283,10 +314,10 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- MASTER BOOKING MODAL (Clinic vs Grooming | Existing vs New Client/Pet) -->
+    <!-- MASTER BOOKING MODAL (Clinic vs Grooming vs Boarding | Existing vs New) -->
     <!-- ========================================================================= -->
     <div class="modal-backdrop" id="modal-book-appointment">
-        <div class="modal-dialog" style="max-width: 920px; width: 95vw;">
+        <div class="modal-dialog" style="max-width: 940px; width: 95vw;">
             <div class="modal-header" style="padding: 1.25rem 1.75rem;">
                 <div class="modal-title-group">
                     <h4 class="modal-title" style="font-size: 1.15rem;">Book New Appointment</h4>
@@ -303,21 +334,34 @@
                         <label class="form-label" style="font-size: 0.9rem; font-weight: 700; color: var(--gold-light); margin-bottom: 0.6rem; display: block;">
                             1. Select Service Category *
                         </label>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                            <!-- Clinic Option -->
                             <label style="cursor: pointer; display: block;">
                                 <input type="radio" name="service_category" value="clinic" checked id="radio_service_clinic" style="display: none;">
-                                <div id="card_service_clinic" class="service-option-card" style="border: 2px solid #10b981; background: rgba(16, 185, 129, 0.12); padding: 1rem 1.25rem; border-radius: 10px; text-align: center; transition: all 0.2s;">
+                                <div id="card_service_clinic" class="service-option-card" style="border: 2px solid #10b981; background: rgba(16, 185, 129, 0.12); padding: 1rem 0.85rem; border-radius: 10px; text-align: center; transition: all 0.2s;">
                                     <div style="font-size: 1.6rem; margin-bottom: 0.35rem;">🏥</div>
-                                    <strong style="color: #34d399; font-size: 1rem; display: block;">Veterinary Clinic</strong>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Consultation, Follow up, Wellness</span>
+                                    <strong style="color: #34d399; font-size: 0.95rem; display: block;">Veterinary Clinic</strong>
+                                    <span style="font-size: 0.72rem; color: var(--text-muted);">Consult, Follow up, Wellness</span>
                                 </div>
                             </label>
+
+                            <!-- Grooming Option -->
                             <label style="cursor: pointer; display: block;">
                                 <input type="radio" name="service_category" value="grooming" id="radio_service_grooming" style="display: none;">
-                                <div id="card_service_grooming" class="service-option-card" style="border: 1px solid var(--navy-border); background: rgba(255, 255, 255, 0.03); padding: 1rem 1.25rem; border-radius: 10px; text-align: center; transition: all 0.2s;">
+                                <div id="card_service_grooming" class="service-option-card" style="border: 1px solid var(--navy-border); background: rgba(255, 255, 255, 0.03); padding: 1rem 0.85rem; border-radius: 10px; text-align: center; transition: all 0.2s;">
                                     <div style="font-size: 1.6rem; margin-bottom: 0.35rem;">✂️</div>
-                                    <strong style="color: var(--white); font-size: 1rem; display: block;">Grooming Salon</strong>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Bath, Teddy bear cut, Coat care</span>
+                                    <strong style="color: var(--white); font-size: 0.95rem; display: block;">Grooming Salon</strong>
+                                    <span style="font-size: 0.72rem; color: var(--text-muted);">Bath, styling, coat care</span>
+                                </div>
+                            </label>
+
+                            <!-- Boarding Option -->
+                            <label style="cursor: pointer; display: block;">
+                                <input type="radio" name="service_category" value="boarding" id="radio_service_boarding" style="display: none;">
+                                <div id="card_service_boarding" class="service-option-card" style="border: 1px solid var(--navy-border); background: rgba(255, 255, 255, 0.03); padding: 1rem 0.85rem; border-radius: 10px; text-align: center; transition: all 0.2s;">
+                                    <div style="font-size: 1.6rem; margin-bottom: 0.35rem;">🏨</div>
+                                    <strong style="color: var(--white); font-size: 0.95rem; display: block;">Pet Boarding</strong>
+                                    <span style="font-size: 0.72rem; color: var(--text-muted);">Daily kennel care & stays</span>
                                 </div>
                             </label>
                         </div>
@@ -341,6 +385,65 @@
                                 <input type="radio" name="service_type" value="wellness">
                                 <span>Wellness</span>
                             </label>
+                        </div>
+                    </div>
+
+                    <!-- BOARDING SPECIFIC SECTION (Visible if service_category === 'boarding') -->
+                    <div id="section_boarding_details" style="display: none; margin-bottom: 1.5rem; background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 10px; padding: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <label class="form-label" style="font-weight: 700; color: #c4b5fd; font-size: 0.9rem; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                                <span>🏨</span> Pet Boarding Rate & Kennel Staff Assignment
+                            </label>
+                            <span style="font-size: 0.72rem; background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35); padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 600;">
+                                Janitor / Kennel Personnel Caregiver
+                            </span>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 1rem; align-items: flex-end;">
+                            <!-- Janitor / Kennel Personnel Assignment -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; color: var(--white);">
+                                    🧹 Assign Janitor / Kennel Staff <span style="font-size: 0.7rem; color: #a78bfa;">(Incentives)</span> *
+                                </label>
+                                <select name="assigned_employee_id" id="select_assigned_employee" class="form-control" style="font-size: 0.85rem;">
+                                    <option value="">-- Select Staff Personnel --</option>
+                                    @foreach($kennelStaff as $staff)
+                                        <option value="{{ $staff->id }}">
+                                            {{ $staff->full_name }} ({{ $staff->position }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Number of Days -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; color: var(--white);">
+                                    📅 Duration (Days) *
+                                </label>
+                                <input type="number" name="boarding_days" id="input_boarding_days" class="form-control" min="1" max="90" value="1" style="font-weight: 700; font-size: 0.95rem; text-align: center;">
+                            </div>
+
+                            <!-- Price per Day -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 600; color: var(--white);">
+                                    💰 Price / Day (₱) *
+                                </label>
+                                <input type="number" name="daily_rate" id="input_daily_rate" class="form-control" step="0.01" min="0" value="350.00" style="font-weight: 700; font-size: 0.95rem; text-align: right;">
+                            </div>
+                        </div>
+
+                        <!-- Interactive Total Calculation Display -->
+                        <div style="margin-top: 1rem; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 8px; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                            <div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">Calculation Breakdown:</div>
+                                <div style="font-size: 0.88rem; color: #e2e8f0; font-weight: 600; margin-top: 2px;" id="boarding_formula_preview">
+                                    ₱350.00 × 1 day = ₱350.00
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Total Boarding Amount</span>
+                                <span style="font-size: 1.35rem; font-weight: 800; color: var(--gold-light);" id="boarding_total_display">₱350.00</span>
+                            </div>
                         </div>
                     </div>
 
@@ -491,7 +594,7 @@
                         </label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                             <div class="form-group">
-                                <label class="form-label">Date of Appointment *</label>
+                                <label class="form-label">Date of Appointment / Check-in *</label>
                                 <input type="date" name="appointment_date" class="form-control" value="{{ date('Y-m-d') }}" required>
                             </div>
                             <div class="form-group">
@@ -501,8 +604,8 @@
                         </div>
 
                         <div class="form-group" style="margin-top: 1rem;">
-                            <label class="form-label">Purpose of Examination / Service Notes</label>
-                            <textarea name="purpose_examination_notes" class="form-control" rows="3" placeholder="State reason for visit, symptoms, or special grooming styling notes..."></textarea>
+                            <label class="form-label">Purpose of Examination / Boarding & Care Instructions</label>
+                            <textarea name="purpose_examination_notes" class="form-control" rows="3" placeholder="State reason for visit, symptoms, grooming notes, or pet boarding dietary/care instructions..."></textarea>
                         </div>
                     </div>
 
@@ -531,12 +634,15 @@
 <script src="{{ asset('js/select2.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. Service Category Card Toggle (Clinic vs Grooming)
+    // 1. Service Category Card Toggle (Clinic vs Grooming vs Boarding)
     const radioClinic = document.getElementById('radio_service_clinic');
     const radioGrooming = document.getElementById('radio_service_grooming');
+    const radioBoarding = document.getElementById('radio_service_boarding');
     const cardClinic = document.getElementById('card_service_clinic');
     const cardGrooming = document.getElementById('card_service_grooming');
+    const cardBoarding = document.getElementById('card_service_boarding');
     const clinicTypeSection = document.getElementById('section_clinic_service_type');
+    const boardingSection = document.getElementById('section_boarding_details');
 
     function updateServiceCategoryUI() {
         if (radioClinic.checked) {
@@ -544,21 +650,65 @@ document.addEventListener('DOMContentLoaded', function() {
             cardClinic.style.background = 'rgba(16, 185, 129, 0.15)';
             cardGrooming.style.border = '1px solid var(--navy-border)';
             cardGrooming.style.background = 'rgba(255, 255, 255, 0.03)';
+            cardBoarding.style.border = '1px solid var(--navy-border)';
+            cardBoarding.style.background = 'rgba(255, 255, 255, 0.03)';
             clinicTypeSection.style.display = 'block';
+            boardingSection.style.display = 'none';
+        } else if (radioBoarding.checked) {
+            cardBoarding.style.border = '2px solid #a78bfa';
+            cardBoarding.style.background = 'rgba(139, 92, 246, 0.15)';
+            cardClinic.style.border = '1px solid var(--navy-border)';
+            cardClinic.style.background = 'rgba(255, 255, 255, 0.03)';
+            cardGrooming.style.border = '1px solid var(--navy-border)';
+            cardGrooming.style.background = 'rgba(255, 255, 255, 0.03)';
+            clinicTypeSection.style.display = 'none';
+            boardingSection.style.display = 'block';
+            calculateBoardingTotal();
         } else {
+            // Grooming
             cardGrooming.style.border = '2px solid var(--gold-primary)';
             cardGrooming.style.background = 'rgba(245, 186, 49, 0.15)';
             cardClinic.style.border = '1px solid var(--navy-border)';
             cardClinic.style.background = 'rgba(255, 255, 255, 0.03)';
+            cardBoarding.style.border = '1px solid var(--navy-border)';
+            cardBoarding.style.background = 'rgba(255, 255, 255, 0.03)';
             clinicTypeSection.style.display = 'none';
+            boardingSection.style.display = 'none';
         }
     }
 
     radioClinic.addEventListener('change', updateServiceCategoryUI);
     radioGrooming.addEventListener('change', updateServiceCategoryUI);
+    radioBoarding.addEventListener('change', updateServiceCategoryUI);
     updateServiceCategoryUI();
 
-    // 2. Client Mode Toggle (Existing vs New)
+    // 2. Boarding Calculation Logic (price * days = total)
+    const inputDays = document.getElementById('input_boarding_days');
+    const inputRate = document.getElementById('input_daily_rate');
+    const formulaPreview = document.getElementById('boarding_formula_preview');
+    const totalDisplay = document.getElementById('boarding_total_display');
+
+    function calculateBoardingTotal() {
+        if (!inputDays || !inputRate) return;
+        const days = Math.max(1, parseInt(inputDays.value) || 1);
+        const rate = Math.max(0, parseFloat(inputRate.value) || 0);
+        const total = days * rate;
+
+        const formattedRate = Number(rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const formattedTotal = Number(total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        if (formulaPreview) {
+            formulaPreview.textContent = `₱${formattedRate} × ${days} day${days > 1 ? 's' : ''} = ₱${formattedTotal}`;
+        }
+        if (totalDisplay) {
+            totalDisplay.textContent = `₱${formattedTotal}`;
+        }
+    }
+
+    if (inputDays) inputDays.addEventListener('input', calculateBoardingTotal);
+    if (inputRate) inputRate.addEventListener('input', calculateBoardingTotal);
+
+    // 3. Client Mode Toggle (Existing vs New)
     const radioClientExisting = document.getElementById('radio_client_existing');
     const radioClientNew = document.getElementById('radio_client_new');
     const sectionExistingClient = document.getElementById('section_existing_client');
@@ -595,7 +745,7 @@ document.addEventListener('DOMContentLoaded', function() {
     radioPetNew.addEventListener('change', updateClientAndPetUI);
     updateClientAndPetUI();
 
-    // 3. Dynamic Pet Fetcher via AJAX when selecting owner
+    // 4. Dynamic Pet Fetcher via AJAX when selecting owner
     if (typeof jQuery !== 'undefined') {
         const selectOwner = jQuery('#select_existing_owner');
         const selectPet = jQuery('#select_existing_pet');

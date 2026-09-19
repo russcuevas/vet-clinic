@@ -113,4 +113,9 @@ class Employee extends Model
     {
         return $this->hasMany(GroomingRecord::class, 'groomer_id');
     }
+
+    public function boardingAppointments()
+    {
+        return $this->hasMany(Appointment::class, 'assigned_employee_id');
+    }
 }

@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use App\Models\Owner;
 use App\Models\Pet;
 use App\Models\User;
+use App\Models\Employee;
 use App\Models\MedicalRecord;
 use App\Models\GroomingRecord;
 use App\Models\Bill;
@@ -19,16 +20,16 @@ class AppointmentController extends Controller
 {
     public function index(Request $request)
     {
-        $category = $request->query('category'); // 'clinic', 'grooming'
+        $category = $request->query('category'); // 'clinic', 'grooming', 'boarding'
         $status = $request->query('status'); // 'pending', 'confirmed', 'checked_in', 'completed', 'cancelled'
         $dateFilter = $request->query('date_filter', 'today'); // 'today', 'upcoming', 'all', 'past'
         $search = $request->query('search');
 
-        $query = Appointment::with(['owner', 'pet', 'bookedBy', 'veterinarian'])
+        $query = Appointment::with(['owner', 'pet', 'bookedBy', 'veterinarian', 'assignedEmployee'])
             ->latest('appointment_date')
             ->latest('appointment_time');
 
-        if ($category && in_array($category, ['clinic', 'grooming'])) {
+        if ($category && in_array($category, ['clinic', 'grooming', 'boarding'])) {
             $query->where('service_category', $category);
         }
 
@@ -67,6 +68,7 @@ class AppointmentController extends Controller
         $todayTotal = Appointment::whereDate('appointment_date', $today)->count();
         $todayClinic = Appointment::whereDate('appointment_date', $today)->where('service_category', 'clinic')->count();
         $todayGrooming = Appointment::whereDate('appointment_date', $today)->where('service_category', 'grooming')->count();
+        $todayBoarding = Appointment::whereDate('appointment_date', $today)->where('service_category', 'boarding')->count();
         $todayCheckedIn = Appointment::whereDate('appointment_date', $today)->where('status', 'checked_in')->count();
         $upcomingCount = Appointment::whereDate('appointment_date', '>=', $today)->count();
 
@@ -74,15 +76,31 @@ class AppointmentController extends Controller
         $owners = Owner::with('pets')->orderBy('full_name')->get();
         $veterinarians = User::where('role', 'veterinarian')->where('status', 'active')->orderBy('name')->get();
 
+        // Janitor & Kennel Personnel for Boarding care incentives
+        $kennelStaff = Employee::where('status', 'active')
+            ->where(function ($q) {
+                $q->where('position', 'like', '%janitor%')
+                  ->orWhere('position', 'like', '%kennel%')
+                  ->orWhere('position', 'like', '%utility%');
+            })
+            ->orderBy('first_name')
+            ->get();
+
+        if ($kennelStaff->isEmpty()) {
+            $kennelStaff = Employee::where('status', 'active')->orderBy('first_name')->get();
+        }
+
         return view('receptionist.appointments.index', compact(
             'appointments',
             'todayTotal',
             'todayClinic',
             'todayGrooming',
+            'todayBoarding',
             'todayCheckedIn',
             'upcomingCount',
             'owners',
             'veterinarians',
+            'kennelStaff',
             'category',
             'status',
             'dateFilter',
@@ -97,7 +115,7 @@ class AppointmentController extends Controller
         $petMode = $request->input('pet_mode', 'existing'); // 'existing' or 'new'
 
         $rules = [
-            'service_category' => 'required|in:clinic,grooming',
+            'service_category' => 'required|in:clinic,grooming,boarding',
             'appointment_date' => 'required|date',
             'appointment_time' => 'required',
             'purpose_examination_notes' => 'nullable|string|max:1000',
@@ -106,6 +124,11 @@ class AppointmentController extends Controller
 
         if ($serviceCategory === 'clinic') {
             $rules['service_type'] = 'required|in:consultation,follow_up,wellness';
+        } elseif ($serviceCategory === 'boarding') {
+            $rules['boarding_days'] = 'required|integer|min:1';
+            $rules['daily_rate'] = 'required|numeric|min:0';
+            $rules['assigned_employee_id'] = 'nullable|exists:employees,id';
+            $rules['service_type'] = 'nullable|string';
         } else {
             $rules['service_type'] = 'nullable|string';
         }
@@ -181,9 +204,28 @@ class AppointmentController extends Controller
             }
 
             // 3. Create Appointment
-            $serviceType = $serviceCategory === 'clinic' 
-                ? $validated['service_type'] 
-                : ($validated['service_type'] ?: 'grooming');
+            if ($serviceCategory === 'clinic') {
+                $serviceType = $validated['service_type'];
+                $boardingDays = null;
+                $dailyRate = null;
+                $totalPrice = null;
+                $assignedEmployeeId = null;
+                $vetId = $validated['veterinarian_id'] ?? null;
+            } elseif ($serviceCategory === 'boarding') {
+                $serviceType = $validated['service_type'] ?: 'Pet Boarding & Day Care';
+                $boardingDays = intval($validated['boarding_days'] ?? 1);
+                $dailyRate = floatval($validated['daily_rate'] ?? 350.00);
+                $totalPrice = $boardingDays * $dailyRate;
+                $assignedEmployeeId = $validated['assigned_employee_id'] ?? null;
+                $vetId = null;
+            } else {
+                $serviceType = $validated['service_type'] ?: 'grooming';
+                $boardingDays = null;
+                $dailyRate = null;
+                $totalPrice = null;
+                $assignedEmployeeId = null;
+                $vetId = null;
+            }
 
             $appointment = Appointment::create([
                 'appointment_code' => Appointment::generateAppointmentCode(),
@@ -192,7 +234,11 @@ class AppointmentController extends Controller
                 'owner_id' => $owner->id,
                 'pet_id' => $pet->id,
                 'booked_by' => auth()->id(),
-                'veterinarian_id' => $validated['veterinarian_id'] ?? null,
+                'veterinarian_id' => $vetId,
+                'assigned_employee_id' => $assignedEmployeeId,
+                'boarding_days' => $boardingDays,
+                'daily_rate' => $dailyRate,
+                'total_price' => $totalPrice,
                 'appointment_date' => $validated['appointment_date'],
                 'appointment_time' => $validated['appointment_time'],
                 'purpose_examination_notes' => $validated['purpose_examination_notes'] ?? null,
@@ -203,7 +249,13 @@ class AppointmentController extends Controller
 
             DB::commit();
 
-            $serviceName = $serviceCategory === 'clinic' ? 'Clinical (' . ucfirst(str_replace('_', ' ', $serviceType)) . ')' : 'Grooming';
+            $serviceName = match($serviceCategory) {
+                'clinic' => 'Clinical (' . ucfirst(str_replace('_', ' ', $serviceType)) . ')',
+                'grooming' => 'Grooming Salon',
+                'boarding' => "Pet Boarding ({$boardingDays} Day(s) @ ₱" . number_format($dailyRate, 2) . " = Total: ₱" . number_format($totalPrice, 2) . ")",
+                default => ucfirst($serviceCategory),
+            };
+
             return redirect()->back()->with('success', "Appointment {$appointment->appointment_code} successfully booked for {$owner->full_name} and {$pet->name} ({$serviceName})!");
         } catch (\Exception $e) {
             DB::rollBack();
@@ -294,6 +346,43 @@ class AppointmentController extends Controller
                         'quantity' => 1,
                         'unit_price' => $groomingPrice,
                         'total_price' => $groomingPrice,
+                    ]);
+                }
+            } elseif ($appointment->service_category === 'boarding') {
+                // Automatically generate Bill for Boarding Service
+                $existingBill = Bill::where('pet_id', $appointment->pet_id)
+                    ->whereDate('transaction_date', Carbon::today())
+                    ->where('notes', 'like', "%{$appointment->appointment_code}%")
+                    ->first();
+
+                if (!$existingBill) {
+                    $owner = $appointment->owner ?: Owner::find($appointment->owner_id);
+                    $days = $appointment->boarding_days ?: 1;
+                    $rate = $appointment->daily_rate ?: 350.00;
+                    $totalAmount = $appointment->total_price ?: ($days * $rate);
+                    $assignedStaff = $appointment->assignedEmployee ? $appointment->assignedEmployee->full_name : 'Janitor / Kennel Staff';
+
+                    $invoiceNo = Bill::generateInvoiceNo();
+                    $bill = Bill::create([
+                        'invoice_no' => $invoiceNo,
+                        'owner_id' => $appointment->owner_id,
+                        'pet_id' => $appointment->pet_id,
+                        'client_name' => $owner ? $owner->full_name : 'Client',
+                        'service_type' => 'veterinary',
+                        'subtotal' => $totalAmount,
+                        'total_amount' => $totalAmount,
+                        'payment_status' => 'unpaid',
+                        'transaction_date' => Carbon::now(),
+                        'notes' => "Pet Boarding ({$days} Days @ ₱" . number_format($rate, 2) . "/day) for {$appointment->appointment_code}. Assigned Caregiver: {$assignedStaff}",
+                    ]);
+
+                    BillItem::create([
+                        'bill_id' => $bill->id,
+                        'item_name' => "Pet Boarding: {$days} Day(s) @ ₱" . number_format($rate, 2) . "/day (Caregiver: {$assignedStaff})",
+                        'item_type' => 'service',
+                        'quantity' => $days,
+                        'unit_price' => $rate,
+                        'total_price' => $totalAmount,
                     ]);
                 }
             }

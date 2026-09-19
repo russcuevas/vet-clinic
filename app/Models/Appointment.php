@@ -17,9 +17,13 @@ class Appointment extends Model
         'pet_id',
         'booked_by',
         'veterinarian_id',
+        'assigned_employee_id',
         'appointment_date',
         'appointment_time',
         'purpose_examination_notes',
+        'boarding_days',
+        'daily_rate',
+        'total_price',
         'status',
         'is_new_client',
         'is_new_pet',
@@ -27,6 +31,9 @@ class Appointment extends Model
 
     protected $casts = [
         'appointment_date' => 'date',
+        'boarding_days' => 'integer',
+        'daily_rate' => 'decimal:2',
+        'total_price' => 'decimal:2',
         'is_new_client' => 'boolean',
         'is_new_pet' => 'boolean',
     ];
@@ -62,5 +69,10 @@ class Appointment extends Model
     public function veterinarian()
     {
         return $this->belongsTo(User::class, 'veterinarian_id');
+    }
+
+    public function assignedEmployee()
+    {
+        return $this->belongsTo(Employee::class, 'assigned_employee_id');
     }
 }

@@ -15,15 +15,15 @@
         rel="stylesheet">
 
     <!-- Modular CSS Files in public/css/ (Clean separation) -->
-    <link rel="stylesheet" href="{{ asset('css/variables.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/layout.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/components.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/datatables.css') }}?v={{ time() }}">
-    <link rel="stylesheet" href="{{ asset('css/modal.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/select2.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/select2-custom.css') }}?v={{ time() }}">
-    <link rel="stylesheet" href="{{ asset('css/footer-animation.css') }}?v={{ time() }}">
+    <link rel="stylesheet" href="{{ asset('css/variables.css') }}?v={{ file_exists(public_path('css/variables.css')) ? filemtime(public_path('css/variables.css')) : time() }}">
+    <link rel="stylesheet" href="{{ asset('css/layout.css') }}?v={{ file_exists(public_path('css/layout.css')) ? filemtime(public_path('css/layout.css')) : time() }}">
+    <link rel="stylesheet" href="{{ asset('css/components.css') }}?v={{ file_exists(public_path('css/components.css')) ? filemtime(public_path('css/components.css')) : time() }}">
+    <link rel="stylesheet" href="{{ asset('css/datatables.css') }}?v={{ file_exists(public_path('css/datatables.css')) ? filemtime(public_path('css/datatables.css')) : time() }}">
+    <link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ file_exists(public_path('css/modal.css')) ? filemtime(public_path('css/modal.css')) : time() }}">
+    <link rel="stylesheet" href="{{ asset('css/toast.css') }}?v={{ file_exists(public_path('css/toast.css')) ? filemtime(public_path('css/toast.css')) : time() }}">
+    <link rel="stylesheet" href="{{ asset('css/select2.min.css') }}?v={{ file_exists(public_path('css/select2.min.css')) ? filemtime(public_path('css/select2.min.css')) : time() }}">
+    <link rel="stylesheet" href="{{ asset('css/select2-custom.css') }}?v={{ file_exists(public_path('css/select2-custom.css')) ? filemtime(public_path('css/select2-custom.css')) : time() }}">
+    <link rel="stylesheet" href="{{ asset('css/footer-animation.css') }}?v={{ file_exists(public_path('css/footer-animation.css')) ? filemtime(public_path('css/footer-animation.css')) : time() }}">
 
     @stack('styles')
 

@@ -9,6 +9,7 @@ use App\Models\EmployeeIncentive;
 use App\Models\GroomingRecord;
 use App\Models\MedicalRecord;
 use App\Models\DtrRecord;
+use App\Models\Appointment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -220,15 +221,36 @@ class IncentiveController extends Controller
             $suggestedRate = $rule ? $rule->default_rate : 35.00;
             $basis = 'fixed_per_unit';
 
-            // Dynamically pulled from DTR: number of active duty days maintaining clinic kennels/boarding
+            // Check boarding appointments assigned to this janitor/kennel staff
+            $assignedBoardingDays = Appointment::where('service_category', 'boarding')
+                ->where('assigned_employee_id', $employee->id)
+                ->whereMonth('appointment_date', $month)
+                ->whereYear('appointment_date', $year)
+                ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
+                ->sum('boarding_days');
+
+            $assignedBoardingSales = Appointment::where('service_category', 'boarding')
+                ->where('assigned_employee_id', $employee->id)
+                ->whereMonth('appointment_date', $month)
+                ->whereYear('appointment_date', $year)
+                ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
+                ->sum('total_price');
+
+            // Fallback to DTR days if no specific boarding appointments assigned
             $dtrDays = DtrRecord::where('employee_id', $employee->id)
                 ->whereMonth('record_date', $month)
                 ->whereYear('record_date', $year)
                 ->whereIn('status', ['present', 'late'])
                 ->count();
 
-            $count = $dtrDays;
-            $tier = "DTR Kennel Duty: {$count} days worked";
+            if ($assignedBoardingDays > 0) {
+                $count = (int) $assignedBoardingDays;
+                $totalSales = (float) $assignedBoardingSales;
+                $tier = "Assigned Boarding: {$count} pet boarding days";
+            } else {
+                $count = $dtrDays;
+                $tier = "DTR Kennel Duty: {$count} days worked";
+            }
         } else {
             $rule = IncentiveRule::where('role_name', 'like', "%{$position}%")->first();
             if ($rule) {
