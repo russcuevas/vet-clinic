@@ -41,17 +41,18 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|in:pet_supplies,medicine,grooming_supply,vaccine,accessories',
+            'category' => 'required|string|max:100',
             'description' => 'nullable|string',
-            'stock_quantity' => 'required|integer|min:0',
+            'stock_quantity' => 'nullable|integer|min:0',
             'unit' => 'required|string|max:50',
             'unit_price' => 'required|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
-            'reorder_level' => 'required|integer|min:1',
+            'reorder_level' => 'nullable|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
         ]);
 
         $prefix = match ($validated['category']) {
+            'medical_services' => 'SRV',
             'medicine' => 'MED',
             'vaccine' => 'VAC',
             'grooming_supply' => 'GRM',
@@ -68,16 +69,19 @@ class InventoryController extends Controller
             $imagePath = 'uploads/supplies/' . $filename;
         }
 
+        $stock = $validated['category'] === 'medical_services' ? 999 : ($validated['stock_quantity'] ?? 0);
+        $reorder = $validated['category'] === 'medical_services' ? 0 : ($validated['reorder_level'] ?? 5);
+
         $item = InventoryItem::create([
             'item_code' => $code,
             'name' => $validated['name'],
             'category' => $validated['category'],
             'description' => $validated['description'] ?? null,
-            'stock_quantity' => $validated['stock_quantity'],
+            'stock_quantity' => $stock,
             'unit' => $validated['unit'],
             'unit_price' => $validated['unit_price'],
             'cost_price' => $validated['cost_price'] ?? 0.00,
-            'reorder_level' => $validated['reorder_level'],
+            'reorder_level' => $reorder,
             'image' => $imagePath,
         ]);
 
@@ -88,13 +92,13 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'required|in:pet_supplies,medicine,grooming_supply,vaccine,accessories',
+            'category' => 'required|string|max:100',
             'description' => 'nullable|string',
-            'stock_quantity' => 'required|integer|min:0',
+            'stock_quantity' => 'nullable|integer|min:0',
             'unit' => 'required|string|max:50',
             'unit_price' => 'required|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
-            'reorder_level' => 'required|integer|min:1',
+            'reorder_level' => 'nullable|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
         ]);
 

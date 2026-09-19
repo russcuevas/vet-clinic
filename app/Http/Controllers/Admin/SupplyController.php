@@ -67,19 +67,23 @@ class SupplyController extends Controller
             $product = InventoryItem::findOrFail($cartItem['item_id']);
             $qty = $cartItem['quantity'];
 
-            // Stock reduction
-            if ($product->stock_quantity < $qty) {
-                return redirect()->back()->with('error', "Insufficient stock for {$product->name} (available: {$product->stock_quantity})");
+            $isService = in_array($product->category, ['medical_services', 'service', 'services']);
+
+            // Stock reduction for physical goods
+            if (!$isService) {
+                if ($product->stock_quantity < $qty) {
+                    return redirect()->back()->with('error', "Insufficient stock for {$product->name} (available: {$product->stock_quantity})");
+                }
+                $product->decrement('stock_quantity', $qty);
             }
 
-            $product->decrement('stock_quantity', $qty);
             $totalLine = $product->unit_price * $qty;
             $subtotal += $totalLine;
 
             $itemsToInsert[] = [
                 'inventory_item_id' => $product->id,
                 'item_name' => $product->name,
-                'item_type' => 'product',
+                'item_type' => $isService ? 'service' : 'product',
                 'quantity' => $qty,
                 'unit_price' => $product->unit_price,
                 'total_price' => $totalLine,

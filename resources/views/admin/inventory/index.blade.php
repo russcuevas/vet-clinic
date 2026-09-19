@@ -18,6 +18,7 @@
             <!-- Category Pills -->
             <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
                 <a href="{{ route('admin.inventory.index') }}" class="btn btn-sm {{ !request('category') && !request('low_stock') ? 'btn-gold' : 'btn-navy' }}">All</a>
+                <a href="{{ route('admin.inventory.index', ['category' => 'medical_services']) }}" class="btn btn-sm {{ request('category') === 'medical_services' ? 'btn-gold' : 'btn-navy' }}">🩺 Services & Lab Tests</a>
                 <a href="{{ route('admin.inventory.index', ['category' => 'pet_supplies']) }}" class="btn btn-sm {{ request('category') === 'pet_supplies' ? 'btn-gold' : 'btn-navy' }}">Supplies</a>
                 <a href="{{ route('admin.inventory.index', ['category' => 'medicine']) }}" class="btn btn-sm {{ request('category') === 'medicine' ? 'btn-gold' : 'btn-navy' }}">Medicines</a>
                 <a href="{{ route('admin.inventory.index', ['category' => 'vaccine']) }}" class="btn btn-sm {{ request('category') === 'vaccine' ? 'btn-gold' : 'btn-navy' }}">Vaccines</a>
@@ -30,7 +31,7 @@
 
         <button type="button" class="btn btn-gold" data-modal-target="modal-new-item">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-            <span>Add Inventory Item</span>
+            <span>Add Inventory / Service</span>
         </button>
     </div>
 
@@ -38,8 +39,8 @@
     <div class="card">
         <div class="card-header">
             <div class="card-title-group">
-                <h3 class="card-title">Inventory Catalog</h3>
-                <span class="card-subtitle">Items, medicines, vaccines, and grooming supplies</span>
+                <h3 class="card-title">Inventory & Services Catalog</h3>
+                <span class="card-subtitle">Medical services, laboratory tests, surgeries, supplies, medicines, vaccines, and grooming items</span>
             </div>
         </div>
 
@@ -49,9 +50,9 @@
                     <thead>
                         <tr>
                             <th>Item Code</th>
-                            <th>Product Name</th>
+                            <th>Product / Service Name</th>
                             <th>Category</th>
-                            <th>Stock Quantity</th>
+                            <th>Stock / Type</th>
                             <th>Unit Price (Selling)</th>
                             <th>Cost Price</th>
                             <th>Status</th>
@@ -60,6 +61,9 @@
                     </thead>
                     <tbody>
                         @foreach($items as $item)
+                            @php
+                                $isService = in_array($item->category, ['medical_services', 'service', 'services']);
+                            @endphp
                             <tr>
                                 <td>
                                     <strong style="color: var(--gold-primary);">{{ $item->item_code }}</strong>
@@ -71,6 +75,7 @@
                                         @else
                                             <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--navy-dark); border: 1px solid var(--black-border); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
                                                 @switch($item->category)
+                                                    @case('medical_services') 🩺 @break
                                                     @case('vaccine') 💉 @break
                                                     @case('medicine') 💊 @break
                                                     @case('grooming_supply') 🛁 @break
@@ -86,15 +91,27 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge badge-navy" style="background: var(--navy-dark); border: 1px solid var(--navy-border); color: var(--gold-light);">
-                                        {{ ucfirst(str_replace('_', ' ', $item->category)) }}
-                                    </span>
+                                    @if($isService)
+                                        <span class="badge badge-gold" style="font-size: 0.72rem;">
+                                            🩺 Medical Service
+                                        </span>
+                                    @else
+                                        <span class="badge badge-navy" style="background: var(--navy-dark); border: 1px solid var(--navy-border); color: var(--gold-light);">
+                                            {{ ucfirst(str_replace('_', ' ', $item->category)) }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td>
-                                    <div style="font-weight: 700; font-size: 0.95rem; color: {{ $item->isLowStock() ? 'var(--danger)' : 'var(--white)' }};">
-                                        {{ $item->stock_quantity }} {{ $item->unit }}
-                                    </div>
-                                    <div style="font-size: 0.72rem; color: var(--text-muted);">Alert below: {{ $item->reorder_level }}</div>
+                                    @if($isService)
+                                        <span class="badge badge-navy" style="font-size: 0.75rem; color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">
+                                            ⚡ Clinical Service
+                                        </span>
+                                    @else
+                                        <div style="font-weight: 700; font-size: 0.95rem; color: {{ $item->isLowStock() ? 'var(--danger)' : 'var(--white)' }};">
+                                            {{ $item->stock_quantity }} {{ $item->unit }}
+                                        </div>
+                                        <div style="font-size: 0.72rem; color: var(--text-muted);">Alert below: {{ $item->reorder_level }}</div>
+                                    @endif
                                 </td>
                                 <td>
                                     <strong style="color: var(--gold-primary); font-size: 0.95rem;">₱{{ number_format($item->unit_price, 2) }}</strong>
@@ -103,7 +120,9 @@
                                     <span style="color: var(--text-secondary);">₱{{ number_format($item->cost_price, 2) }}</span>
                                 </td>
                                 <td>
-                                    @if($item->isLowStock())
+                                    @if($isService)
+                                        <span class="badge badge-success">Active Service</span>
+                                    @elseif($item->isLowStock())
                                         <span class="badge badge-danger">Low Stock</span>
                                     @else
                                         <span class="badge badge-success">In Stock</span>
@@ -176,7 +195,8 @@
                         <div class="form-group">
                             <label class="form-label">Category <span class="req">*</span></label>
                             <select name="category" class="form-select" required>
-                                <option value="pet_supplies">Pet Supplies</option>
+                                <option value="medical_services">🩺 Medical Services, Lab Tests, Surgery & Ultrasound</option>
+                                <option value="pet_supplies" selected>Pet Supplies</option>
                                 <option value="medicine">Medicine</option>
                                 <option value="vaccine">Vaccine</option>
                                 <option value="grooming_supply">Grooming Supply</option>
@@ -252,6 +272,7 @@
                         <div class="form-group">
                             <label class="form-label">Category <span class="req">*</span></label>
                             <select name="category" class="form-select" required>
+                                <option value="medical_services">🩺 Medical Services, Lab Tests, Surgery & Ultrasound</option>
                                 <option value="pet_supplies">Pet Supplies</option>
                                 <option value="medicine">Medicine</option>
                                 <option value="vaccine">Vaccine</option>

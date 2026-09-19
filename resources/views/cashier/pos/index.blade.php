@@ -25,6 +25,7 @@
                 <!-- Category Filter Pills -->
                 <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;" id="category-filter-pills">
                     <button type="button" class="btn btn-sm btn-gold cat-filter-btn" data-category="all">All Items</button>
+                    <button type="button" class="btn btn-sm btn-navy cat-filter-btn" data-category="medical_services">🩺 Services & Lab Tests</button>
                     <button type="button" class="btn btn-sm btn-navy cat-filter-btn" data-category="pet_supplies">Supplies</button>
                     <button type="button" class="btn btn-sm btn-navy cat-filter-btn" data-category="medicine">Medicines</button>
                     <button type="button" class="btn btn-sm btn-navy cat-filter-btn" data-category="vaccine">Vaccines</button>
@@ -50,6 +51,9 @@
                                 @else
                                     <div style="width: 100%; height: 70px; border-radius: var(--radius-sm); margin-bottom: 0.6rem; background: rgba(11, 25, 44, 0.6); border: 1px dashed rgba(212, 175, 55, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
                                         @switch($item->category)
+                                            @case('medical_services')
+                                                🩺
+                                                @break
                                             @case('vaccine')
                                                 💉
                                                 @break
