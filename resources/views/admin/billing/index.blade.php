@@ -76,8 +76,13 @@
                                     <strong style="color: var(--gold-primary);">{{ $bill->invoice_no }}</strong>
                                 </td>
                                 <td>
-                                    <div style="font-size: 0.85rem; color: var(--white);">{{ $bill->transaction_date->format('M d, Y') }}</div>
-                                    <div style="font-size: 0.72rem; color: var(--text-muted);">{{ $bill->transaction_date->format('h:i A') }}</div>
+                                    @php
+                                        $tDate = ($bill->transaction_date && $bill->transaction_date->format('H:i:s') !== '00:00:00')
+                                            ? $bill->transaction_date
+                                            : ($bill->created_at ?: $bill->transaction_date);
+                                    @endphp
+                                    <div style="font-size: 0.85rem; color: var(--white);">{{ $tDate ? $tDate->format('M d, Y') : '-' }}</div>
+                                    <div style="font-size: 0.72rem; color: var(--text-muted);">{{ $tDate ? $tDate->format('h:i A') : '' }}</div>
                                 </td>
                                 <td>
                                     <div style="font-weight: 700; color: var(--white);">{{ $bill->client_name }}</div>

@@ -67,7 +67,7 @@ class AdmissionController extends Controller
 
         // Owners & Staff for Modal
         $owners = Owner::with('pets')->orderBy('full_name')->get();
-        $staffMembers = Employee::where('status', 'active')->orderBy('full_name')->get();
+        $staffMembers = Employee::where('status', 'active')->orderBy('first_name')->orderBy('last_name')->get();
         $veterinarians = User::where('role', 'veterinarian')->orderBy('name')->get();
 
         return view('veterinarian.admission.index', compact(

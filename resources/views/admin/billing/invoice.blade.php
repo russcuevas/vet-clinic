@@ -115,7 +115,12 @@
             <div style="text-align: right;">
                 <h3 style="color: var(--gold-primary); margin: 0; font-size: 1.2rem;">OFFICIAL INVOICE</h3>
                 <div style="font-size: 0.85rem; font-weight: 700;">#{{ $bill->invoice_no }}</div>
-                <div style="font-size: 0.75rem; color: #94A3B8;">{{ $bill->transaction_date->format('M d, Y h:i A') }}</div>
+                @php
+                    $tDate = ($bill->transaction_date && $bill->transaction_date->format('H:i:s') !== '00:00:00')
+                        ? $bill->transaction_date
+                        : ($bill->created_at ?: $bill->transaction_date);
+                @endphp
+                <div style="font-size: 0.75rem; color: #94A3B8;">{{ $tDate ? $tDate->format('M d, Y h:i A') : '' }}</div>
             </div>
         </div>
 

@@ -34,7 +34,7 @@ class MedicalRecordController extends Controller
 
         $records = $query->latest()->get();
         $owners = Owner::with('pets')->where('status', 'active')->get();
-        $staffMembers = \App\Models\Employee::where('status', 'active')->orderBy('full_name')->get();
+        $staffMembers = \App\Models\Employee::where('status', 'active')->orderBy('first_name')->orderBy('last_name')->get();
         $generatedCode = MedicalRecord::generateRecordCode();
 
         return view('veterinarian.medical.index', compact('records', 'owners', 'staffMembers', 'generatedCode'));
@@ -169,7 +169,7 @@ class MedicalRecordController extends Controller
         $totalBillAmount = $baseServiceFee + $servicesSubtotal + $admissionTotal;
 
         $vetUser = auth()->user();
-        $visitDate = !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date']) : Carbon::now();
+        $visitDate = !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date'])->setTimeFrom(Carbon::now()) : Carbon::now();
 
         $isPaid = $request->boolean('is_already_paid');
 
@@ -615,7 +615,7 @@ class MedicalRecordController extends Controller
         $originRecord = MedicalRecord::findOrFail($validated['origin_record_id']);
         $recordCode = MedicalRecord::generateRecordCode();
         $vetUser = auth()->user();
-        $visitDate = Carbon::parse($validated['visit_date']);
+        $visitDate = !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date'])->setTimeFrom(Carbon::now()) : Carbon::now();
 
         $labPath = null;
         if ($request->hasFile('lab_results')) {

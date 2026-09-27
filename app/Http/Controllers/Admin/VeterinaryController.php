@@ -127,7 +127,7 @@ class VeterinaryController extends Controller
         }
 
         $vetUser = !empty($validated['veterinarian_id']) ? User::find($validated['veterinarian_id']) : auth()->user();
-        $visitDate = !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date']) : Carbon::now();
+        $visitDate = !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date'])->setTimeFrom(Carbon::now()) : Carbon::now();
 
         $isPaid = $request->boolean('is_already_paid');
 

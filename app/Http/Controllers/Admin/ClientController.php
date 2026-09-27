@@ -104,7 +104,7 @@ class ClientController extends Controller
 
         // Check if user chose to encode a past/old medical record for this new client and pet
         if ($pet && $request->boolean('include_medical_record')) {
-            $visitDate = !empty($validated['med_visit_date']) ? Carbon::parse($validated['med_visit_date']) : Carbon::now();
+            $visitDate = !empty($validated['med_visit_date']) ? Carbon::parse($validated['med_visit_date'])->setTimeFrom(Carbon::now()) : Carbon::now();
             $serviceFee = $validated['med_service_fee'] ?? 450.00;
             $serviceType = $validated['med_service_type'] ?? 'consultation';
             $isPaid = true; // Auto-paid for old/historical data
