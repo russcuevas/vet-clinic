@@ -40,7 +40,7 @@ class BillingController extends Controller
         $totalPending = Bill::where('payment_status', 'unpaid')->sum('total_amount');
 
         $owners = Owner::with('pets')->orderBy('full_name')->get();
-        $inventoryItems = InventoryItem::where('stock_quantity', '>', 0)->orderBy('name')->get();
+        $inventoryItems = InventoryItem::orderBy('category')->orderBy('name')->get();
 
         return view('cashier.billing.index', compact('bills', 'totalCollected', 'totalPending', 'owners', 'inventoryItems'));
     }
@@ -69,9 +69,17 @@ class BillingController extends Controller
         try {
             $discount = floatval($validated['discount'] ?? 0);
             $subtotal = floatval($validated['subtotal']);
-            $totalAmount = floatval($validated['total_amount']);
+            $isCreditCard = ($validated['payment_method'] === 'credit_card');
+            $tax = $isCreditCard ? round(max(0, $subtotal - $discount) * 0.03, 2) : 0.00;
+            $totalAmount = max(0, $subtotal - $discount) + $tax;
             $paidAmount = floatval($validated['paid_amount']);
             $changeAmount = max(0, $paidAmount - $totalAmount);
+
+            $notes = $validated['notes'] ?? null;
+            if ($isCreditCard) {
+                $cardNotice = 'Includes 3% Card Fee (+₱' . number_format($tax, 2) . ')';
+                $notes = $notes ? "{$notes} | {$cardNotice}" : $cardNotice;
+            }
 
             $bill = Bill::create([
                 'invoice_no' => Bill::generateInvoiceNo(),
@@ -82,13 +90,14 @@ class BillingController extends Controller
                 'service_type' => in_array($validated['service_type'], ['veterinary', 'grooming', 'pet_supplies', 'combined', 'boarding']) ? $validated['service_type'] : 'combined',
                 'subtotal' => $subtotal,
                 'discount' => $discount,
+                'tax' => $tax,
                 'total_amount' => $totalAmount,
                 'paid_amount' => $paidAmount,
                 'change_amount' => $changeAmount,
                 'payment_method' => $validated['payment_method'],
                 'payment_status' => 'paid',
                 'transaction_date' => Carbon::now(),
-                'notes' => $validated['notes'] ?? null,
+                'notes' => $notes,
             ]);
 
             foreach ($validated['items'] as $item) {
@@ -153,7 +162,9 @@ class BillingController extends Controller
                 $subtotal = floatval($bill->subtotal ?: $bill->total_amount);
             }
 
-            $totalAmount = max(0, $subtotal - $discount);
+            $isCreditCard = ($validated['payment_method'] === 'credit_card');
+            $tax = $isCreditCard ? round(max(0, $subtotal - $discount) * 0.03, 2) : 0.00;
+            $totalAmount = max(0, $subtotal - $discount) + $tax;
             $paidAmount = floatval($validated['paid_amount']);
 
             if ($paidAmount < $totalAmount) {
@@ -162,9 +173,16 @@ class BillingController extends Controller
 
             $change = max(0, $paidAmount - $totalAmount);
 
+            $notes = $validated['notes'] ?? $bill->notes;
+            if ($isCreditCard && !str_contains($notes ?? '', '3% Card Fee')) {
+                $cardNotice = 'Includes 3% Card Fee (+₱' . number_format($tax, 2) . ')';
+                $notes = $notes ? "{$notes} | {$cardNotice}" : $cardNotice;
+            }
+
             $bill->update([
                 'subtotal' => $subtotal,
                 'discount' => $discount,
+                'tax' => $tax,
                 'total_amount' => $totalAmount,
                 'payment_method' => $validated['payment_method'],
                 'paid_amount' => $paidAmount,
@@ -172,7 +190,7 @@ class BillingController extends Controller
                 'payment_status' => 'paid',
                 'cashier_id' => auth()->id(),
                 'transaction_date' => Carbon::now(),
-                'notes' => $validated['notes'] ?? $bill->notes,
+                'notes' => $notes,
             ]);
 
             if ($bill->medicalRecord) {

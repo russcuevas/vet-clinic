@@ -75,6 +75,27 @@
         </div>
     @endif
 
+    <!-- Inpatient Confinement Status Banner -->
+    @if(isset($existingAdmission) && $existingAdmission)
+        <div style="background: rgba(147, 51, 234, 0.12); border: 1.5px solid rgba(147, 51, 234, 0.45); border-radius: var(--radius-sm); padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.5rem;">🏥</span>
+                <div>
+                    <div style="font-weight: 700; color: #c084fc; font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem;">
+                        <span>Inpatient Confinement Active — {{ $existingAdmission->boarding_days }} Day(s) Stay</span>
+                        <span class="badge badge-gold" style="font-size: 0.7rem; padding: 2px 7px;">🏥 Confined</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+                        Admission Code: <strong>{{ $existingAdmission->appointment_code }}</strong> • Rate: <strong>₱{{ number_format($existingAdmission->daily_rate, 2) }}/day</strong> (Total: <strong>₱{{ number_format($existingAdmission->total_price, 2) }}</strong>) • Care & Cage Notes: {{ $existingAdmission->purpose_examination_notes ?? 'In-clinic observation' }}
+                    </div>
+                </div>
+            </div>
+            <a href="{{ route('vet.admission.index') }}" class="btn btn-navy btn-sm" style="font-size: 0.8rem; border-color: rgba(147, 51, 234, 0.5);">
+                🏥 View in Pet Admission Desk →
+            </a>
+        </div>
+    @endif
+
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start;">
         <!-- Left: Case File Breakdown -->
         <div>
@@ -524,7 +545,7 @@
 
     <!-- ==================== MODAL: COMPLETE / EDIT EXAMINATION & BILLING ==================== -->
     <div class="modal-backdrop" id="modal-examine-case">
-        <div class="modal-dialog modal-xl" style="max-width: 1100px;">
+        <div class="modal-dialog modal-xl" style="max-width: 1240px; width: 95vw;">
             <div class="modal-header">
                 <div class="modal-title-group">
                     <div class="modal-icon">🩺</div>
@@ -540,20 +561,22 @@
             <form action="{{ route('vet.medical.update', $record->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-                <div class="modal-body" style="padding: 1.25rem 1.5rem; max-height: calc(100vh - 180px); overflow-y: auto;">
-                    <div style="display: grid; grid-template-columns: 1.05fr 1fr; gap: 1.5rem; align-items: start;">
+                <div class="modal-body" style="padding: 1.25rem 1.5rem; max-height: calc(100vh - 175px); overflow-y: auto;">
+                    
+                    <!-- ==================== SECTION 1: CLINICAL OBSERVATION & DIAGNOSIS (2-Column Grid) ==================== -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; align-items: start;">
                         
-                        <!-- ==================== LEFT COLUMN (Exact Blueprint Layout) ==================== -->
-                        <div style="display: flex; flex-direction: column; gap: 1.15rem;">
+                        <!-- Left Column: Visit Date, Vitals, Complaint & Assessment -->
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
                             <!-- 1. Date of Visit -->
-                            <div class="form-group">
-                                <label class="form-label" style="font-weight: 700; color: var(--gold-primary);">📅 Date of Visit <span class="req">*</span></label>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-primary); font-size: 0.85rem;">📅 Date of Visit <span class="req">*</span></label>
                                 <input type="date" name="visit_date" class="form-control" value="{{ $record->visit_date ? $record->visit_date->format('Y-m-d') : ($record->created_at ? $record->created_at->format('Y-m-d') : date('Y-m-d')) }}" required>
                             </div>
 
                             <!-- 2. Physical Vitals -->
-                            <div style="background: rgba(11, 25, 44, 0.45); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem;">
-                                <h5 style="color: var(--gold-primary); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+                            <div style="background: rgba(11, 25, 44, 0.5); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 0.9rem;">
+                                <h5 style="color: var(--gold-primary); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.65rem;">
                                     🌡️ Physical Vitals
                                 </h5>
                                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65rem;">
@@ -572,197 +595,289 @@
                                 </div>
                             </div>
 
-                            <!-- 3. Veterinarian Notes / Advice -->
-                            <div class="form-group">
-                                <label class="form-label" style="font-weight: 700; color: var(--gold-light);">👨‍⚕️ Veterinarian Notes / Advice</label>
-                                <textarea name="veterinarians_notes" class="form-control" rows="3" placeholder="Diet recommendations, home-care instructions, advice for pet owner...">{{ $record->veterinarians_notes }}</textarea>
+                            <!-- 3. Purpose / Exam Note / Complaint -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-primary); font-size: 0.85rem;">📝 Purpose / Exam Note / Complaint</label>
+                                <textarea name="history_taking" class="form-control" rows="3" placeholder="Symptoms, observed condition, patient history, client complaint...">{{ $record->history_taking }}</textarea>
                             </div>
 
-                            <!-- 4. Consultation Service Fee Input Banner -->
-                            <div style="background: rgba(245, 186, 49, 0.08); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1.15rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                            <!-- 4. Clinical Assessment (Diagnosis) -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-primary); font-size: 0.85rem;">🩺 Clinical Assessment / Diagnosis <span class="req">*</span></label>
+                                <textarea name="diagnosis" class="form-control" rows="2" placeholder="e.g. Acute Gastroenteritis, Canine Parvovirus, Otitis Externa..." required>{{ $record->diagnosis }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Medication, Vet Notes, Lab Notes & Take-Home Rx -->
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <!-- In-Clinic Medication / Treatment (Optional) -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">💊 Medication / In-Clinic Treatment (Optional)</label>
+                                <textarea name="medication_treatment" class="form-control" rows="2" placeholder="Injections, intravenous fluids, administered treatments...">{{ $record->medication_treatment }}</textarea>
+                            </div>
+
+                            <!-- Veterinarian Clinical Notes / Advice -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-light); font-size: 0.82rem;">👨‍⚕️ Veterinarian Notes / Advice</label>
+                                <textarea name="veterinarians_notes" class="form-control" rows="2" placeholder="Diet recommendations, home-care instructions, advice for pet owner...">{{ $record->veterinarians_notes }}</textarea>
+                            </div>
+
+                            <!-- Laboratory / Diagnostic Notes & File Attachment -->
+                            <div style="background: rgba(11, 25, 44, 0.5); border: 1px dashed var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem;">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-light); font-size: 0.82rem; margin-bottom: 0.35rem;">🔬 Laboratory / Test Notes</label>
+                                <textarea name="laboratory_notes" class="form-control" rows="2" placeholder="e.g. CBC Normal, Parvo Rapid Test Negative, X-Ray clear" style="margin-bottom: 0.5rem; font-size: 0.82rem;">{{ $record->laboratory_notes }}</textarea>
+                                
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                    <label class="form-label" style="margin-bottom: 0; font-size: 0.75rem; color: var(--text-muted);">📎 Attach / Replace Lab Result File</label>
+                                    @if($record->attached_lab_results)
+                                        <span style="font-size: 0.72rem; color: var(--gold-light);">
+                                            Current: <strong>{{ basename($record->attached_lab_results) }}</strong>
+                                        </span>
+                                    @endif
+                                </div>
+                                <input type="file" name="lab_results" class="form-control" accept="image/*,.pdf,.doc,.docx" style="padding: 4px; font-size: 0.8rem; margin-top: 4px;">
+                            </div>
+
+                            <!-- Rx Prescribe Take-Home Medicine -->
+                            <div style="background: rgba(245, 186, 49, 0.05); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem;">
+                                <h5 style="color: var(--gold-light); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span>💊</span> Rx Prescribe Take-Home Medicine
+                                </h5>
+                                <div class="form-group" style="margin-bottom: 0.5rem;">
+                                    <textarea name="prescribe_rx" class="form-control" rows="2" placeholder="Medication details, strength, dosage & frequency..." style="font-size: 0.82rem;">{{ $record->prescription ? $record->prescription->rx_details : '' }}</textarea>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <input type="text" name="rx_instructions" class="form-control" placeholder="Special directions (e.g. Give after meals with food)" value="{{ $record->prescription ? $record->prescription->instructions : '' }}" style="font-size: 0.82rem;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==================== SECTION 2: 🔬 LABORATORY TESTS & MEDICAL SERVICES (FULL-WIDTH EXPANDED ROW) ==================== -->
+                    <div style="background: var(--navy-dark); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 4px 14px rgba(0,0,0,0.25);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.75rem;">
+                            <div>
+                                <h4 style="color: var(--gold-light); font-size: 0.95rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 2px 0; display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="font-size: 1.2rem;">🔬</span> LABORATORY TESTS & MEDICAL SERVICES PERFORMED
+                                </h4>
+                                <span style="font-size: 0.78rem; color: var(--text-muted);">
+                                    Lahat ng laboratory tests at medical procedures na ilalagay dito ay <strong>awtomatikong ipapasa sa Cashier Billing queue</strong>.
+                                </span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                                <span class="badge badge-gold" style="font-size: 0.75rem; padding: 5px 10px;">
+                                    Queued to Cashier Billing
+                                </span>
+                                <button type="button" id="btn-add-exam-item" class="btn btn-gold btn-sm" style="font-size: 0.82rem; padding: 6px 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                    <span>➕</span> Add Lab / Service Item
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Service Suggestion Pills (Full Row) -->
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.85rem; background: rgba(4, 7, 13, 0.4); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--navy-border);">
+                            <span style="font-size: 0.75rem; font-weight: 700; color: var(--gold-primary); display: inline-flex; align-items: center; gap: 0.25rem;">
+                                ⚡ Quick Add:
+                            </span>
+                            <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Complete Blood Count (CBC)" data-price="550.00" style="font-size: 0.75rem; padding: 3px 9px;">+ CBC (₱550)</button>
+                            <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Blood Chemistry Panel" data-price="1200.00" style="font-size: 0.75rem; padding: 3px 9px;">+ Blood Chem (₱1.2k)</button>
+                            <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Parvo / Distemper Ag Rapid Test" data-price="650.00" style="font-size: 0.75rem; padding: 3px 9px;">+ Parvo Test (₱650)</button>
+                            <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Ultrasound Examination" data-price="900.00" style="font-size: 0.75rem; padding: 3px 9px;">+ Ultrasound (₱900)</button>
+                            <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Digital X-Ray (1 View)" data-price="850.00" style="font-size: 0.75rem; padding: 3px 9px;">+ X-Ray (₱850)</button>
+                            <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Urinary Catheterization" data-price="800.00" style="font-size: 0.75rem; padding: 3px 9px;">+ Catheter (₱800)</button>
+                            <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="IV Fluid Therapy & Cannulation" data-price="450.00" style="font-size: 0.75rem; padding: 3px 9px;">+ IV Therapy (₱450)</button>
+                            <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Urinalysis Complete" data-price="350.00" style="font-size: 0.75rem; padding: 3px 9px;">+ Urinalysis (₱350)</button>
+                            <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Fecalysis Examination" data-price="300.00" style="font-size: 0.75rem; padding: 3px 9px;">+ Fecalysis (₱300)</button>
+                        </div>
+
+                        <!-- Wide, Expanded Laboratory & Medical Services Table -->
+                        <div style="max-height: 320px; overflow-y: auto; border: 1px solid var(--black-border); border-radius: var(--radius-sm); background: rgba(4, 7, 13, 0.55);">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+                                <thead style="position: sticky; top: 0; background: rgba(11, 25, 44, 0.95); z-index: 2; border-bottom: 1.5px solid var(--black-border);">
+                                    <tr>
+                                        <th style="padding: 10px 14px; text-align: left; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;">Laboratory Test / Medical Service</th>
+                                        <th style="padding: 10px 14px; width: 90px; text-align: center; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;">Qty</th>
+                                        <th style="padding: 10px 14px; width: 130px; text-align: right; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;">Price (₱)</th>
+                                        <th style="padding: 10px 14px; width: 130px; text-align: right; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;">Subtotal</th>
+                                        <th style="padding: 10px 14px; text-align: left; color: var(--gold-light); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;">Directions / Clinical Remarks / Findings</th>
+                                        <th style="padding: 10px 14px; width: 45px; text-align: center;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="exam-items-tbody">
+                                    @php
+                                        $initialItems = !empty($record->prescribed_items) ? $record->prescribed_items : [];
+                                    @endphp
+
+                                    @forelse($initialItems as $idx => $it)
+                                        @php
+                                            $q = floatval($it['quantity'] ?? 1);
+                                            $p = floatval($it['price'] ?? 0);
+                                            $t = $q * $p;
+                                        @endphp
+                                        <tr class="exam-item-row" style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.15s ease;">
+                                            <td style="padding: 8px 12px;">
+                                                <input type="text" name="items[{{ $idx }}][name]" class="form-control item-name" placeholder="e.g. Complete Blood Count (CBC)" value="{{ $it['name'] ?? '' }}" style="font-size: 0.88rem;" required>
+                                            </td>
+                                            <td style="padding: 8px 12px; width: 90px;">
+                                                <input type="number" step="0.01" min="0.01" name="items[{{ $idx }}][quantity]" class="form-control item-qty" placeholder="1" value="{{ $it['quantity'] ?? '1' }}" style="font-size: 0.88rem; text-align: center;">
+                                            </td>
+                                            <td style="padding: 8px 12px; width: 130px;">
+                                                <input type="number" step="0.01" min="0" name="items[{{ $idx }}][price]" class="form-control item-price" placeholder="0.00" value="{{ $it['price'] ?? '' }}" style="font-size: 0.88rem; text-align: right;">
+                                            </td>
+                                            <td style="padding: 8px 12px; width: 130px; text-align: right; font-weight: 700; color: var(--gold-primary); font-size: 0.92rem;" class="item-row-total">
+                                                ₱{{ number_format($t, 2) }}
+                                            </td>
+                                            <td style="padding: 8px 12px;">
+                                                <input type="text" name="items[{{ $idx }}][remarks]" class="form-control" placeholder="e.g. In-house STAT / Normal findings" value="{{ $it['instructions'] ?? ($it['remarks'] ?? '') }}" style="font-size: 0.88rem;">
+                                            </td>
+                                            <td style="padding: 8px 12px; width: 45px; text-align: center;">
+                                                <button type="button" class="btn btn-ghost btn-sm btn-remove-item" style="color: #ef4444; padding: 4px 8px; font-size: 0.95rem; border-radius: 4px;" title="Remove row">
+                                                    🗑️
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <!-- Row will be added dynamically by JS -->
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="no-items-placeholder" style="{{ count($initialItems) > 0 ? 'display: none;' : '' }} text-align: center; padding: 1.25rem; color: var(--text-muted); font-size: 0.85rem; font-style: italic; background: rgba(4, 7, 13, 0.3); border-radius: var(--radius-sm); margin-top: 0.5rem;">
+                            🔬 No laboratory tests or special medical services added yet. Click <strong>"➕ Add Lab / Service Item"</strong> or select one of the quick add buttons above.
+                        </div>
+
+                        <!-- Subtotal summary bar of tests -->
+                        <div style="background: rgba(4, 7, 13, 0.7); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <div style="font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.4rem;">
+                                <span>📋</span> Diagnostic & Medical Services Subtotal:
+                            </div>
+                            <div style="font-weight: 800; color: var(--gold-light); font-size: 1.05rem;" id="modal_lab_subtotal">
+                                ₱0.00
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==================== SECTION 3: 🏥 INPATIENT ADMISSION & CONFINEMENT ==================== -->
+                    <div style="background: rgba(11, 25, 44, 0.65); border: 1.5px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1.15rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                            <label style="display: flex; align-items: center; gap: 0.75rem; margin: 0; cursor: pointer; user-select: none;">
+                                <input type="checkbox" name="is_admission" id="toggle_exam_admission" value="1" {{ !empty($existingAdmission) ? 'checked' : '' }} style="width: 19px; height: 19px; accent-color: var(--gold-primary); cursor: pointer;">
+                                <div>
+                                    <strong style="color: var(--gold-light); font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem;">
+                                        <span>🏥</span> Admit Pet for Inpatient Care & Confinement
+                                    </strong>
+                                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+                                        I-admit ang pasyente sa clinic para sa IV fluid therapy, post-op monitoring, o emergency confinement. Awtomatikong mairerehistro sa <strong>Pet Admission desk</strong> at maidadagdag sa Cashier invoice.
+                                    </div>
+                                </div>
+                            </label>
+                            <span class="badge {{ !empty($existingAdmission) ? 'badge-gold' : 'badge-navy' }}" id="admission_active_badge" style="font-size: 0.75rem; padding: 4px 10px; display: {{ !empty($existingAdmission) ? 'inline-block' : 'none' }};">
+                                🏥 Inpatient Active
+                            </span>
+                        </div>
+
+                        <!-- Collapsible Admission Inpatient Fields -->
+                        <div id="exam_admission_fields" style="display: {{ !empty($existingAdmission) ? 'block' : 'none' }}; margin-top: 1rem; border-top: 1px dashed var(--navy-border); padding-top: 1rem;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 0.85rem;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Days of Confinement <span class="req">*</span></label>
+                                    <input type="number" min="1" name="admission_days" id="exam_adm_days" class="form-control" value="{{ $existingAdmission->boarding_days ?? 1 }}" style="font-weight: 700; text-align: center; font-size: 0.9rem;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Daily Inpatient Rate (₱) <span class="req">*</span></label>
+                                    <input type="number" step="0.01" min="0" name="daily_rate" id="exam_adm_rate" class="form-control" value="{{ $existingAdmission->daily_rate ?? 450.00 }}" style="font-weight: 700; text-align: right; font-size: 0.9rem;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Inpatient Subtotal</label>
+                                    <div style="background: rgba(4, 7, 13, 0.6); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.55rem 0.85rem; font-weight: 800; color: var(--gold-primary); font-size: 1.15rem; text-align: right; height: 38px; display: flex; align-items: center; justify-content: flex-end;" id="exam_adm_total_display">
+                                        ₱{{ number_format(($existingAdmission->boarding_days ?? 1) * ($existingAdmission->daily_rate ?? 450.00), 2) }}
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Assigned Attending Staff</label>
+                                    <select name="assigned_employee_id" class="form-select" style="font-size: 0.85rem;">
+                                        <option value="">-- Attending Staff (Optional) --</option>
+                                        @if(isset($staffMembers))
+                                            @foreach($staffMembers as $staff)
+                                                <option value="{{ $staff->id }}" {{ (!empty($existingAdmission) && $existingAdmission->assigned_employee_id == $staff->id) ? 'selected' : '' }}>
+                                                    {{ $staff->full_name }} ({{ $staff->position }})
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Cage No. & Care / Monitoring Instructions</label>
+                                <input type="text" name="admission_notes" class="form-control" placeholder="e.g. Cage 2 - Continuous IV DLR 15 drops/min, fasting, observe urination and vomiting" value="{{ $existingAdmission->purpose_examination_notes ?? '' }}" style="font-size: 0.85rem;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==================== SECTION 4: BILLING TOTALS & STATUS SELECTOR (2-Column Unified Layout) ==================== -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: stretch;">
+                        
+                        <!-- Left: Base Consultation Fee & Grand Total Summary Box -->
+                        <div style="background: rgba(245, 186, 49, 0.08); border: 1.5px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.85rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
                                 <div>
                                     <label class="form-label" style="font-weight: 700; color: var(--gold-light); font-size: 0.88rem; margin-bottom: 2px; display: flex; align-items: center; gap: 0.4rem;">
                                         <span>🩺</span> Base Consultation / Examination Fee (₱) <span class="req">*</span>
                                     </label>
-                                    <div style="font-size: 0.72rem; color: var(--text-muted);">
-                                        Ipapasa sa Cashier Billing kasama ang laboratory tests & services sa ibaba.
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                        Standard checkup / professional consultation fee.
                                     </div>
                                 </div>
-                                <input type="number" step="0.01" min="0" name="service_fee" id="exam_modal_service_fee" class="form-control" value="{{ $record->service_fee ?? 450.00 }}" required style="max-width: 150px; font-weight: 800; text-align: right; color: var(--gold-primary); font-size: 1.1rem; border-color: var(--gold-border);">
+                                <input type="number" step="0.01" min="0" name="service_fee" id="exam_modal_service_fee" class="form-control" value="{{ $record->service_fee ?? 450.00 }}" required style="max-width: 160px; font-weight: 800; text-align: right; color: var(--gold-primary); font-size: 1.15rem; border-color: var(--gold-border);">
                             </div>
 
-                            <!-- 5. LABORATORY TEST & MEDICAL SERVICES (Itemized Bill passed to Cashier) -->
-                            <div style="background: var(--navy-dark); border: 1.5px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
-                                    <div>
-                                        <h5 style="color: var(--gold-light); font-size: 0.85rem; font-weight: 800; text-transform: uppercase; margin: 0; display: flex; align-items: center; gap: 0.35rem;">
-                                            <span>🔬</span> LABORATORY TEST & MEDICAL SERVICES
-                                        </h5>
-                                        <span style="font-size: 0.72rem; color: var(--text-muted);">
-                                            Lahat ng ilalagay dito ay <strong>awtomatikong ipapasa sa Cashier Billing</strong>. Pwede rin burahin ni Cashier kung hindi naisagawa ang serbisyo.
-                                        </span>
-                                    </div>
-                                    <button type="button" id="btn-add-exam-item" class="btn btn-gold btn-sm" style="font-size: 0.75rem; padding: 4px 10px; font-weight: 700;">
-                                        ➕ Add Lab / Service
-                                    </button>
-                                </div>
-
-                                <!-- Quick Service Suggestion Pills -->
-                                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.65rem;">
-                                    <span style="font-size: 0.72rem; color: var(--text-muted); align-self: center;">Quick Add:</span>
-                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Complete Blood Count (CBC)" data-price="550.00" style="font-size: 0.7rem; padding: 2px 7px;">+ CBC (₱550)</button>
-                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Blood Chemistry Panel" data-price="1200.00" style="font-size: 0.7rem; padding: 2px 7px;">+ Blood Chem (₱1.2k)</button>
-                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Parvo / Distemper Ag Rapid Test" data-price="650.00" style="font-size: 0.7rem; padding: 2px 7px;">+ Parvo Test (₱650)</button>
-                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Ultrasound Examination" data-price="900.00" style="font-size: 0.7rem; padding: 2px 7px;">+ Ultrasound (₱900)</button>
-                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Digital X-Ray (1 View)" data-price="850.00" style="font-size: 0.7rem; padding: 2px 7px;">+ X-Ray (₱850)</button>
-                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="Urinary Catheterization" data-price="800.00" style="font-size: 0.7rem; padding: 2px 7px;">+ Catheter (₱800)</button>
-                                    <button type="button" class="btn btn-navy btn-sm btn-quick-service" data-name="IV Fluid Therapy & Cannulation" data-price="450.00" style="font-size: 0.7rem; padding: 2px 7px;">+ IV Therapy (₱450)</button>
-                                </div>
-
-                                <div style="max-height: 250px; overflow-y: auto; margin-bottom: 0.75rem; border: 1px solid var(--black-border); border-radius: var(--radius-sm); background: rgba(4, 7, 13, 0.4);">
-                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
-                                        <thead style="position: sticky; top: 0; background: var(--navy-dark); z-index: 2; border-bottom: 1px solid var(--black-border);">
-                                            <tr>
-                                                <th style="padding: 8px; text-align: left; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Laboratory Test / Medical Service</th>
-                                                <th style="padding: 8px; width: 80px; text-align: center; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Qty</th>
-                                                <th style="padding: 8px; width: 100px; text-align: right; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Price (₱)</th>
-                                                <th style="padding: 8px; width: 100px; text-align: right; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Total</th>
-                                                <th style="padding: 8px; text-align: left; color: var(--gold-light); font-size: 0.75rem; text-transform: uppercase;">Directions / Remarks</th>
-                                                <th style="padding: 8px; width: 35px; text-align: center;"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="exam-items-tbody">
-                                            @php
-                                                $initialItems = !empty($record->prescribed_items) ? $record->prescribed_items : [];
-                                            @endphp
-
-                                            @forelse($initialItems as $idx => $it)
-                                                @php
-                                                    $q = floatval($it['quantity'] ?? 1);
-                                                    $p = floatval($it['price'] ?? 0);
-                                                    $t = $q * $p;
-                                                @endphp
-                                                <tr class="exam-item-row" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                                    <td style="padding: 6px;">
-                                                        <input type="text" name="items[{{ $idx }}][name]" class="form-control form-control-sm item-name" placeholder="e.g. Complete Blood Count (CBC)" value="{{ $it['name'] ?? '' }}" style="font-size: 0.82rem;" required>
-                                                    </td>
-                                                    <td style="padding: 6px; width: 80px;">
-                                                        <input type="number" step="0.01" min="0.01" name="items[{{ $idx }}][quantity]" class="form-control form-control-sm item-qty" placeholder="1" value="{{ $it['quantity'] ?? '1' }}" style="font-size: 0.82rem; text-align: center;">
-                                                    </td>
-                                                    <td style="padding: 6px; width: 100px;">
-                                                        <input type="number" step="0.01" min="0" name="items[{{ $idx }}][price]" class="form-control form-control-sm item-price" placeholder="0.00" value="{{ $it['price'] ?? '' }}" style="font-size: 0.82rem; text-align: right;">
-                                                    </td>
-                                                    <td style="padding: 6px; width: 100px; text-align: right; font-weight: 700; color: var(--gold-primary);" class="item-row-total">
-                                                        ₱{{ number_format($t, 2) }}
-                                                    </td>
-                                                    <td style="padding: 6px;">
-                                                        <input type="text" name="items[{{ $idx }}][remarks]" class="form-control form-control-sm" placeholder="e.g. In-house STAT / Normal findings" value="{{ $it['instructions'] ?? ($it['remarks'] ?? '') }}" style="font-size: 0.82rem;">
-                                                    </td>
-                                                    <td style="padding: 6px; width: 35px; text-align: center;">
-                                                        <button type="button" class="btn btn-ghost btn-sm btn-remove-item" style="color: #ef4444; padding: 2px 4px; font-size: 0.85rem;" title="Remove row">
-                                                            🗑️
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <!-- Row will be added dynamically by JS -->
-                                            @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div id="no-items-placeholder" style="{{ count($initialItems) > 0 ? 'display: none;' : '' }} text-align: center; padding: 0.6rem; color: var(--text-muted); font-size: 0.78rem; font-style: italic;">
-                                    No laboratory tests or special medical services added yet. Click <strong>"+ Add Lab / Service"</strong> or use quick add above.
-                                </div>
-
-                                <!-- Estimated Cashier Total Banner -->
-                                <div style="background: rgba(4, 7, 13, 0.6); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
-                                    <div style="font-size: 0.78rem; color: var(--text-muted);">
+                            <!-- Live Cashier Billing Queue Grand Total Banner -->
+                            <div style="background: rgba(4, 7, 13, 0.65); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); font-weight: 600;">
                                         Total Amount Queued to Cashier:
                                     </div>
-                                    <div style="font-weight: 800; color: var(--gold-primary); font-size: 1.1rem;" id="modal_exam_grand_total">
-                                        ₱0.00
+                                    <div style="font-size: 0.72rem; color: var(--text-secondary);">
+                                        Consultation Fee + Lab & Services + Inpatient Admission
                                     </div>
                                 </div>
+                                <div style="font-weight: 800; color: var(--gold-primary); font-size: 1.35rem;" id="modal_exam_grand_total">
+                                    ₱0.00
+                                </div>
                             </div>
+                        </div>
 
-                            <!-- 6. Follow-Up Schedule -->
-                            <div style="background: rgba(11, 25, 44, 0.45); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
-                                <h5 style="color: var(--gold-light); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem;">
+                        <!-- Right: Follow-Up Schedule & STATUS Selector -->
+                        <div style="background: rgba(11, 25, 44, 0.5); border: 1px solid var(--navy-border); border-radius: var(--radius-sm); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.85rem;">
+                            <!-- Follow-Up Schedule -->
+                            <div>
+                                <h5 style="color: var(--gold-light); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.45rem;">
                                     🗓️ Follow-Up Schedule
                                 </h5>
-                                <div class="form-grid">
+                                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 0.65rem;">
                                     <div class="form-group" style="margin-bottom: 0;">
-                                        <label class="form-label" style="font-size: 0.75rem;">Follow Up Date</label>
-                                        <input type="date" name="follow_up_date" class="form-control" value="{{ $record->follow_up_date ? $record->follow_up_date->format('Y-m-d') : '' }}">
+                                        <label class="form-label" style="font-size: 0.72rem;">Follow Up Date</label>
+                                        <input type="date" name="follow_up_date" class="form-control" value="{{ $record->follow_up_date ? $record->follow_up_date->format('Y-m-d') : '' }}" style="font-size: 0.82rem;">
                                     </div>
                                     <div class="form-group" style="margin-bottom: 0;">
-                                        <label class="form-label" style="font-size: 0.75rem;">Purpose / Notes</label>
-                                        <input type="text" name="follow_up_notes" class="form-control" placeholder="e.g. Re-evaluation / suture removal" value="{{ $record->follow_up_notes }}">
+                                        <label class="form-label" style="font-size: 0.72rem;">Purpose / Notes</label>
+                                        <input type="text" name="follow_up_notes" class="form-control" placeholder="e.g. Re-eval / suture removal" value="{{ $record->follow_up_notes }}" style="font-size: 0.82rem;">
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- 7. STATUS Selector -->
-                            <div class="form-group">
-                                <label class="form-label" style="font-weight: 700; color: var(--gold-light);">🏷️ STATUS <span class="req">*</span></label>
-                                <select name="status" class="form-select" required style="font-weight: 600; font-size: 0.9rem;">
+                            <!-- STATUS Selector -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="font-weight: 700; color: var(--gold-light); font-size: 0.82rem;">🏷️ CASE STATUS <span class="req">*</span></label>
+                                <select name="status" class="form-select" required style="font-weight: 600; font-size: 0.88rem;">
                                     <option value="completed" {{ $record->status === 'completed' || $record->status === 'ongoing' ? 'selected' : '' }}>✅ Completed (Send to Cashier Billing)</option>
                                     <option value="ongoing" {{ $record->status === 'ongoing' ? '' : '' }}>🟡 Ongoing / In-Progress</option>
                                     <option value="billed" {{ $record->status === 'billed' ? 'selected' : '' }}>🟢 Billed / Settled</option>
                                 </select>
                                 <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">
-                                    💡 Selecting <strong>"Completed"</strong> automatically routes the consultation fee and itemized services to the Cashier Desk.
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ==================== RIGHT COLUMN (Exact Blueprint Layout) ==================== -->
-                        <div style="display: flex; flex-direction: column; gap: 1.15rem;">
-                            <!-- 1. Purpose / Exam Note / Complaint -->
-                            <div class="form-group">
-                                <label class="form-label" style="font-weight: 700; color: var(--gold-primary);">📝 Purpose / Exam Note / Complaint</label>
-                                <textarea name="history_taking" class="form-control" rows="4" placeholder="Symptoms, observed condition, patient history, client complaint...">{{ $record->history_taking }}</textarea>
-                            </div>
-
-                            <!-- 2. Clinical Assessment (Diagnosis) -->
-                            <div class="form-group">
-                                <label class="form-label" style="font-weight: 700; color: var(--gold-primary);">🩺 Clinical Assessment / Diagnosis <span class="req">*</span></label>
-                                <textarea name="diagnosis" class="form-control" rows="3" placeholder="e.g. Acute Gastroenteritis, Canine Parvovirus, Otitis Externa..." required>{{ $record->diagnosis }}</textarea>
-                            </div>
-
-                            <!-- In-Clinic Medication / Treatment (Optional) -->
-                            <div class="form-group">
-                                <label class="form-label" style="font-size: 0.8rem; color: var(--text-secondary);">💊 Medication / In-Clinic Treatment (Optional)</label>
-                                <textarea name="medication_treatment" class="form-control" rows="2" placeholder="Injections, intravenous fluids, administered treatments...">{{ $record->medication_treatment }}</textarea>
-                            </div>
-
-                            <!-- 3. Laboratory / Test Notes -->
-                            <div style="background: rgba(11, 25, 44, 0.45); border: 1px dashed var(--gold-border); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
-                                <label class="form-label" style="font-weight: 700; color: var(--gold-light); margin-bottom: 0.35rem;">🔬 Laboratory / Test Notes</label>
-                                <textarea name="laboratory_notes" class="form-control" rows="2" placeholder="e.g. CBC Normal, Parvo Rapid Test Negative, X-Ray clear" style="margin-bottom: 0.5rem;">{{ $record->laboratory_notes }}</textarea>
-                                
-                                <label class="form-label" style="margin-bottom: 0.25rem; font-size: 0.75rem; color: var(--text-muted);">📎 Attach / Replace Lab Result File</label>
-                                <input type="file" name="lab_results" class="form-control" accept="image/*,.pdf,.doc,.docx" style="padding: 4px; font-size: 0.8rem;">
-                                @if($record->attached_lab_results)
-                                    <div style="font-size: 0.72rem; color: var(--gold-light); margin-top: 3px;">
-                                        Current file: {{ basename($record->attached_lab_results) }}
-                                    </div>
-                                @endif
-                            </div>
-
-                            <!-- 4. Rx Prescribe Take-Home Medicine -->
-                            <div style="background: rgba(245, 186, 49, 0.05); border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1rem;">
-                                <h5 style="color: var(--gold-light); font-size: 0.84rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.4rem;">
-                                    <span>💊</span> Rx Prescribe Take-Home Medicine
-                                </h5>
-                                <div class="form-group" style="margin-bottom: 0.75rem;">
-                                    <label class="form-label" style="font-size: 0.78rem;">Medication Details, Strength, Dosage & Frequency</label>
-                                    <textarea name="prescribe_rx" class="form-control" rows="4" placeholder="e.g.&#10;1. Amoxicillin 250mg - 1 tab BID for 7 days&#10;2. Nutriplus Gel - 1 tsp daily&#10;3. Eye Drops - 2 drops TID">{{ $record->prescription ? $record->prescription->rx_details : '' }}</textarea>
-                                </div>
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label class="form-label" style="font-size: 0.78rem;">Rx Instructions / Precautions</label>
-                                    <input type="text" name="rx_instructions" class="form-control" placeholder="e.g. Give after meals. Keep refrigerated. Finish full antibiotic course." value="{{ $record->prescription ? $record->prescription->instructions : '' }}">
+                                    💡 Selecting <strong>"Completed"</strong> automatically routes the total bill to the Cashier Desk.
                                 </div>
                             </div>
                         </div>
@@ -770,9 +885,9 @@
                 </div>
 
                 <!-- Footer Action Buttons (Cancel & Save) -->
-                <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--black-border);">
                     <button type="button" class="btn btn-ghost" data-modal-close style="font-size: 0.88rem; padding: 0.6rem 1.25rem;">Cancel</button>
-                    <button type="submit" class="btn btn-gold" style="font-weight: 700; font-size: 0.92rem; padding: 0.65rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <button type="submit" class="btn btn-gold" style="font-weight: 700; font-size: 0.95rem; padding: 0.65rem 1.75rem; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: var(--gold-shadow);">
                         💾 SAVE Examination & Send to Cashier
                     </button>
                 </div>
@@ -787,12 +902,21 @@
         const addItemBtn = document.getElementById('btn-add-exam-item');
         const noItemsPlaceholder = document.getElementById('no-items-placeholder');
         const feeInput = document.getElementById('exam_modal_service_fee');
+        const labSubtotalDisplay = document.getElementById('modal_lab_subtotal');
         const grandTotalDisplay = document.getElementById('modal_exam_grand_total');
+
+        // Inpatient Admission Elements
+        const toggleAdm = document.getElementById('toggle_exam_admission');
+        const admFields = document.getElementById('exam_admission_fields');
+        const admBadge = document.getElementById('admission_active_badge');
+        const admDays = document.getElementById('exam_adm_days');
+        const admRate = document.getElementById('exam_adm_rate');
+        const admTotalDisplay = document.getElementById('exam_adm_total_display');
 
         if (!tableBody) return;
 
         function recalcGrandTotal() {
-            let total = parseFloat(feeInput ? feeInput.value : 0) || 0;
+            let labSubtotal = 0;
             tableBody.querySelectorAll('tr.exam-item-row').forEach(function (row) {
                 const qty = parseFloat(row.querySelector('.item-qty')?.value || 1) || 1;
                 const price = parseFloat(row.querySelector('.item-price')?.value || 0) || 0;
@@ -801,11 +925,29 @@
                 if (totalCell) {
                     totalCell.textContent = '₱' + rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 }
-                total += rowTotal;
+                labSubtotal += rowTotal;
             });
 
+            if (labSubtotalDisplay) {
+                labSubtotalDisplay.textContent = '₱' + labSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            // Inpatient Admission calculation
+            let admTotal = 0;
+            if (toggleAdm && toggleAdm.checked) {
+                const d = parseFloat(admDays ? admDays.value : 1) || 0;
+                const r = parseFloat(admRate ? admRate.value : 0) || 0;
+                admTotal = d * r;
+                if (admTotalDisplay) {
+                    admTotalDisplay.textContent = '₱' + admTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+            }
+
+            const baseFee = parseFloat(feeInput ? feeInput.value : 0) || 0;
+            const grandTotal = baseFee + labSubtotal + admTotal;
+
             if (grandTotalDisplay) {
-                grandTotalDisplay.textContent = '₱' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                grandTotalDisplay.textContent = '₱' + grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
         }
 
@@ -821,28 +963,29 @@
             const index = tableBody.querySelectorAll('tr.exam-item-row').length + '_' + Date.now();
             const tr = document.createElement('tr');
             tr.className = 'exam-item-row';
-            tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            tr.style.borderBottom = '1px solid rgba(255,255,255,0.06)';
+            tr.style.transition = 'background 0.15s ease';
             const q = parseFloat(qty) || 1;
             const p = parseFloat(price) || 0;
             const rowTot = q * p;
             tr.innerHTML = `
-                <td style="padding: 6px;">
-                    <input type="text" name="items[${index}][name]" class="form-control form-control-sm item-name" placeholder="e.g. Complete Blood Count (CBC)" value="${name.replace(/"/g, '&quot;')}" style="font-size: 0.82rem;" required autofocus>
+                <td style="padding: 8px 12px;">
+                    <input type="text" name="items[${index}][name]" class="form-control item-name" placeholder="e.g. Complete Blood Count (CBC)" value="${name.replace(/"/g, '&quot;')}" style="font-size: 0.88rem;" required autofocus>
                 </td>
-                <td style="padding: 6px; width: 80px;">
-                    <input type="number" step="0.01" min="0.01" name="items[${index}][quantity]" class="form-control form-control-sm item-qty" placeholder="1" value="${qty}" style="font-size: 0.82rem; text-align: center;">
+                <td style="padding: 8px 12px; width: 90px;">
+                    <input type="number" step="0.01" min="0.01" name="items[${index}][quantity]" class="form-control item-qty" placeholder="1" value="${qty}" style="font-size: 0.88rem; text-align: center;">
                 </td>
-                <td style="padding: 6px; width: 100px;">
-                    <input type="number" step="0.01" min="0" name="items[${index}][price]" class="form-control form-control-sm item-price" placeholder="0.00" value="${price}" style="font-size: 0.82rem; text-align: right;">
+                <td style="padding: 8px 12px; width: 130px;">
+                    <input type="number" step="0.01" min="0" name="items[${index}][price]" class="form-control item-price" placeholder="0.00" value="${price}" style="font-size: 0.88rem; text-align: right;">
                 </td>
-                <td style="padding: 6px; width: 100px; text-align: right; font-weight: 700; color: var(--gold-primary);" class="item-row-total">
+                <td style="padding: 8px 12px; width: 130px; text-align: right; font-weight: 700; color: var(--gold-primary); font-size: 0.92rem;" class="item-row-total">
                     ₱${rowTot.toFixed(2)}
                 </td>
-                <td style="padding: 6px;">
-                    <input type="text" name="items[${index}][remarks]" class="form-control form-control-sm" placeholder="e.g. In-house STAT / Normal findings" value="${remarks.replace(/"/g, '&quot;')}" style="font-size: 0.82rem;">
+                <td style="padding: 8px 12px;">
+                    <input type="text" name="items[${index}][remarks]" class="form-control" placeholder="e.g. In-house STAT / Normal findings" value="${remarks.replace(/"/g, '&quot;')}" style="font-size: 0.88rem;">
                 </td>
-                <td style="padding: 6px; width: 35px; text-align: center;">
-                    <button type="button" class="btn btn-ghost btn-sm btn-remove-item" style="color: #ef4444; padding: 2px 4px; font-size: 0.85rem;" title="Remove row">
+                <td style="padding: 8px 12px; width: 45px; text-align: center;">
+                    <button type="button" class="btn btn-ghost btn-sm btn-remove-item" style="color: #ef4444; padding: 4px 8px; font-size: 0.95rem; border-radius: 4px;" title="Remove row">
                         🗑️
                     </button>
                 </td>
@@ -893,6 +1036,17 @@
         if (feeInput) {
             feeInput.addEventListener('input', recalcGrandTotal);
         }
+
+        // Admission toggle & inputs event listeners
+        if (toggleAdm && admFields) {
+            toggleAdm.addEventListener('change', function () {
+                admFields.style.display = this.checked ? 'block' : 'none';
+                if (admBadge) admBadge.style.display = this.checked ? 'inline-block' : 'none';
+                recalcGrandTotal();
+            });
+        }
+        if (admDays) admDays.addEventListener('input', recalcGrandTotal);
+        if (admRate) admRate.addEventListener('input', recalcGrandTotal);
 
         updatePlaceholder();
     });

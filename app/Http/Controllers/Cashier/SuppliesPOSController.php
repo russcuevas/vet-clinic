@@ -63,7 +63,8 @@ class SuppliesPOSController extends Controller
             $product = InventoryItem::findOrFail($cartItem['item_id']);
             $qty = $cartItem['quantity'];
 
-            $isService = in_array($product->category, ['medical_services', 'service', 'services']);
+            $isService = in_array($product->category, ['medical_services', 'service', 'services'])
+                || in_array($product->unit, ['session', 'procedure', 'day', 'test']);
 
             if (!$isService) {
                 if ($product->stock_quantity < $qty) {
@@ -86,8 +87,15 @@ class SuppliesPOSController extends Controller
         }
 
         $paid = $validated['paid_amount'];
-        $change = max(0, $paid - $subtotal);
-        $status = $paid >= $subtotal ? 'paid' : 'unpaid';
+        $isCreditCard = ($validated['payment_method'] === 'credit_card');
+        $tax = $isCreditCard ? round($subtotal * 0.03, 2) : 0.00;
+        $totalAmount = $subtotal + $tax;
+        $change = max(0, $paid - $totalAmount);
+        $status = $paid >= $totalAmount ? 'paid' : 'unpaid';
+
+        $notes = $isCreditCard 
+            ? 'POS checkout (Includes 3% Card Fee: +₱' . number_format($tax, 2) . ')'
+            : 'Pet supplies/POS purchase processed by cashier';
 
         $invoiceNo = Bill::generateInvoiceNo();
         $bill = Bill::create([
@@ -97,13 +105,14 @@ class SuppliesPOSController extends Controller
             'client_name' => $clientName,
             'service_type' => 'pet_supplies',
             'subtotal' => $subtotal,
-            'total_amount' => $subtotal,
+            'tax' => $tax,
+            'total_amount' => $totalAmount,
             'paid_amount' => $paid,
             'change_amount' => $change,
             'payment_method' => $validated['payment_method'],
             'payment_status' => $status,
             'transaction_date' => Carbon::now(),
-            'notes' => 'Pet supplies purchase processed by cashier',
+            'notes' => $notes,
         ]);
 
         foreach ($itemsToInsert as $item) {

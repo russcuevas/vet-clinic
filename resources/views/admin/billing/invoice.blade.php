@@ -179,6 +179,12 @@
                     <strong>- ₱{{ number_format($bill->discount, 2) }}</strong>
                 </div>
             @endif
+            @if($bill->tax > 0)
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; color: #38bdf8;">
+                    <span>Card Surcharge (3%):</span>
+                    <strong>+ ₱{{ number_format($bill->tax, 2) }}</strong>
+                </div>
+            @endif
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 1.15rem; color: var(--gold-primary); border-top: 1px solid var(--gold-border); padding-top: 0.5rem;">
                 <span>Total Due:</span>
                 <strong>₱{{ number_format($bill->total_amount, 2) }}</strong>

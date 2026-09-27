@@ -158,6 +158,7 @@
                                                 data-subtotal="{{ $bill->subtotal ?: $bill->total_amount }}"
                                                 data-discount="{{ $bill->discount ?? 0 }}"
                                                 data-total-amount="{{ $bill->total_amount }}"
+                                                data-payment-method="{{ $bill->payment_method }}"
                                                 data-action-url="{{ route('cashier.billing.pay', $bill->id) }}"
                                                 data-items='@json($bill->items)'>
                                                 💵 Pay
@@ -232,19 +233,50 @@
                     <div
                         style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--navy-border); border-radius: 12px; padding: 1.25rem;">
                         <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.75rem;">
                             <div>
                                 <h5
                                     style="margin: 0; font-size: 1rem; font-weight: 800; color: var(--gold-light); display: flex; align-items: center; gap: 0.45rem;">
                                     📋 Itemized Line Items & Charges
                                 </h5>
-                                <span style="font-size: 0.76rem; color: var(--text-muted);">Review items, update quantities
-                                    or prices, and add line items if needed</span>
+                                <span style="font-size: 0.76rem; color: var(--text-muted);">
+                                    Select from POS catalog products & services or add custom charges
+                                </span>
                             </div>
-                            <button type="button" class="btn btn-navy btn-sm" id="btn-add-pay-item"
-                                style="font-size: 0.82rem; padding: 0.4rem 1rem; font-weight: 700; border-color: var(--gold-border);">
-                                ➕ Add Line Item
-                            </button>
+
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                <div style="min-width: 290px; max-width: 380px;">
+                                    <select id="select-pos-catalog-pay" class="form-control form-control-sm"
+                                        style="background: var(--navy-dark); border-color: var(--gold-border); color: var(--white); font-weight: 600;">
+                                        <option value="">-- 🔍 Choose POS Product / Service --</option>
+                                        @foreach($inventoryItems->groupBy('category') as $category => $items)
+                                            <optgroup label="@switch($category)
+                                                @case('medical_services') 🩺 Medical Services & Lab Tests @break
+                                                @case('vaccine') 💉 Vaccines & Biologicals @break
+                                                @case('medicine') 💊 Medicines & Pharmaceuticals @break
+                                                @case('grooming_supply') ✂️ Grooming Services & Supplies @break
+                                                @case('pet_supplies') 🛍️ Pet Supplies & Food @break
+                                                @case('accessories') 🎀 Pet Accessories @break
+                                                @default {{ ucfirst(str_replace('_', ' ', $category)) }}
+                                            @endswitch">
+                                                @foreach($items as $item)
+                                                    <option value="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->unit_price }}" data-category="{{ $item->category }}">
+                                                        {{ $item->name }} — ₱{{ number_format($item->unit_price, 2) }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-gold btn-sm" id="btn-add-pos-pay-item"
+                                    style="font-size: 0.82rem; padding: 0.4rem 1rem; font-weight: 700; white-space: nowrap;">
+                                    ➕ Add to Charges
+                                </button>
+                                <button type="button" class="btn btn-navy btn-sm" id="btn-add-pay-item"
+                                    style="font-size: 0.82rem; padding: 0.4rem 0.85rem; font-weight: 700; border-color: var(--gold-border); white-space: nowrap;">
+                                    ✏️ Custom Line
+                                </button>
+                            </div>
                         </div>
 
                         <div class="table-responsive"
@@ -286,7 +318,7 @@
                                         <option value="cash">💵 Cash Payment</option>
                                         <option value="gcash">📱 GCash E-Wallet</option>
                                         <option value="maya">💳 Maya E-Wallet</option>
-                                        <option value="credit_card">💳 Credit Card</option>
+                                        <option value="credit_card">💳 Credit Card (+3% Surcharge)</option>
                                         <option value="debit_card">💳 Debit Card</option>
                                         <option value="bank_transfer">🏦 Bank Transfer</option>
                                     </select>
@@ -353,6 +385,15 @@
                                             id="pay_input_discount" class="form-control form-control-sm" value="0.00"
                                             style="text-align: right; font-weight: 700; color: #f87171; background: rgba(0,0,0,0.4); border-color: rgba(248, 113, 113, 0.4);">
                                     </div>
+                                </div>
+
+                                <!-- 3% Credit Card Surcharge Display -->
+                                <div id="pay_row_card_fee"
+                                    style="display: none; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.95rem; background: rgba(56, 189, 248, 0.1); border: 1px dashed rgba(56, 189, 248, 0.4); padding: 0.45rem 0.75rem; border-radius: 8px;">
+                                    <span style="color: #38bdf8; font-weight: 700; display: flex; align-items: center; gap: 0.35rem;">
+                                        💳 Card Surcharge (3%):
+                                    </span>
+                                    <strong style="color: #38bdf8; font-size: 1.1rem;" id="pay_display_card_fee">+₱0.00</strong>
                                 </div>
                             </div>
 
@@ -455,19 +496,50 @@
                     <div
                         style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--navy-border); border-radius: 12px; padding: 1.25rem;">
                         <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.75rem;">
                             <div>
                                 <h5
                                     style="margin: 0; font-size: 1rem; font-weight: 800; color: var(--gold-light); display: flex; align-items: center; gap: 0.45rem;">
                                     📋 Billable Line Items
                                 </h5>
-                                <span style="font-size: 0.76rem; color: var(--text-muted);">Services, medications, or items
-                                    purchased</span>
+                                <span style="font-size: 0.76rem; color: var(--text-muted);">
+                                    Select from POS catalog products & services or add custom items
+                                </span>
                             </div>
-                            <button type="button" class="btn btn-navy btn-sm" id="btn-add-create-item"
-                                style="font-size: 0.82rem; padding: 0.4rem 1rem; font-weight: 700; border-color: var(--gold-border);">
-                                ➕ Add Item
-                            </button>
+
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                <div style="min-width: 290px; max-width: 380px;">
+                                    <select id="select-pos-catalog-create" class="form-control form-control-sm"
+                                        style="background: var(--navy-dark); border-color: var(--gold-border); color: var(--white); font-weight: 600;">
+                                        <option value="">-- 🔍 Choose POS Product / Service --</option>
+                                        @foreach($inventoryItems->groupBy('category') as $category => $items)
+                                            <optgroup label="@switch($category)
+                                                @case('medical_services') 🩺 Medical Services & Lab Tests @break
+                                                @case('vaccine') 💉 Vaccines & Biologicals @break
+                                                @case('medicine') 💊 Medicines & Pharmaceuticals @break
+                                                @case('grooming_supply') ✂️ Grooming Services & Supplies @break
+                                                @case('pet_supplies') 🛍️ Pet Supplies & Food @break
+                                                @case('accessories') 🎀 Pet Accessories @break
+                                                @default {{ ucfirst(str_replace('_', ' ', $category)) }}
+                                            @endswitch">
+                                                @foreach($items as $item)
+                                                    <option value="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ $item->unit_price }}" data-category="{{ $item->category }}">
+                                                        {{ $item->name }} — ₱{{ number_format($item->unit_price, 2) }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-gold btn-sm" id="btn-add-pos-create-item"
+                                    style="font-size: 0.82rem; padding: 0.4rem 1rem; font-weight: 700; white-space: nowrap;">
+                                    ➕ Add to Bill
+                                </button>
+                                <button type="button" class="btn btn-navy btn-sm" id="btn-add-create-item"
+                                    style="font-size: 0.82rem; padding: 0.4rem 0.85rem; font-weight: 700; border-color: var(--gold-border); white-space: nowrap;">
+                                    ✏️ Custom Line
+                                </button>
+                            </div>
                         </div>
 
                         <div class="table-responsive"
@@ -484,7 +556,7 @@
                                 </thead>
                                 <tbody id="tbody-create-items">
                                     <tr>
-                                        <td><input type="text" name="items[0][item_name]"
+                                        <td><input type="text" name="items[0][item_name]" list="pos-items-datalist"
                                                 class="form-control form-control-sm item-name-input"
                                                 placeholder="e.g. Consultation Fee / Medicine / Service" required></td>
                                         <td><input type="number" name="items[0][quantity]"
@@ -522,12 +594,12 @@
                                 <div class="form-group" style="margin-bottom: 1rem;">
                                     <label class="form-label" style="font-weight: 700; font-size: 0.82rem;">Payment Method
                                         *</label>
-                                    <select name="payment_method" class="form-control" required
+                                    <select name="payment_method" id="create_select_method" class="form-control" required
                                         style="font-weight: 600;">
                                         <option value="cash">💵 Cash Payment</option>
                                         <option value="gcash">📱 GCash E-Wallet</option>
                                         <option value="maya">💳 Maya E-Wallet</option>
-                                        <option value="credit_card">💳 Credit Card</option>
+                                        <option value="credit_card">💳 Credit Card (+3% Surcharge)</option>
                                         <option value="debit_card">💳 Debit Card</option>
                                         <option value="bank_transfer">🏦 Bank Transfer</option>
                                     </select>
@@ -596,6 +668,15 @@
                                             style="text-align: right; font-weight: 700; color: #f87171; background: rgba(0,0,0,0.4); border-color: rgba(248, 113, 113, 0.4);">
                                     </div>
                                 </div>
+
+                                <!-- 3% Credit Card Surcharge Display -->
+                                <div id="create_row_card_fee"
+                                    style="display: none; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.95rem; background: rgba(56, 189, 248, 0.1); border: 1px dashed rgba(56, 189, 248, 0.4); padding: 0.45rem 0.75rem; border-radius: 8px;">
+                                    <span style="color: #38bdf8; font-weight: 700; display: flex; align-items: center; gap: 0.35rem;">
+                                        💳 Card Surcharge (3%):
+                                    </span>
+                                    <strong style="color: #38bdf8; font-size: 1.1rem;" id="create_display_card_fee">+₱0.00</strong>
+                                </div>
                             </div>
 
                             <div>
@@ -633,6 +714,15 @@
             </form>
         </div>
     </div>
+
+    <!-- Datalist for Autocomplete on Item / Service Inputs -->
+    <datalist id="pos-items-datalist">
+        @foreach ($inventoryItems as $posItm)
+            <option value="{{ $posItm->name }}" data-price="{{ $posItm->unit_price }}">
+                ₱{{ number_format($posItm->unit_price, 2) }} - {{ ucfirst(str_replace('_', ' ', $posItm->category)) }}
+            </option>
+        @endforeach
+    </datalist>
 @endsection
 
 @push('scripts')
@@ -640,6 +730,25 @@
     <script src="{{ asset('js/select2.min.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // -------------------------------------------------------------
+            // POS Item Name to Price Dictionary for Auto-fill
+            // -------------------------------------------------------------
+            const posPriceMap = {
+                @foreach ($inventoryItems as $posItm)
+                    "{{ addslashes($posItm->name) }}": {{ $posItm->unit_price }},
+                @endforeach
+            };
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            }
+
             // -------------------------------------------------------------
             // Helper function to format PHP currency
             // -------------------------------------------------------------
@@ -657,6 +766,11 @@
             const payForm = document.getElementById('form-pay-bill');
             const tbodyPay = document.getElementById('tbody-pay-items');
             const btnAddPayItem = document.getElementById('btn-add-pay-item');
+            const btnAddPosPayItem = document.getElementById('btn-add-pos-pay-item');
+            const selectPosCatalogPay = document.getElementById('select-pos-catalog-pay');
+            const paySelectMethod = document.getElementById('pay_select_method');
+            const payRowCardFee = document.getElementById('pay_row_card_fee');
+            const payDispCardFee = document.getElementById('pay_display_card_fee');
             const inputPayDiscount = document.getElementById('pay_input_discount');
             const inputPayCash = document.getElementById('pay_input_cash');
             const dispPaySubtotal = document.getElementById('pay_display_subtotal');
@@ -682,7 +796,20 @@
                 });
 
                 const discount = Math.max(0, parseFloat(inputPayDiscount.value) || 0);
-                const total = Math.max(0, subtotal - discount);
+                const netSubtotal = Math.max(0, subtotal - discount);
+
+                // Automatic 3% surcharge when paying via Credit Card
+                const method = paySelectMethod ? paySelectMethod.value : 'cash';
+                let cardFee = 0;
+                if (method === 'credit_card' && netSubtotal > 0) {
+                    cardFee = netSubtotal * 0.03;
+                    if (payRowCardFee) payRowCardFee.style.display = 'flex';
+                    if (payDispCardFee) payDispCardFee.textContent = '+' + fmtCurrency(cardFee);
+                } else {
+                    if (payRowCardFee) payRowCardFee.style.display = 'none';
+                }
+
+                const total = netSubtotal + cardFee;
                 const cash = Math.max(0, parseFloat(inputPayCash.value) || 0);
                 const change = Math.max(0, cash - total);
 
@@ -695,15 +822,30 @@
                 const tr = document.createElement('tr');
                 const lineTotal = (qty * price).toFixed(2);
                 tr.innerHTML = `
-            <td><input type="text" name="items[${payItemIndex}][item_name]" class="form-control form-control-sm item-name-input" value="${name}" placeholder="Item description" required></td>
-            <td><input type="number" name="items[${payItemIndex}][quantity]" class="form-control form-control-sm item-qty-input" min="1" value="${qty}" required style="text-align: center;"></td>
-            <td><input type="number" step="0.01" name="items[${payItemIndex}][unit_price]" class="form-control form-control-sm item-price-input" min="0" value="${Number(price).toFixed(2)}" required style="text-align: right;"></td>
-            <td><input type="number" step="0.01" name="items[${payItemIndex}][total_price]" class="form-control form-control-sm item-total-input" value="${lineTotal}" readonly style="text-align: right; font-weight: 700; background: rgba(0,0,0,0.3);"></td>
-            <td style="text-align: center;"><button type="button" class="btn btn-ghost btn-sm btn-delete-row" style="color: #ef4444; padding: 0.2rem 0.4rem;">🗑️</button></td>
-        `;
+                    <td><input type="text" name="items[${payItemIndex}][item_name]" list="pos-items-datalist" class="form-control form-control-sm item-name-input" value="${escapeHtml(name)}" placeholder="Select from dropdown or enter description" required></td>
+                    <td><input type="number" name="items[${payItemIndex}][quantity]" class="form-control form-control-sm item-qty-input" min="1" value="${qty}" required style="text-align: center;"></td>
+                    <td><input type="number" step="0.01" name="items[${payItemIndex}][unit_price]" class="form-control form-control-sm item-price-input" min="0" value="${Number(price).toFixed(2)}" required style="text-align: right;"></td>
+                    <td><input type="number" step="0.01" name="items[${payItemIndex}][total_price]" class="form-control form-control-sm item-total-input" value="${lineTotal}" readonly style="text-align: right; font-weight: 700; background: rgba(0,0,0,0.3); color: var(--gold-light);"></td>
+                    <td style="text-align: center;"><button type="button" class="btn btn-ghost btn-sm btn-delete-row" style="color: #ef4444; padding: 0.2rem 0.4rem;">🗑️</button></td>
+                `;
                 tbodyPay.appendChild(tr);
                 payItemIndex++;
                 recalcPayModal();
+            }
+
+            // Quick Add from POS Catalog dropdown in Pay modal
+            if (btnAddPosPayItem && selectPosCatalogPay) {
+                btnAddPosPayItem.addEventListener('click', function() {
+                    const opt = selectPosCatalogPay.options[selectPosCatalogPay.selectedIndex];
+                    if (!opt || !opt.value) {
+                        alert('Please choose a product or service from the dropdown list first.');
+                        return;
+                    }
+                    const name = opt.getAttribute('data-name');
+                    const price = parseFloat(opt.getAttribute('data-price')) || 0;
+                    addPayItemRow(name, 1, price);
+                    selectPosCatalogPay.selectedIndex = 0;
+                });
             }
 
             if (btnAddPayItem) {
@@ -728,6 +870,16 @@
             if (inputPayDiscount) inputPayDiscount.addEventListener('input', recalcPayModal);
             if (inputPayCash) inputPayCash.addEventListener('input', recalcPayModal);
 
+            // Listen to payment method change in Pay modal (e.g. credit card 3% fee toggle)
+            if (paySelectMethod) {
+                paySelectMethod.addEventListener('change', function() {
+                    recalcPayModal();
+                    const tot = parseFloat(dispPayTotal.textContent.replace(/[^\d.]/g, '')) || 0;
+                    inputPayCash.value = tot.toFixed(2);
+                    recalcPayModal();
+                });
+            }
+
             // Open Pay Modal button handler
             document.querySelectorAll('.btn-open-pay-modal').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -735,12 +887,16 @@
                     const invoiceNo = this.dataset.invoiceNo;
                     const clientName = this.dataset.clientName;
                     const discount = parseFloat(this.dataset.discount) || 0;
+                    const paymentMethod = this.dataset.paymentMethod || 'cash';
                     const items = JSON.parse(this.dataset.items || '[]');
 
                     payForm.action = actionUrl;
                     document.getElementById('pay_modal_invoice_no').textContent = invoiceNo;
                     document.getElementById('pay_modal_client_name').textContent = clientName;
                     inputPayDiscount.value = discount.toFixed(2);
+                    if (paySelectMethod) {
+                        paySelectMethod.value = paymentMethod;
+                    }
 
                     tbodyPay.innerHTML = '';
                     payItemIndex = 0;
@@ -750,15 +906,14 @@
                             addPayItemRow(it.item_name, it.quantity, it.unit_price);
                         });
                     } else {
-                        addPayItemRow('Service Charge', 1, parseFloat(this.dataset.totalAmount) ||
-                            0);
+                        addPayItemRow('Service Charge', 1, parseFloat(this.dataset.totalAmount) || 0);
                     }
 
-                    // Default cash tendered to total
-                    const subtotal = parseFloat(this.dataset.subtotal) || parseFloat(this.dataset
-                        .totalAmount) || 0;
-                    const total = Math.max(0, subtotal - discount);
-                    inputPayCash.value = total.toFixed(2);
+                    recalcPayModal();
+
+                    // Default cash tendered to total (including 3% surcharge if credit card)
+                    const tot = parseFloat(dispPayTotal.textContent.replace(/[^\d.]/g, '')) || 0;
+                    inputPayCash.value = tot.toFixed(2);
 
                     recalcPayModal();
                     payModal.classList.add('active');
@@ -770,6 +925,11 @@
             // -------------------------------------------------------------
             const tbodyCreate = document.getElementById('tbody-create-items');
             const btnAddCreateItem = document.getElementById('btn-add-create-item');
+            const btnAddPosCreateItem = document.getElementById('btn-add-pos-create-item');
+            const selectPosCatalogCreate = document.getElementById('select-pos-catalog-create');
+            const createSelectMethod = document.getElementById('create_select_method');
+            const createRowCardFee = document.getElementById('create_row_card_fee');
+            const createDispCardFee = document.getElementById('create_display_card_fee');
             const inputCreateDiscount = document.getElementById('create_input_discount');
             const inputCreateCash = document.getElementById('create_input_cash');
             const dispCreateSubtotal = document.getElementById('create_display_subtotal');
@@ -797,7 +957,20 @@
                 });
 
                 const discount = Math.max(0, parseFloat(inputCreateDiscount.value) || 0);
-                const total = Math.max(0, subtotal - discount);
+                const netSubtotal = Math.max(0, subtotal - discount);
+
+                // Automatic 3% surcharge when paying via Credit Card
+                const method = createSelectMethod ? createSelectMethod.value : 'cash';
+                let cardFee = 0;
+                if (method === 'credit_card' && netSubtotal > 0) {
+                    cardFee = netSubtotal * 0.03;
+                    if (createRowCardFee) createRowCardFee.style.display = 'flex';
+                    if (createDispCardFee) createDispCardFee.textContent = '+' + fmtCurrency(cardFee);
+                } else {
+                    if (createRowCardFee) createRowCardFee.style.display = 'none';
+                }
+
+                const total = netSubtotal + cardFee;
                 const cash = Math.max(0, parseFloat(inputCreateCash.value) || 0);
                 const change = Math.max(0, cash - total);
 
@@ -812,15 +985,45 @@
                 const tr = document.createElement('tr');
                 const lineTotal = (qty * price).toFixed(2);
                 tr.innerHTML = `
-            <td><input type="text" name="items[${createItemIndex}][item_name]" class="form-control form-control-sm item-name-input" value="${name}" placeholder="Item description" required></td>
-            <td><input type="number" name="items[${createItemIndex}][quantity]" class="form-control form-control-sm item-qty-input" min="1" value="${qty}" required style="text-align: center;"></td>
-            <td><input type="number" step="0.01" name="items[${createItemIndex}][unit_price]" class="form-control form-control-sm item-price-input" min="0" value="${Number(price).toFixed(2)}" required style="text-align: right;"></td>
-            <td><input type="number" step="0.01" name="items[${createItemIndex}][total_price]" class="form-control form-control-sm item-total-input" value="${lineTotal}" readonly style="text-align: right; font-weight: 700; background: rgba(0,0,0,0.3);"></td>
-            <td style="text-align: center;"><button type="button" class="btn btn-ghost btn-sm btn-delete-row" style="color: #ef4444; padding: 0.2rem 0.4rem;">🗑️</button></td>
-        `;
+                    <td><input type="text" name="items[${createItemIndex}][item_name]" list="pos-items-datalist" class="form-control form-control-sm item-name-input" value="${escapeHtml(name)}" placeholder="Select from dropdown or enter description" required></td>
+                    <td><input type="number" name="items[${createItemIndex}][quantity]" class="form-control form-control-sm item-qty-input" min="1" value="${qty}" required style="text-align: center;"></td>
+                    <td><input type="number" step="0.01" name="items[${createItemIndex}][unit_price]" class="form-control form-control-sm item-price-input" min="0" value="${Number(price).toFixed(2)}" required style="text-align: right;"></td>
+                    <td><input type="number" step="0.01" name="items[${createItemIndex}][total_price]" class="form-control form-control-sm item-total-input" value="${lineTotal}" readonly style="text-align: right; font-weight: 700; background: rgba(0,0,0,0.3); color: var(--gold-light);"></td>
+                    <td style="text-align: center;"><button type="button" class="btn btn-ghost btn-sm btn-delete-row" style="color: #ef4444; padding: 0.2rem 0.4rem;">🗑️</button></td>
+                `;
                 tbodyCreate.appendChild(tr);
                 createItemIndex++;
                 recalcCreateModal();
+            }
+
+            // Quick Add from POS Catalog dropdown in Create Bill modal
+            if (btnAddPosCreateItem && selectPosCatalogCreate) {
+                btnAddPosCreateItem.addEventListener('click', function() {
+                    const opt = selectPosCatalogCreate.options[selectPosCatalogCreate.selectedIndex];
+                    if (!opt || !opt.value) {
+                        alert('Please choose a product or service from the dropdown list first.');
+                        return;
+                    }
+                    const name = opt.getAttribute('data-name');
+                    const price = parseFloat(opt.getAttribute('data-price')) || 0;
+
+                    // If first row is empty, fill it instead of appending
+                    const firstRow = tbodyCreate.querySelector('tr');
+                    if (firstRow) {
+                        const firstRowName = firstRow.querySelector('.item-name-input')?.value.trim();
+                        const firstRowPrice = parseFloat(firstRow.querySelector('.item-price-input')?.value) || 0;
+                        if (!firstRowName && firstRowPrice === 0) {
+                            firstRow.querySelector('.item-name-input').value = name;
+                            firstRow.querySelector('.item-price-input').value = price.toFixed(2);
+                            recalcCreateModal();
+                            selectPosCatalogCreate.selectedIndex = 0;
+                            return;
+                        }
+                    }
+
+                    addCreateItemRow(name, 1, price);
+                    selectPosCatalogCreate.selectedIndex = 0;
+                });
             }
 
             if (btnAddCreateItem) {
@@ -845,22 +1048,49 @@
             if (inputCreateDiscount) inputCreateDiscount.addEventListener('input', recalcCreateModal);
             if (inputCreateCash) inputCreateCash.addEventListener('input', recalcCreateModal);
 
+            // Listen to payment method change in Create Bill modal (e.g. credit card 3% fee toggle)
+            if (createSelectMethod) {
+                createSelectMethod.addEventListener('change', function() {
+                    recalcCreateModal();
+                    const tot = parseFloat(hiddenCreateTotal.value) || 0;
+                    inputCreateCash.value = tot.toFixed(2);
+                    recalcCreateModal();
+                });
+            }
+
+            // -------------------------------------------------------------
+            // Auto-fill price when item name is selected from datalist
+            // -------------------------------------------------------------
+            function checkAutoPrice(e) {
+                if (e.target && e.target.classList.contains('item-name-input')) {
+                    const val = e.target.value.trim();
+                    if (posPriceMap.hasOwnProperty(val)) {
+                        const row = e.target.closest('tr');
+                        if (row) {
+                            const priceInput = row.querySelector('.item-price-input');
+                            if (priceInput) {
+                                priceInput.value = posPriceMap[val].toFixed(2);
+                                if (row.closest('#tbody-pay-items')) recalcPayModal();
+                                if (row.closest('#tbody-create-items')) recalcCreateModal();
+                            }
+                        }
+                    }
+                }
+            }
+            tbodyPay.addEventListener('input', checkAutoPrice);
+            tbodyPay.addEventListener('change', checkAutoPrice);
+            tbodyCreate.addEventListener('input', checkAutoPrice);
+            tbodyCreate.addEventListener('change', checkAutoPrice);
+
+            // -------------------------------------------------------------
             // Quick cash presets for Pay Modal
+            // -------------------------------------------------------------
             document.querySelectorAll('.btn-quick-cash').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const amount = this.dataset.amount;
                     if (amount === 'exact') {
-                        let subtotal = 0;
-                        tbodyPay.querySelectorAll('tr').forEach(row => {
-                            const qty = Math.max(1, parseInt(row.querySelector(
-                                '.item-qty-input')?.value) || 1);
-                            const price = Math.max(0, parseFloat(row.querySelector(
-                                '.item-price-input')?.value) || 0);
-                            subtotal += (qty * price);
-                        });
-                        const discount = Math.max(0, parseFloat(inputPayDiscount.value) || 0);
-                        const total = Math.max(0, subtotal - discount);
-                        inputPayCash.value = total.toFixed(2);
+                        const tot = parseFloat(dispPayTotal.textContent.replace(/[^\d.]/g, '')) || 0;
+                        inputPayCash.value = tot.toFixed(2);
                     } else {
                         inputPayCash.value = parseFloat(amount).toFixed(2);
                     }
@@ -868,22 +1098,15 @@
                 });
             });
 
+            // -------------------------------------------------------------
             // Quick cash presets for Create Bill Modal
+            // -------------------------------------------------------------
             document.querySelectorAll('.btn-quick-cash-create').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const amount = this.dataset.amount;
                     if (amount === 'exact') {
-                        let subtotal = 0;
-                        tbodyCreate.querySelectorAll('tr').forEach(row => {
-                            const qty = Math.max(1, parseInt(row.querySelector(
-                                '.item-qty-input')?.value) || 1);
-                            const price = Math.max(0, parseFloat(row.querySelector(
-                                '.item-price-input')?.value) || 0);
-                            subtotal += (qty * price);
-                        });
-                        const discount = Math.max(0, parseFloat(inputCreateDiscount.value) || 0);
-                        const total = Math.max(0, subtotal - discount);
-                        inputCreateCash.value = total.toFixed(2);
+                        const tot = parseFloat(hiddenCreateTotal.value) || 0;
+                        inputCreateCash.value = tot.toFixed(2);
                     } else {
                         inputCreateCash.value = parseFloat(amount).toFixed(2);
                     }
@@ -891,7 +1114,9 @@
                 });
             });
 
+            // -------------------------------------------------------------
             // Sync client name from select2
+            // -------------------------------------------------------------
             if (typeof jQuery !== 'undefined') {
                 jQuery('#select_new_bill_owner').on('change', function() {
                     const selectedOption = jQuery(this).find('option:selected');

@@ -184,19 +184,27 @@
                     </div>
 
                     <div style="background: var(--navy-dark); padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--black-border); margin-bottom: 1rem;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.88rem; color: var(--text-secondary);">
-                            <span>Total Due:</span>
-                            <strong style="color: var(--gold-primary); font-size: 1.25rem;" id="cart-total-display">₱0.00</strong>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem;">
+                            <span>Subtotal:</span>
+                            <span style="color: var(--white); font-weight: 600;" id="cart-subtotal-display">₱0.00</span>
+                        </div>
+                        <div id="cart-card-fee-row" style="display: none; justify-content: space-between; font-size: 0.85rem; color: #38bdf8; margin-bottom: 0.35rem; padding-top: 0.35rem; border-top: 1px dashed rgba(255,255,255,0.08);">
+                            <span style="font-weight: 600;">💳 Card Surcharge (3%):</span>
+                            <strong id="cart-card-fee-display">+₱0.00</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--text-secondary); border-top: 1px solid var(--black-border); padding-top: 0.5rem;">
+                            <span style="font-weight: 700; color: var(--gold-light);">Total Due:</span>
+                            <strong style="color: var(--gold-primary); font-size: 1.3rem;" id="cart-total-display">₱0.00</strong>
                         </div>
                     </div>
 
                     <div class="form-grid" style="margin-bottom: 1rem;">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label class="form-label">Payment Method</label>
-                            <select name="payment_method" class="form-select" required>
+                            <select name="payment_method" id="pos_payment_method" class="form-select" required onchange="renderCart()">
                                 <option value="cash">Cash</option>
                                 <option value="gcash">GCash</option>
-                                <option value="credit_card">Card</option>
+                                <option value="credit_card">💳 Credit Card (+3% Surcharge)</option>
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
@@ -258,14 +266,19 @@
 
     function renderCart() {
         const container = document.getElementById('cart-items-container');
+        const subDisplay = document.getElementById('cart-subtotal-display');
         const totalDisplay = document.getElementById('cart-total-display');
         const paidInput = document.getElementById('paid_amount_input');
+        const cardFeeRow = document.getElementById('cart-card-fee-row');
+        const cardFeeDisplay = document.getElementById('cart-card-fee-display');
 
         container.innerHTML = '';
 
         if (cart.length === 0) {
             container.innerHTML = '<p id="empty-cart-msg" style="color: var(--text-muted); font-size: 0.82rem; text-align: center; padding: 1rem;">Cart is empty.</p>';
+            if (subDisplay) subDisplay.textContent = '₱0.00';
             totalDisplay.textContent = '₱0.00';
+            if (cardFeeRow) cardFeeRow.style.display = 'none';
             paidInput.value = '';
             return;
         }
@@ -295,8 +308,21 @@
             container.appendChild(row);
         });
 
-        totalDisplay.textContent = '₱' + total.toFixed(2);
-        paidInput.value = total.toFixed(2);
+        const method = document.getElementById('pos_payment_method')?.value || 'cash';
+        let cardSurcharge = 0;
+        if (method === 'credit_card' && total > 0) {
+            cardSurcharge = total * 0.03;
+            if (cardFeeRow) cardFeeRow.style.display = 'flex';
+            if (cardFeeDisplay) cardFeeDisplay.textContent = '+₱' + cardSurcharge.toFixed(2);
+        } else {
+            if (cardFeeRow) cardFeeRow.style.display = 'none';
+        }
+
+        const finalTotal = total + cardSurcharge;
+
+        if (subDisplay) subDisplay.textContent = '₱' + total.toFixed(2);
+        totalDisplay.textContent = '₱' + finalTotal.toFixed(2);
+        paidInput.value = finalTotal.toFixed(2);
     }
 
     function toggleClientFields(type) {
