@@ -224,6 +224,14 @@ Route::group(['prefix' => 'veterinarian', 'as' => 'vet.', 'middleware' => ['auth
     Route::post('/prescriptions', [\App\Http\Controllers\Veterinarian\PrescriptionController::class, 'store'])->name('prescriptions.store');
     Route::put('/prescriptions/{prescription}', [\App\Http\Controllers\Veterinarian\PrescriptionController::class, 'update'])->name('prescriptions.update');
     Route::get('/prescriptions/{prescription}/print', [\App\Http\Controllers\Veterinarian\PrescriptionController::class, 'print'])->name('prescriptions.print');
+
+    // Veterinary Health Certificate Generator & Official Travel Pass
+    Route::get('/certificates', [\App\Http\Controllers\Veterinarian\HealthCertificateController::class, 'index'])->name('certificates.index');
+    Route::post('/certificates', [\App\Http\Controllers\Veterinarian\HealthCertificateController::class, 'store'])->name('certificates.store');
+    Route::get('/certificates/{certificate}', [\App\Http\Controllers\Veterinarian\HealthCertificateController::class, 'show'])->name('certificates.show');
+    Route::put('/certificates/{certificate}', [\App\Http\Controllers\Veterinarian\HealthCertificateController::class, 'update'])->name('certificates.update');
+    Route::get('/certificates/{certificate}/print', [\App\Http\Controllers\Veterinarian\HealthCertificateController::class, 'print'])->name('certificates.print');
+    Route::delete('/certificates/{certificate}', [\App\Http\Controllers\Veterinarian\HealthCertificateController::class, 'destroy'])->name('certificates.destroy');
 });
 
 // ==========================================
