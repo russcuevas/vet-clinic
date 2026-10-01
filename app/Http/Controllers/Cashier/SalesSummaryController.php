@@ -74,6 +74,7 @@ class SalesSummaryController extends Controller
         $salesRows = [];
         $grandSubtotal = 0;
         $grandDiscount = 0;
+        $grandSurcharge = 0;
         $grandTotal = 0;
         $grandCash = 0;
         $grandGCash = 0;
@@ -90,10 +91,18 @@ class SalesSummaryController extends Controller
             $grandChange += floatval($bill->change_amount ?? 0);
 
             $method = strtolower($bill->payment_method ?? 'cash');
+            $isCreditCard = in_array($method, ['credit_card', 'debit_card', 'card']);
 
-            // Categorize bill level payment totals
-            if (in_array($method, ['credit_card', 'debit_card', 'card'])) {
-                $grandCreditCard += $bill->total_amount;
+            // Surcharge calculation for credit card (3%)
+            $billSurcharge = 0;
+            if ($isCreditCard) {
+                // If total amount in DB already includes surcharge or if computed from (subtotal - discount) * 0.03
+                $netBeforeCardFee = max(0, floatval($bill->subtotal) - $billDiscount);
+                $calculatedFee = round($netBeforeCardFee * 0.03, 2);
+                $diff = floatval($bill->total_amount) - $netBeforeCardFee;
+                $billSurcharge = ($diff > 0) ? $diff : $calculatedFee;
+                $grandSurcharge += $billSurcharge;
+                $grandCreditCard += $netBeforeCardFee;
             } elseif ($method === 'gcash') {
                 $grandGCash += $bill->total_amount;
             } elseif ($method === 'maya' || $method === 'paymaya') {
@@ -110,13 +119,29 @@ class SalesSummaryController extends Controller
             foreach ($bill->items as $index => $item) {
                 $grandSubtotal += $item->total_price;
 
+                // Prorate or assign discount
+                if ($itemCount === 1) {
+                    $rowDiscount = $billDiscount;
+                } elseif ($bill->subtotal > 0) {
+                    $rowDiscount = round(($item->total_price / $bill->subtotal) * $billDiscount, 2);
+                } else {
+                    $rowDiscount = round($billDiscount / $itemCount, 2);
+                }
+
                 // Allocate payment column for this specific item row
-                $itemMethod = $method;
-                $rowCredit = in_array($itemMethod, ['credit_card', 'debit_card', 'card']) ? $item->total_price : 0;
-                $rowGCash = ($itemMethod === 'gcash') ? $item->total_price : 0;
-                $rowBank = ($itemMethod === 'bank_transfer' || $itemMethod === 'bank') ? $item->total_price : 0;
-                $rowMaya = ($itemMethod === 'maya' || $itemMethod === 'paymaya') ? $item->total_price : 0;
-                $rowCash = (!in_array($itemMethod, ['credit_card', 'debit_card', 'card', 'gcash', 'maya', 'paymaya', 'bank_transfer', 'bank'])) ? $item->total_price : 0;
+                $rowNetPrice = max(0, $item->total_price - $rowDiscount);
+                $rowSurcharge = 0;
+                $rowCredit = 0;
+
+                if ($isCreditCard) {
+                    $rowCredit = $rowNetPrice;
+                    $rowSurcharge = ($itemCount === 1) ? $billSurcharge : round($rowNetPrice * 0.03, 2);
+                }
+
+                $rowGCash = ($method === 'gcash') ? $rowNetPrice : 0;
+                $rowBank = ($method === 'bank_transfer' || $method === 'bank') ? $rowNetPrice : 0;
+                $rowMaya = ($method === 'maya' || $method === 'paymaya') ? $rowNetPrice : 0;
+                $rowCash = (!in_array($method, ['credit_card', 'debit_card', 'card', 'gcash', 'maya', 'paymaya', 'bank_transfer', 'bank'])) ? $rowNetPrice : 0;
 
                 $salesRows[] = [
                     'bill_id' => $bill->id,
@@ -128,8 +153,10 @@ class SalesSummaryController extends Controller
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
                     'total_price' => $item->total_price,
+                    'discount' => $rowDiscount,
                     'payment_method' => $bill->payment_method,
                     'credit_card' => $rowCredit,
+                    'surcharge' => $rowSurcharge,
                     'gcash' => $rowGCash,
                     'bank_transfer' => $rowBank,
                     'maya' => $rowMaya,
@@ -137,6 +164,7 @@ class SalesSummaryController extends Controller
                     'is_first_item' => $index === 0,
                     'row_span' => $itemCount,
                     'bill_discount' => $billDiscount,
+                    'bill_surcharge' => $billSurcharge,
                     'bill_total' => $bill->total_amount,
                     'bill_paid' => $bill->paid_amount,
                     'bill_change' => $bill->change_amount,
@@ -156,6 +184,7 @@ class SalesSummaryController extends Controller
             'search',
             'grandSubtotal',
             'grandDiscount',
+            'grandSurcharge',
             'grandTotal',
             'grandCash',
             'grandGCash',

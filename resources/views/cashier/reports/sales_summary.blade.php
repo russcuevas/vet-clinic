@@ -141,7 +141,7 @@
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div class="card-title-group">
                 <h3 class="card-title">Itemized Sales Breakdown: {{ $filterLabel }}</h3>
-                <span class="card-subtitle">Format: Invoice • Item • Description • Quantity • Total • Credit Card • GCash • Bank Transfer • Maya • Cash</span>
+                <span class="card-subtitle">Format: Invoice • Item • Description • Quantity • Total • Discount • Credit Card • 3% Surcharge • GCash • Bank Transfer • Maya • Cash</span>
             </div>
             <div>
                 <span class="badge badge-gold" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">
@@ -158,13 +158,15 @@
                             <th style="width: 130px;">Invoice #</th>
                             <th>Item Name</th>
                             <th>Description</th>
-                            <th style="text-align: center; width: 60px;">Qty</th>
-                            <th style="text-align: right; width: 100px;">Total</th>
-                            <th style="text-align: right; color: #60a5fa; width: 100px;">Credit Card</th>
-                            <th style="text-align: right; color: #3b82f6; width: 95px;">GCash</th>
-                            <th style="text-align: right; color: #a78bfa; width: 110px;">Bank Transfer</th>
-                            <th style="text-align: right; color: #10b981; width: 95px;">Maya</th>
-                            <th style="text-align: right; color: #fbbf24; width: 95px;">Cash</th>
+                            <th style="text-align: center; width: 50px;">Qty</th>
+                            <th style="text-align: right; width: 90px;">Total</th>
+                            <th style="text-align: right; color: #ef4444; width: 90px;">Discount</th>
+                            <th style="text-align: right; color: #93c5fd; width: 95px;">Credit Card</th>
+                            <th style="text-align: right; color: #fbbf24; width: 95px;">Surcharge (3%)</th>
+                            <th style="text-align: right; color: #60a5fa; width: 90px;">GCash</th>
+                            <th style="text-align: right; color: #c4b5fd; width: 105px;">Bank Transfer</th>
+                            <th style="text-align: right; color: #6ee7b7; width: 90px;">Maya</th>
+                            <th style="text-align: right; color: #fde68a; width: 90px;">Cash</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -196,8 +198,14 @@
                                 <td style="text-align: right; font-weight: 700; color: var(--gold-primary);">
                                     ₱{{ number_format($row['total_price'], 2) }}
                                 </td>
+                                <td style="text-align: right; font-weight: 700; color: #ef4444;">
+                                    {{ $row['discount'] > 0 ? '-₱' . number_format($row['discount'], 2) : '-' }}
+                                </td>
                                 <td style="text-align: right; color: #93c5fd;">
                                     {{ $row['credit_card'] > 0 ? '₱' . number_format($row['credit_card'], 2) : '-' }}
+                                </td>
+                                <td style="text-align: right; font-weight: 600; color: #fbbf24;">
+                                    {{ $row['surcharge'] > 0 ? '+₱' . number_format($row['surcharge'], 2) : '-' }}
                                 </td>
                                 <td style="text-align: right; color: #60a5fa;">
                                     {{ $row['gcash'] > 0 ? '₱' . number_format($row['gcash'], 2) : '-' }}
@@ -214,7 +222,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
+                                <td colspan="12" style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;">
                                     <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
                                     <strong style="color: var(--white);">No sales transactions found for this period.</strong>
                                 </td>
@@ -230,8 +238,14 @@
                                 <td style="text-align: right; color: var(--gold-primary); font-size: 0.95rem;">
                                     ₱{{ number_format($grandSubtotal, 2) }}
                                 </td>
+                                <td style="text-align: right; color: #ef4444; font-size: 0.95rem;">
+                                    {{ $grandDiscount > 0 ? '-₱' . number_format($grandDiscount, 2) : '₱0.00' }}
+                                </td>
                                 <td style="text-align: right; color: #93c5fd;">
                                     ₱{{ number_format($grandCreditCard, 2) }}
+                                </td>
+                                <td style="text-align: right; color: #fbbf24;">
+                                    ₱{{ number_format($grandSurcharge, 2) }}
                                 </td>
                                 <td style="text-align: right; color: #60a5fa;">
                                     ₱{{ number_format($grandGCash, 2) }}
@@ -249,42 +263,6 @@
                         </tfoot>
                     @endif
                 </table>
-            </div>
-
-            <!-- Grand Financial Summary Footer (Matching Client Requested Layout) -->
-            <div style="padding: 1.75rem; background: linear-gradient(180deg, rgba(19, 22, 32, 0.95) 0%, rgba(10, 12, 18, 1) 100%); border-top: 1px solid var(--navy-border);">
-                <div style="display: flex; justify-content: flex-end;">
-                    <div style="width: 100%; max-width: 380px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--gold-border); border-radius: 10px; padding: 1.25rem;">
-                        <h4 style="color: var(--gold-light); font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; border-bottom: 1px dashed rgba(212, 175, 55, 0.3); padding-bottom: 0.5rem; text-align: center;">
-                            Financial Summary ({{ $filterLabel }})
-                        </h4>
-
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.88rem; color: #cbd5e1;">
-                            <span>Subtotal:</span>
-                            <strong style="color: var(--white);">₱{{ number_format($grandSubtotal, 2) }}</strong>
-                        </div>
-
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.88rem; color: #f87171;">
-                            <span>Discount:</span>
-                            <strong>- ₱{{ number_format($grandDiscount, 2) }}</strong>
-                        </div>
-
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 1.2rem; color: var(--gold-primary); font-weight: 800; border-top: 2px solid var(--gold-border); padding-top: 0.6rem;">
-                            <span>Total Net Sales:</span>
-                            <span>₱{{ number_format($grandTotal, 2) }}</span>
-                        </div>
-
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem; color: #34d399;">
-                            <span>Cash Tendered:</span>
-                            <span>₱{{ number_format($grandPaidTendered, 2) }}</span>
-                        </div>
-
-                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8;">
-                            <span>Change Given:</span>
-                            <span>₱{{ number_format($grandChange, 2) }}</span>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

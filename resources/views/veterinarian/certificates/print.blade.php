@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Veterinary Health Certificate - {{ $certificate->control_number }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -15,9 +15,9 @@
         body {
             background-color: #525659;
             color: #000;
-            font-family: 'Times New Roman', Times, serif, 'Plus Jakarta Sans', sans-serif;
-            font-size: 13.5pt;
-            line-height: 1.5;
+            font-family: Arial, Helvetica, 'Plus Jakarta Sans', sans-serif;
+            font-size: 10.8pt;
+            line-height: 1.42;
             display: flex;
             justify-content: center;
             padding: 20px 0;
@@ -59,7 +59,7 @@
             background: #fff;
             width: 210mm;
             min-height: 297mm;
-            padding: 18mm 20mm 20mm 20mm;
+            padding: 14mm 20mm 15mm 20mm;
             box-shadow: 0 0 15px rgba(0,0,0,0.4);
             position: relative;
         }
@@ -67,7 +67,7 @@
         /* Clinic Header */
         .clinic-header {
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .clinic-logo-wrapper {
@@ -78,67 +78,47 @@
         }
 
         .clinic-logo {
-            max-height: 85px;
+            max-height: 75px;
             max-width: 320px;
             object-fit: contain;
-        }
-
-        .clinic-brand-title {
-            font-size: 20pt;
-            font-weight: 800;
-            color: #1e3a8a;
-            letter-spacing: -0.5px;
-            font-family: Arial, Helvetica, sans-serif;
-            margin-bottom: 2px;
-        }
-
-        .clinic-brand-subtitle {
-            font-size: 11pt;
-            font-weight: 700;
-            color: #0f172a;
-            font-family: Arial, Helvetica, sans-serif;
-            margin-bottom: 4px;
         }
 
         .clinic-contact-info {
             font-size: 8.8pt;
             color: #000;
-            font-family: Arial, Helvetica, sans-serif;
             line-height: 1.35;
+            text-align: center;
         }
 
-        /* Double border separator */
+        /* Double border separator matching original certificate */
         .header-divider {
             border-top: 2px solid #000;
             border-bottom: 1px solid #000;
             height: 3px;
-            margin: 8px 0 16px 0;
+            margin: 6px 0 12px 0;
         }
 
         /* Certificate Title & Control # */
-        .cert-title-container {
-            position: relative;
+        .cert-title-block {
             text-align: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .cert-title {
-            font-size: 17pt;
+            font-size: 16pt;
             font-weight: 800;
             text-transform: capitalize;
             color: #000;
             letter-spacing: 0.2px;
-            display: inline-block;
+            margin-bottom: 2px;
         }
 
         .control-number {
-            position: absolute;
-            right: 0;
-            top: 2px;
+            text-align: right;
             font-size: 10.5pt;
             font-weight: 700;
             color: #000;
-            font-family: Arial, Helvetica, sans-serif;
+            margin-top: 2px;
         }
 
         .control-number span {
@@ -148,33 +128,29 @@
 
         /* Content Paragraphs */
         .cert-date {
-            font-size: 11pt;
+            font-size: 10.8pt;
             margin-bottom: 12px;
-            font-family: Arial, Helvetica, sans-serif;
         }
 
         .salutation {
-            font-size: 11pt;
+            font-size: 10.8pt;
             font-weight: 700;
-            margin-bottom: 4px;
-            font-family: Arial, Helvetica, sans-serif;
+            margin-bottom: 3px;
         }
 
         .cert-text {
-            font-size: 11pt;
+            font-size: 10.8pt;
             text-align: justify;
-            line-height: 1.45;
+            line-height: 1.42;
             margin-bottom: 10px;
-            font-family: Arial, Helvetica, sans-serif;
         }
 
         /* Key-Value Tables */
         .info-table {
             width: 100%;
-            margin-left: 20px;
+            margin-left: 24px;
             margin-bottom: 12px;
             font-size: 10.8pt;
-            font-family: Arial, Helvetica, sans-serif;
             border-collapse: collapse;
         }
 
@@ -184,13 +160,13 @@
         }
 
         .info-table .key-col {
-            width: 130px;
+            width: 125px;
             font-weight: 700;
             color: #000;
         }
 
         .info-table .sep-col {
-            width: 18px;
+            width: 16px;
             text-align: center;
             font-weight: 700;
         }
@@ -203,19 +179,17 @@
 
         /* Description Section */
         .section-header {
-            font-size: 11pt;
+            font-size: 10.8pt;
             font-weight: 800;
-            margin-top: 10px;
-            margin-bottom: 4px;
-            font-family: Arial, Helvetica, sans-serif;
+            margin-top: 8px;
+            margin-bottom: 3px;
         }
 
         .desc-table {
             width: 100%;
-            margin-left: 20px;
-            margin-bottom: 14px;
+            margin-left: 24px;
+            margin-bottom: 12px;
             font-size: 10.8pt;
-            font-family: Arial, Helvetica, sans-serif;
             border-collapse: collapse;
         }
 
@@ -225,12 +199,12 @@
         }
 
         .desc-table .key-col {
-            width: 130px;
+            width: 125px;
             color: #000;
         }
 
         .desc-table .sep-col {
-            width: 18px;
+            width: 16px;
             text-align: center;
             font-weight: 700;
         }
@@ -243,12 +217,11 @@
 
         /* Rabies Clause */
         .rabies-clause {
-            font-size: 11pt;
-            font-family: Arial, Helvetica, sans-serif;
-            line-height: 1.5;
+            font-size: 10.8pt;
+            line-height: 1.42;
             text-align: justify;
-            margin-top: 10px;
-            margin-bottom: 25px;
+            margin-top: 8px;
+            margin-bottom: 16px;
         }
 
         .underline-bold {
@@ -260,66 +233,62 @@
         .signature-section {
             display: flex;
             justify-content: flex-end;
-            margin-top: 25px;
+            margin-top: 18px;
             page-break-inside: avoid;
         }
 
         .signature-box {
-            width: 270px;
+            width: 250px;
             text-align: center;
             position: relative;
-        }
-
-        .vet-sig-img {
-            position: absolute;
-            top: -45px;
-            left: 20px;
-            height: 90px;
-            width: auto;
-            opacity: 0.85;
-            pointer-events: none;
         }
 
         .vet-sig-line {
             border-top: 1px solid #000;
             padding-top: 4px;
-            margin-top: 35px;
+            margin-top: 40px;
         }
 
         .vet-name {
-            font-size: 11.5pt;
-            font-weight: 800;
+            font-size: 9.5pt;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.15px;
             color: #000;
-            font-family: Arial, Helvetica, sans-serif;
+            white-space: nowrap;
         }
 
         .vet-title {
-            font-size: 10pt;
+            font-size: 9pt;
             color: #000;
-            font-family: Arial, Helvetica, sans-serif;
             margin-bottom: 2px;
         }
 
         .vet-details {
-            font-size: 9pt;
+            font-size: 8.8pt;
             text-align: right;
-            font-family: Arial, Helvetica, sans-serif;
             color: #000;
-            line-height: 1.35;
+            line-height: 1.3;
             margin-top: 2px;
-            padding-right: 5px;
+            padding-right: 4px;
         }
 
         .vet-details strong {
             text-decoration: underline;
         }
 
+        @page {
+            size: A4 portrait;
+            margin: 10mm 15mm 10mm 15mm;
+        }
+
         @media print {
-            body {
+            html, body {
                 background: #fff !important;
                 padding: 0 !important;
+                margin: 0 !important;
+                font-size: 10.4pt !important;
+                line-height: 1.38 !important;
             }
 
             .action-bar {
@@ -331,12 +300,19 @@
                 margin: 0 !important;
                 width: 100% !important;
                 min-height: auto !important;
-                padding: 10mm 15mm 15mm 15mm !important;
+                height: auto !important;
+                padding: 0 !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+                border: none !important;
             }
 
-            @page {
-                size: A4 portrait;
-                margin: 10mm;
+            .clinic-logo {
+                max-height: 75px !important;
+            }
+
+            * {
+                page-break-inside: avoid !important;
             }
         }
     </style>
@@ -365,7 +341,7 @@
         <div class="header-divider"></div>
 
         <!-- Certificate Title & Sequential Control Number -->
-        <div class="cert-title-container">
+        <div class="cert-title-block">
             <h1 class="cert-title">Veterinary Health Certificate</h1>
             <div class="control-number">
                 Control Number: <span>{{ $certificate->control_number }}</span>
@@ -473,12 +449,6 @@
         <!-- Signature Block -->
         <div class="signature-section">
             <div class="signature-box">
-                <!-- Decorative signature line -->
-                <svg class="vet-sig-img" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 40 Q 30 10, 60 30 T 110 20 T 150 40 T 190 25" stroke="#1e293b" stroke-width="2" fill="none" stroke-linecap="round"/>
-                    <path d="M40 50 Q 70 15, 120 45 T 180 30" stroke="#1e293b" stroke-width="1.5" fill="none"/>
-                </svg>
-
                 <div class="vet-sig-line"></div>
                 <div class="vet-name">{{ $certificate->veterinarian_name }}</div>
                 <div class="vet-title">Veterinarian</div>

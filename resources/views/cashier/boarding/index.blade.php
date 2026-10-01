@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             selectPet.append('<option value="">⏳ Loading pets...</option>');
 
-            fetch('{{ url("receptionist/api/owners") }}/' + ownerId + '/pets')
+            fetch('{{ url("api/owners") }}/' + ownerId + '/pets')
                 .then(res => res.json())
                 .then(data => {
                     selectPet.empty();
@@ -383,6 +383,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     } else {
                         selectPet.append('<option value="">No pets registered for this client</option>');
+                    }
+                    if (selectPet.hasClass('select2-hidden-accessible')) {
+                        selectPet.trigger('change');
                     }
                 })
                 .catch(err => {

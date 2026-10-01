@@ -761,7 +761,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             selectPet.append('<option value="">⏳ Loading pets...</option>');
 
-            fetch('{{ url("receptionist/api/owners") }}/' + ownerId + '/pets')
+            fetch('{{ url("api/owners") }}/' + ownerId + '/pets')
                 .then(res => res.json())
                 .then(data => {
                     selectPet.empty();

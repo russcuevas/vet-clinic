@@ -377,3 +377,11 @@ Route::group(['prefix' => 'receptionist', 'as' => 'receptionist.', 'middleware' 
     Route::get('/leaves', [\App\Http\Controllers\Receptionist\LeaveController::class, 'index'])->name('leaves.index');
     Route::post('/leaves', [\App\Http\Controllers\Receptionist\LeaveController::class, 'store'])->name('leaves.store');
 });
+
+// ==========================================
+// 8. SHARED CLINIC API ROUTES (Authenticated)
+// ==========================================
+Route::group(['middleware' => ['auth']], function () {
+    Route::get('/api/owners/{owner}/pets', [\App\Http\Controllers\Receptionist\AppointmentController::class, 'apiGetPetsByOwner'])->name('api.owners.pets');
+    Route::get('/receptionist/api/owners/{owner}/pets', [\App\Http\Controllers\Receptionist\AppointmentController::class, 'apiGetPetsByOwner']);
+});
