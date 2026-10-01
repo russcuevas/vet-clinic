@@ -160,25 +160,19 @@
                         </div>
                     </div>
 
-                    <!-- Overtime (OT) Detection & Approval Box -->
-                    <div id="otApprovalBox" style="display: none; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; padding: 0.75rem 1rem; margin-top: 0.85rem;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem;">
+                    <!-- Overtime (OT) / Lapsed Time Detection Notice Box -->
+                    <div id="otApprovalBox" style="display: none; background: rgba(245, 158, 11, 0.10); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 6px; padding: 0.85rem 1rem; margin-top: 0.85rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.35rem;">
                             <span style="font-size: 0.82rem; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 6px;">
-                                ⚡ Overtime Detected (+30 mins past shift)
+                                ⚡ Lapsed Time Detected (Past Shift End)
                             </span>
-                            <span id="otDurationLabel" style="font-size: 0.75rem; color: #fff; background: rgba(245, 158, 11, 0.3); padding: 2px 8px; border-radius: 4px; font-weight: 700;">
+                            <span id="otDurationLabel" style="font-size: 0.75rem; color: #fff; background: rgba(245, 158, 11, 0.25); border: 1px solid rgba(245, 158, 11, 0.4); padding: 2px 8px; border-radius: 4px; font-weight: 700;">
                                 +0.00 hrs
                             </span>
                         </div>
-                        <p style="font-size: 0.74rem; color: var(--text-muted); margin: 0 0 0.5rem 0;">
-                            Overtime is only credited if authorized by the Clinic Manager or Admin.
-                        </p>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(0,0,0,0.3); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);">
-                            <input type="checkbox" name="ot_approved" id="cb_ot_approved" value="1" style="width: 16px; height: 16px; cursor: pointer; accent-color: #f59e0b;">
-                            <span style="font-size: 0.82rem; font-weight: 700; color: #fff;">
-                                ✅ Overtime Approved by Admin / Manager
-                            </span>
-                        </label>
+                        <div style="font-size: 0.76rem; color: #cbd5e1; line-height: 1.45; background: rgba(0,0,0,0.25); padding: 0.6rem 0.75rem; border-radius: 4px; border-left: 3px solid #f59e0b;">
+                            <strong style="color: #fbbf24;">📌 Policy Notice:</strong> Time Out will be logged. Overtime is <strong>0.00 (Zero)</strong> on payslip by default and requires <strong>Manager or Admin</strong> approval/edit in Payroll DTR.
+                        </div>
                     </div>
                 </div>
 
@@ -187,7 +181,6 @@
                     @csrf
                     <input type="hidden" name="employee_id" id="formEmployeeId" value="">
                     <input type="hidden" name="action_type" id="formActionType" value="clock_in">
-                    <input type="hidden" name="ot_approved" id="formOtApproved" value="0">
 
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label class="form-label" style="font-size: 0.8rem;">Optional Remarks / Log Note</label>
@@ -207,6 +200,16 @@
                         ☕ Mark as Scheduled Rest Day
                     </button>
                 </form>
+
+                <!-- Policy Reminder Footer -->
+                <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.74rem; color: var(--text-muted); line-height: 1.5;">
+                    <div style="font-weight: 700; color: var(--gold-light); margin-bottom: 3px;">📋 Attendance & Overtime Rules:</div>
+                    <ul style="margin: 0; padding-left: 1.1rem;">
+                        <li>Staff <strong>must</strong> Clock In and Clock Out to compute hours and qualify for attendance credit.</li>
+                        <li>Overtime past timeout is <strong>zero (0) on payslip</strong> unless officially approved by <strong>Manager or Admin</strong>.</li>
+                        <li>Only Manager and Admin have authorization to edit and credit Overtime hours.</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -360,13 +363,9 @@
         const empName = select.options[select.selectedIndex].dataset.name;
 
         if (actionType === 'clock_out') {
-            const cbOt = document.getElementById('cb_ot_approved');
-            const isOtApproved = cbOt && cbOt.checked ? 1 : 0;
-            document.getElementById('formOtApproved').value = isOtApproved;
-            
             const otBox = document.getElementById('otApprovalBox');
-            if (otBox && otBox.style.display !== 'none' && !isOtApproved) {
-                if (!confirm(`Notice: Overtime detected but "Approved by Admin/Manager" is UNCHECKED. Overtime will NOT be credited.\n\nProceed with Time Out for ${empName}?`)) {
+            if (otBox && otBox.style.display !== 'none') {
+                if (!confirm(`Confirm TIME OUT for ${empName}?\n\nNote: Lapsed overtime is logged and will require Manager/Admin approval in Payroll DTR.`)) {
                     return;
                 }
             } else {

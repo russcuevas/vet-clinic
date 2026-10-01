@@ -124,7 +124,7 @@ class DtrController extends Controller
             $timeInStr = $existing && $existing->time_in ? $existing->time_in : null;
 
             if (!$timeInStr) {
-                return redirect()->back()->with('error', "❌ Cannot Clock Out: {$employee->full_name} has not Clocked In yet today.");
+                return redirect()->back()->with('error', "❌ Cannot Clock Out: {$employee->full_name} has no recorded Time In today. Both Time In and Time Out are strictly required.");
             }
 
             $timeInCarbon = Carbon::createFromFormat('H:i', Carbon::parse($timeInStr)->format('H:i'));
@@ -145,21 +145,18 @@ class DtrController extends Controller
                 $undertimeMinutes = (int) abs($shiftEnd->diffInMinutes($out, true));
             }
 
-            // Rule 2: Overtime Calculation (30+ mins past shift end AND approved by Admin/Manager)
+            // Rule 2: Overtime / Lapsed Time Check
+            // Policy: Reception punch defaults OT to 0.00. Only Manager / Admin can approve & credit OT in payroll.
+            // Minimum threshold: at least 30 mins after shift end.
             $otHours = 0.00;
-            $otApproved = $request->boolean('ot_approved');
             $otNote = '';
+            $pastShiftMins = 0;
 
             if ($out->gt($shiftEnd)) {
                 $pastShiftMins = (int) abs($shiftEnd->diffInMinutes($out, true));
-                // Only qualify for OT if worked 30 mins or more past shift
                 if ($pastShiftMins >= 30) {
-                    if ($otApproved) {
-                        $otHours = round($pastShiftMins / 60, 2);
-                        $otNote = " • OT Approved by Admin/Manager ({$otHours} hrs)";
-                    } else {
-                        $otNote = " • OT Unapproved ({$pastShiftMins} mins beyond shift not credited)";
-                    }
+                    $lapsedHrs = round($pastShiftMins / 60, 2);
+                    $otNote = " • Lapsed OT: +{$lapsedHrs} hrs ({$pastShiftMins} mins past shift - Pending Manager/Admin Approval)";
                 }
             }
 
@@ -181,15 +178,15 @@ class DtrController extends Controller
                     'time_out' => $currentTimeStr,
                     'regular_hours' => $regularHours,
                     'undertime_minutes' => $undertimeMinutes,
-                    'ot_hours' => $otHours,
+                    'ot_hours' => 0.00, // Zero by default at reception; Manager/Admin approval required for credit
                     'status' => $status,
                     'notes' => trim($finalNotes),
                 ]
             );
 
             $formattedTime = $now->format('g:i A');
-            $otMsg = $otHours > 0 ? " with {$otHours} hrs Overtime (Approved)" : "";
-            return redirect()->back()->with('success', "🏁 Time Out recorded for {$employee->full_name} at {$formattedTime}! Worked: {$regularHours} hrs{$otMsg}.");
+            $otNotice = $pastShiftMins >= 30 ? " (Lapsed +".round($pastShiftMins/60, 2)." hrs overtime logged; pending Manager/Admin approval)" : "";
+            return redirect()->back()->with('success', "🏁 Time Out recorded for {$employee->full_name} at {$formattedTime}! Worked: {$regularHours} hrs{$otNotice}.");
         }
 
         // -------------------------------------------------------------

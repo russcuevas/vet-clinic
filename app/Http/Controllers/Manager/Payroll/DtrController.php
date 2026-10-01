@@ -189,9 +189,15 @@ class DtrController extends Controller
                     $undertimeMinutes = (int) abs($shiftEnd->diffInMinutes($out, true));
                 }
 
-                // Overtime calculation (stayed past shift end)
-                if ($out->gt($shiftEnd) && $otHours == 0) {
-                    $otHours = round(abs($shiftEnd->diffInMinutes($out, true)) / 60, 2);
+                // Overtime calculation & verification:
+                // Rule: Must have both Time In and Time Out, and duration must be >= 30 mins past shift end
+                if ($out->gt($shiftEnd)) {
+                    $pastShiftMins = (int) abs($shiftEnd->diffInMinutes($out, true));
+                    if ($pastShiftMins < 30) {
+                        $otHours = 0.00; // Less than 30 mins is not credited as OT
+                    }
+                } else {
+                    $otHours = 0.00;
                 }
 
                 // Duty hours worked (minus 1 hour lunch break if shift is 5+ hours)
@@ -203,9 +209,13 @@ class DtrController extends Controller
                     $regularHours = round($diffMinutes / 60, 2);
                 }
             } else {
-                // Time In logged, awaiting Time Out
+                // Time In logged, awaiting Time Out -> No OT credit without both Time In & Out
                 $regularHours = 0.00;
+                $otHours = 0.00;
             }
+        } else {
+            // No Time In -> No OT credit allowed
+            $otHours = 0.00;
         }
 
         $data = [
