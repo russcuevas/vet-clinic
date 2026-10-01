@@ -10,6 +10,7 @@ use App\Models\Pet;
 use App\Models\Bill;
 use App\Models\BillItem;
 use App\Models\Appointment;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -315,7 +316,14 @@ class MedicalRecordController extends Controller
     public function show(MedicalRecord $record)
     {
         $record->load(['owner', 'pet', 'prescription', 'veterinarian', 'bill.items']);
-        return view('veterinarian.medical.show', compact('record'));
+        $staffMembers = Employee::where('status', 'active')->orderBy('first_name')->orderBy('last_name')->get();
+        $existingAdmission = Appointment::where('service_category', 'boarding')
+            ->where('pet_id', $record->pet_id)
+            ->whereIn('status', ['confirmed', 'checked_in'])
+            ->latest()
+            ->first();
+
+        return view('veterinarian.medical.show', compact('record', 'staffMembers', 'existingAdmission'));
     }
 
     public function update(Request $request, MedicalRecord $record)
@@ -342,6 +350,11 @@ class MedicalRecordController extends Controller
             'lab_results' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:10240',
             'prescribe_rx' => 'nullable|string',
             'rx_instructions' => 'nullable|string',
+            'is_admission' => 'nullable',
+            'admission_days' => 'nullable|integer|min:1',
+            'daily_rate' => 'nullable|numeric|min:0',
+            'admission_notes' => 'nullable|string',
+            'assigned_employee_id' => 'nullable|exists:employees,id',
         ]);
 
         if ($request->hasFile('lab_results')) {
@@ -385,7 +398,16 @@ class MedicalRecordController extends Controller
             }
         }
 
-        $totalBillAmount = $baseServiceFee + $servicesSubtotal;
+        // Admission handling
+        $isAdmission = $request->boolean('is_admission');
+        $admissionTotal = 0;
+        $admissionDays = intval($request->input('admission_days', 1));
+        $dailyRate = floatval($request->input('daily_rate', 450.00));
+        if ($isAdmission) {
+            $admissionTotal = $admissionDays * $dailyRate;
+        }
+
+        $totalBillAmount = $baseServiceFee + $servicesSubtotal + $admissionTotal;
 
         $record->update([
             'visit_date' => !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date']) : ($record->visit_date ?: Carbon::now()),
@@ -431,7 +453,50 @@ class MedicalRecordController extends Controller
             }
         }
 
-        // Central Billing Queue synchronization with Itemized Laboratory Tests & Services
+        // Handle Admission Creation / Update
+        $visitDate = !empty($validated['visit_date']) ? Carbon::parse($validated['visit_date']) : Carbon::now();
+        if ($isAdmission) {
+            $existingAdmission = Appointment::where('service_category', 'boarding')
+                ->where('pet_id', $record->pet_id)
+                ->whereIn('status', ['confirmed', 'checked_in'])
+                ->latest()
+                ->first();
+
+            $admNotes = $request->input('admission_notes') ?: ($validated['diagnosis'] ? "Admission for {$validated['diagnosis']}" : 'Inpatient Confinement & Monitoring');
+            $staffId = $request->input('assigned_employee_id') ?: null;
+
+            if ($existingAdmission) {
+                $existingAdmission->update([
+                    'appointment_date' => $visitDate->format('Y-m-d'),
+                    'boarding_days' => $admissionDays,
+                    'daily_rate' => $dailyRate,
+                    'total_price' => $admissionTotal,
+                    'assigned_employee_id' => $staffId ?: $existingAdmission->assigned_employee_id,
+                    'purpose_examination_notes' => $admNotes,
+                    'status' => 'checked_in',
+                ]);
+            } else {
+                Appointment::create([
+                    'appointment_code' => Appointment::generateAppointmentCode(),
+                    'service_category' => 'boarding',
+                    'service_type' => 'Pet Admission / Inpatient Care',
+                    'owner_id' => $record->owner_id,
+                    'pet_id' => $record->pet_id,
+                    'booked_by' => auth()->id(),
+                    'veterinarian_id' => auth()->id(),
+                    'assigned_employee_id' => $staffId,
+                    'appointment_date' => $visitDate->format('Y-m-d'),
+                    'appointment_time' => '08:00:00',
+                    'purpose_examination_notes' => $admNotes,
+                    'boarding_days' => $admissionDays,
+                    'daily_rate' => $dailyRate,
+                    'total_price' => $admissionTotal,
+                    'status' => 'checked_in',
+                ]);
+            }
+        }
+
+        // Central Billing Queue synchronization with Itemized Laboratory Tests & Services & Admission
         $bill = $record->bill ?: Bill::where('medical_record_id', $record->id)->first();
         $invoiceNo = null;
 
@@ -466,6 +531,18 @@ class MedicalRecordController extends Controller
                         'quantity' => $lItem['quantity'],
                         'unit_price' => $lItem['price'],
                         'total_price' => $lItem['total'],
+                    ]);
+                }
+
+                // 3. Admission line item if admitted
+                if ($isAdmission) {
+                    BillItem::create([
+                        'bill_id' => $bill->id,
+                        'item_name' => 'Pet Admission / Inpatient Stay (' . $admissionDays . ' Days)',
+                        'item_type' => 'service',
+                        'quantity' => $admissionDays,
+                        'unit_price' => $dailyRate,
+                        'total_price' => $admissionTotal,
                     ]);
                 }
             }
@@ -509,11 +586,23 @@ class MedicalRecordController extends Controller
                     'total_price' => $lItem['total'],
                 ]);
             }
+
+            if ($isAdmission) {
+                BillItem::create([
+                    'bill_id' => $bill->id,
+                    'item_name' => 'Pet Admission / Inpatient Stay (' . $admissionDays . ' Days)',
+                    'item_type' => 'service',
+                    'quantity' => $admissionDays,
+                    'unit_price' => $dailyRate,
+                    'total_price' => $admissionTotal,
+                ]);
+            }
         }
 
-        // If marked completed, also complete any linked checked-in appointment
+        // If marked completed, complete any linked consultation appointment (excluding active inpatient boarding)
         if (in_array($validated['status'], ['completed', 'billed'])) {
             Appointment::where('pet_id', $record->pet_id)
+                ->where('service_category', '!=', 'boarding')
                 ->where('status', 'checked_in')
                 ->update(['status' => 'completed']);
         }
