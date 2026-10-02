@@ -87,7 +87,9 @@
                     <tbody>
                         @forelse($employees as $emp)
                             @php
-                                $isGov = $emp->isGovEligible();
+                                $isGov = method_exists($emp, 'isGovEligible') 
+                                    ? $emp->isGovEligible() 
+                                    : in_array(strtolower($emp->employment_type ?? ''), ['regular', 'casual', 'full_time']);
                                 $docCount = collect([
                                     $emp->police_clearance_file,
                                     $emp->medical_certificate_file,
