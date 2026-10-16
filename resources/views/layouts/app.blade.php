@@ -37,6 +37,9 @@
     @if (session('warning'))
         <meta name="flash-warning" content="{{ session('warning') }}">
     @endif
+    @if ($errors->any())
+        <meta name="flash-error" content="{{ $errors->first() }}">
+    @endif
 </head>
 
 <body>

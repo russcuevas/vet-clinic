@@ -182,7 +182,7 @@
                                         @csrf
                                         @method('PUT')
                                         <div class="modal-body" style="padding: 1.5rem;">
-                                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem;">
                                                 <div class="form-group">
                                                     <label class="form-label">Days Worked</label>
                                                     <input type="number" step="0.5" name="days_worked" class="form-control" value="{{ $rec->days_worked }}" required>
@@ -192,10 +192,18 @@
                                                     <input type="number" step="0.01" name="regular_pay" class="form-control" value="{{ $rec->regular_pay }}" required>
                                                 </div>
                                                 <div class="form-group">
+                                                    <label class="form-label">OT Hours</label>
+                                                    <input type="number" step="0.5" name="ot_hours" class="form-control" value="{{ $rec->ot_hours }}">
+                                                </div>
+                                                <div class="form-group">
                                                     <label class="form-label">OT Pay (₱)</label>
-                                                    <input type="number" step="0.01" name="ot_pay" class="form-control" value="{{ $rec->ot_pay }}" required>
+                                                    <input type="number" step="0.01" name="ot_pay" class="form-control" value="{{ $rec->ot_pay }}">
                                                 </div>
                                             </div>
+
+                                            <input type="hidden" name="holiday_days" value="{{ $rec->holiday_days }}">
+                                            <input type="hidden" name="special_holiday_days" value="{{ $rec->special_holiday_days }}">
+                                            <input type="hidden" name="rest_day_days" value="{{ $rec->rest_day_days }}">
 
                                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
                                                 <div class="form-group">
@@ -296,3 +304,54 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[id^="form-rec-"]').forEach(function (form) {
+            function recalculate() {
+                // Earnings
+                const regularPay = parseFloat(form.querySelector('input[name="regular_pay"]')?.value || 0) || 0;
+                const otPay = parseFloat(form.querySelector('input[name="ot_pay"]')?.value || 0) || 0;
+                const holidayPay = parseFloat(form.querySelector('input[name="holiday_pay"]')?.value || 0) || 0;
+                const spHolidayPay = parseFloat(form.querySelector('input[name="special_holiday_pay"]')?.value || 0) || 0;
+                const restDayPay = parseFloat(form.querySelector('input[name="rest_day_pay"]')?.value || 0) || 0;
+                const incentives = parseFloat(form.querySelector('input[name="incentives_total"]')?.value || 0) || 0;
+
+                const grossInput = form.querySelector('input[name="gross_pay"]');
+                const gross = Math.round((regularPay + otPay + holidayPay + spHolidayPay + restDayPay + incentives) * 100) / 100;
+                if (grossInput && document.activeElement !== grossInput) {
+                    grossInput.value = gross.toFixed(2);
+                }
+                const activeGross = parseFloat(grossInput?.value || gross) || 0;
+
+                // Deductions
+                const sss = parseFloat(form.querySelector('input[name="sss_deduction"]')?.value || 0) || 0;
+                const philhealth = parseFloat(form.querySelector('input[name="philhealth_deduction"]')?.value || 0) || 0;
+                const pagibig = parseFloat(form.querySelector('input[name="pagibig_deduction"]')?.value || 0) || 0;
+                const loan = parseFloat(form.querySelector('input[name="loan_deduction"]')?.value || 0) || 0;
+                const ca = parseFloat(form.querySelector('input[name="cash_advance_deduction"]')?.value || 0) || 0;
+                const abs = parseFloat(form.querySelector('input[name="absence_tardiness_deduction"]')?.value || 0) || 0;
+                const tax = parseFloat(form.querySelector('input[name="tax_deduction"]')?.value || 0) || 0;
+
+                const totalDed = Math.round((sss + philhealth + pagibig + loan + ca + abs + tax) * 100) / 100;
+                const totalDedInput = form.querySelector('input[name="total_deductions"]');
+                if (totalDedInput) {
+                    totalDedInput.value = totalDed.toFixed(2);
+                }
+
+                // Net Pay
+                const netInput = form.querySelector('input[name="net_pay"]');
+                const net = Math.max(0, Math.round((activeGross - totalDed) * 100) / 100);
+                if (netInput) {
+                    netInput.value = net.toFixed(2);
+                }
+            }
+
+            form.querySelectorAll('input').forEach(function (input) {
+                input.addEventListener('input', recalculate);
+            });
+        });
+    });
+</script>
+@endpush

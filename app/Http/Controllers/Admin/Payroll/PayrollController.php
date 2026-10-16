@@ -206,30 +206,94 @@ class PayrollController extends Controller
         $validated = $request->validate([
             'days_worked' => 'required|numeric|min:0',
             'regular_pay' => 'required|numeric|min:0',
-            'ot_hours' => 'required|numeric|min:0',
-            'ot_pay' => 'required|numeric|min:0',
+            'ot_hours' => 'nullable|numeric|min:0',
+            'ot_pay' => 'nullable|numeric|min:0',
             'holiday_days' => 'nullable|numeric|min:0',
             'holiday_pay' => 'nullable|numeric|min:0',
             'special_holiday_days' => 'nullable|numeric|min:0',
             'special_holiday_pay' => 'nullable|numeric|min:0',
             'rest_day_days' => 'nullable|numeric|min:0',
             'rest_day_pay' => 'nullable|numeric|min:0',
-            'incentives_total' => 'required|numeric|min:0',
-            'gross_pay' => 'required|numeric|min:0',
-            'sss_deduction' => 'required|numeric|min:0',
-            'philhealth_deduction' => 'required|numeric|min:0',
-            'pagibig_deduction' => 'required|numeric|min:0',
-            'tax_deduction' => 'required|numeric|min:0',
-            'loan_deduction' => 'required|numeric|min:0',
-            'cash_advance_deduction' => 'required|numeric|min:0',
-            'absence_tardiness_deduction' => 'required|numeric|min:0',
-            'total_deductions' => 'required|numeric|min:0',
-            'net_pay' => 'required|numeric|min:0',
+            'incentives_total' => 'nullable|numeric|min:0',
+            'gross_pay' => 'nullable|numeric|min:0',
+            'sss_deduction' => 'nullable|numeric|min:0',
+            'philhealth_deduction' => 'nullable|numeric|min:0',
+            'pagibig_deduction' => 'nullable|numeric|min:0',
+            'tax_deduction' => 'nullable|numeric|min:0',
+            'loan_deduction' => 'nullable|numeric|min:0',
+            'cash_advance_deduction' => 'nullable|numeric|min:0',
+            'absence_tardiness_deduction' => 'nullable|numeric|min:0',
+            'total_deductions' => 'nullable|numeric|min:0',
+            'net_pay' => 'nullable|numeric|min:0',
             'payment_status' => 'required|in:unpaid,paid',
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $record->update($validated);
+        $daysWorked = floatval($validated['days_worked'] ?? $record->days_worked);
+        $regularPay = floatval($validated['regular_pay'] ?? $record->regular_pay);
+        $otHours = floatval($validated['ot_hours'] ?? $record->ot_hours ?? 0);
+        $otPay = floatval($validated['ot_pay'] ?? 0);
+        $holidayDays = floatval($validated['holiday_days'] ?? $record->holiday_days ?? 0);
+        $holidayPay = floatval($validated['holiday_pay'] ?? 0);
+        $specialHolidayDays = floatval($validated['special_holiday_days'] ?? $record->special_holiday_days ?? 0);
+        $specialHolidayPay = floatval($validated['special_holiday_pay'] ?? 0);
+        $restDayDays = floatval($validated['rest_day_days'] ?? $record->rest_day_days ?? 0);
+        $restDayPay = floatval($validated['rest_day_pay'] ?? 0);
+        $incentivesTotal = floatval($validated['incentives_total'] ?? 0);
+
+        $calcGross = round($regularPay + $otPay + $holidayPay + $specialHolidayPay + $restDayPay + $incentivesTotal, 2);
+        $grossPay = isset($validated['gross_pay']) && $validated['gross_pay'] !== null ? floatval($validated['gross_pay']) : $calcGross;
+
+        $sss = floatval($validated['sss_deduction'] ?? 0);
+        $philhealth = floatval($validated['philhealth_deduction'] ?? 0);
+        $pagibig = floatval($validated['pagibig_deduction'] ?? 0);
+        $tax = floatval($validated['tax_deduction'] ?? 0);
+        $loan = floatval($validated['loan_deduction'] ?? 0);
+        $ca = floatval($validated['cash_advance_deduction'] ?? 0);
+        $absence = floatval($validated['absence_tardiness_deduction'] ?? 0);
+
+        $calcDeductions = round($sss + $philhealth + $pagibig + $tax + $loan + $ca + $absence, 2);
+        $totalDeductions = isset($validated['total_deductions']) && $validated['total_deductions'] !== null ? floatval($validated['total_deductions']) : $calcDeductions;
+
+        $calcNet = max(0, round($grossPay - $totalDeductions, 2));
+        $netPay = isset($validated['net_pay']) && $validated['net_pay'] !== null ? floatval($validated['net_pay']) : $calcNet;
+
+        $record->update([
+            'days_worked' => $daysWorked,
+            'regular_pay' => $regularPay,
+            'ot_hours' => $otHours,
+            'ot_pay' => $otPay,
+            'holiday_days' => $holidayDays,
+            'holiday_pay' => $holidayPay,
+            'special_holiday_days' => $specialHolidayDays,
+            'special_holiday_pay' => $specialHolidayPay,
+            'rest_day_days' => $restDayDays,
+            'rest_day_pay' => $restDayPay,
+            'incentives_total' => $incentivesTotal,
+            'gross_pay' => $grossPay,
+            'sss_deduction' => $sss,
+            'philhealth_deduction' => $philhealth,
+            'pagibig_deduction' => $pagibig,
+            'tax_deduction' => $tax,
+            'loan_deduction' => $loan,
+            'cash_advance_deduction' => $ca,
+            'absence_tardiness_deduction' => $absence,
+            'total_deductions' => $totalDeductions,
+            'net_pay' => $netPay,
+            'payment_status' => $validated['payment_status'],
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        // Sync parent period financial totals
+        $period = $record->payrollPeriod;
+        if ($period) {
+            $period->update([
+                'total_gross_pay' => $period->records()->sum('gross_pay'),
+                'total_incentives' => $period->records()->sum('incentives_total'),
+                'total_deductions' => $period->records()->sum('total_deductions'),
+                'total_net_pay' => $period->records()->sum('net_pay'),
+            ]);
+        }
 
         return redirect()->back()->with('success', "Payroll record for {$record->employee->full_name} updated successfully.");
     }
