@@ -236,8 +236,26 @@ class PayrollController extends Controller
         $restDayPay = floatval($validated['rest_day_pay'] ?? 0);
         $incentivesTotal = floatval($validated['incentives_total'] ?? 0);
 
+        // Sum of all earnings components
         $calcGross = round($regularPay + $otPay + $holidayPay + $specialHolidayPay + $restDayPay + $incentivesTotal, 2);
-        $grossPay = isset($validated['gross_pay']) && $validated['gross_pay'] !== null ? floatval($validated['gross_pay']) : $calcGross;
+
+        // Check if earnings components changed compared to existing record
+        $earningsComponentsChanged = (
+            abs($regularPay - floatval($record->regular_pay)) > 0.001 ||
+            abs($otPay - floatval($record->ot_pay)) > 0.001 ||
+            abs($holidayPay - floatval($record->holiday_pay)) > 0.001 ||
+            abs($specialHolidayPay - floatval($record->special_holiday_pay)) > 0.001 ||
+            abs($restDayPay - floatval($record->rest_day_pay)) > 0.001 ||
+            abs($incentivesTotal - floatval($record->incentives_total)) > 0.001
+        );
+
+        if ($earningsComponentsChanged) {
+            $grossPay = $calcGross;
+        } elseif (isset($validated['gross_pay']) && $validated['gross_pay'] !== null) {
+            $grossPay = floatval($validated['gross_pay']);
+        } else {
+            $grossPay = $calcGross;
+        }
 
         $sss = floatval($validated['sss_deduction'] ?? 0);
         $philhealth = floatval($validated['philhealth_deduction'] ?? 0);
@@ -247,11 +265,45 @@ class PayrollController extends Controller
         $ca = floatval($validated['cash_advance_deduction'] ?? 0);
         $absence = floatval($validated['absence_tardiness_deduction'] ?? 0);
 
+        // Sum of all deduction breakdown items
         $calcDeductions = round($sss + $philhealth + $pagibig + $tax + $loan + $ca + $absence, 2);
-        $totalDeductions = isset($validated['total_deductions']) && $validated['total_deductions'] !== null ? floatval($validated['total_deductions']) : $calcDeductions;
 
+        // Check if individual deduction components were changed compared to existing record
+        $deductionsChanged = (
+            abs($sss - floatval($record->sss_deduction)) > 0.001 ||
+            abs($philhealth - floatval($record->philhealth_deduction)) > 0.001 ||
+            abs($pagibig - floatval($record->pagibig_deduction)) > 0.001 ||
+            abs($tax - floatval($record->tax_deduction)) > 0.001 ||
+            abs($loan - floatval($record->loan_deduction)) > 0.001 ||
+            abs($ca - floatval($record->cash_advance_deduction)) > 0.001 ||
+            abs($absence - floatval($record->absence_tardiness_deduction)) > 0.001
+        );
+
+        if ($deductionsChanged) {
+            // User edited one or more deduction amounts -> total deductions MUST be updated to the new sum!
+            $totalDeductions = $calcDeductions;
+        } elseif (isset($validated['total_deductions']) && $validated['total_deductions'] !== null) {
+            // User directly edited total deductions
+            $totalDeductions = floatval($validated['total_deductions']);
+        } else {
+            $totalDeductions = $calcDeductions;
+        }
+
+        // Net Pay is always Gross Pay minus Total Deductions when overrides occur
         $calcNet = max(0, round($grossPay - $totalDeductions, 2));
-        $netPay = isset($validated['net_pay']) && $validated['net_pay'] !== null ? floatval($validated['net_pay']) : $calcNet;
+
+        $financialsChanged = $earningsComponentsChanged || $deductionsChanged ||
+            (abs($totalDeductions - floatval($record->total_deductions)) > 0.001) ||
+            (abs($grossPay - floatval($record->gross_pay)) > 0.001);
+
+        if ($financialsChanged) {
+            // If deductions or earnings were updated, net pay MUST automatically recalculate and override!
+            $netPay = $calcNet;
+        } elseif (isset($validated['net_pay']) && $validated['net_pay'] !== null) {
+            $netPay = floatval($validated['net_pay']);
+        } else {
+            $netPay = $calcNet;
+        }
 
         $record->update([
             'days_worked' => $daysWorked,
@@ -278,17 +330,6 @@ class PayrollController extends Controller
             'payment_status' => $validated['payment_status'],
             'notes' => $validated['notes'] ?? null,
         ]);
-
-        // Sync parent period financial totals
-        $period = $record->payrollPeriod;
-        if ($period) {
-            $period->update([
-                'total_gross_pay' => $period->records()->sum('gross_pay'),
-                'total_incentives' => $period->records()->sum('incentives_total'),
-                'total_deductions' => $period->records()->sum('total_deductions'),
-                'total_net_pay' => $period->records()->sum('net_pay'),
-            ]);
-        }
 
         return redirect()->back()->with('success', "Payroll record for {$record->employee->full_name} updated successfully.");
     }
