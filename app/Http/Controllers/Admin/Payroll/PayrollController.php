@@ -108,19 +108,14 @@ class PayrollController extends Controller
                 $grossPay = round($regularPay + $otPay + $holidayPay + $specialHolidayPay + $restDayPay + $incentivesTotal, 2);
 
                 // 5. Deductions
-                // A. Government Contributions (Only applicable for Regular or Casual employees)
-                $sss = 0.00;
-                $philhealth = 0.00;
-                $pagibig = 0.00;
+                // A. Government Contributions (Manual Input from Employee Database, Nullable for PhilHealth & Pag-IBIG)
+                $sss = round(floatval($emp->sss_contribution ?? 0) * $factor, 2);
+                $philhealth = round(floatval($emp->philhealth_contribution ?? 0) * $factor, 2);
+                $pagibig = round(floatval($emp->pagibig_contribution ?? 0) * $factor, 2);
                 $tax = 0.00;
 
-                if ($emp->isGovEligible()) {
-                    $sss = round(min(1350.00, $monthlySalary * 0.045) * $factor, 2);
-                    $philhealth = round(($monthlySalary * 0.025) * $factor, 2);
-                    $pagibig = round(100.00 * $factor, 2);
-                    if ($monthlySalary > 20833) {
-                        $tax = round(($monthlySalary - 20833) * 0.15 * $factor, 2);
-                    }
+                if ($emp->isGovEligible() && $monthlySalary > 20833) {
+                    $tax = round(($monthlySalary - 20833) * 0.15 * $factor, 2);
                 }
 
                 // B. Active Loans & Cash Advances

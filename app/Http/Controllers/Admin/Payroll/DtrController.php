@@ -48,8 +48,24 @@ class DtrController extends Controller
                         ]
                     );
                 }
+            } elseif ($emp->isDayOff($selectedDate)) {
+                // Today is employee's preset day off -> AUTOMATIC REST DAY (not absent)
+                if (!$existingRecord) {
+                    DtrRecord::create([
+                        'employee_id' => $emp->id,
+                        'record_date' => $selectedDate,
+                        'status' => 'rest_day',
+                        'time_in' => null,
+                        'time_out' => null,
+                        'regular_hours' => 0.00,
+                        'ot_hours' => 0.00,
+                        'late_minutes' => 0,
+                        'undertime_minutes' => 0,
+                        'notes' => 'Scheduled Day Off (' . ($emp->day_off ?: 'Sunday') . ')',
+                    ]);
+                }
             } elseif (!$existingRecord) {
-                // No time-in entry logged and NO leave application filed -> AUTOMATIC ABSENT
+                // No time-in entry logged, no day off, and NO leave application filed -> AUTOMATIC ABSENT
                 DtrRecord::create([
                     'employee_id' => $emp->id,
                     'record_date' => $selectedDate,
@@ -358,12 +374,15 @@ class DtrController extends Controller
             $dateStr = $curr->toDateString();
             $rec = $existingRecords->get($dateStr);
 
+            $isEmpDayOff = $employee->isDayOff($curr);
+
             $dayLog = [
                 'date' => $curr->copy(),
                 'date_str' => $dateStr,
                 'day_name' => $curr->format('D'),
                 'full_day_name' => $curr->format('l'),
                 'is_sunday' => $curr->isSunday(),
+                'is_day_off' => $isEmpDayOff,
                 'record_id' => $rec ? $rec->id : null,
                 'time_in' => $rec && $rec->time_in ? $rec->time_in : null,
                 'time_out' => $rec && $rec->time_out ? $rec->time_out : null,
@@ -372,7 +391,7 @@ class DtrController extends Controller
                 'undertime_minutes' => $rec ? (int) $rec->undertime_minutes : 0,
                 'undertime_reason' => $rec ? $rec->undertime_reason : null,
                 'ot_hours' => $rec ? (float) $rec->ot_hours : 0.00,
-                'status' => $rec ? $rec->status : ($curr->isSunday() ? 'rest_day' : 'no_record'),
+                'status' => $rec ? $rec->status : ($isEmpDayOff ? 'rest_day' : 'no_record'),
                 'notes' => $rec ? $rec->notes : null,
             ];
 
@@ -394,7 +413,7 @@ class DtrController extends Controller
                         $daysPresent++;
                     }
                 }
-            } elseif ($curr->isSunday()) {
+            } elseif ($isEmpDayOff) {
                 $daysRestDay++;
             }
 

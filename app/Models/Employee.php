@@ -47,6 +47,7 @@ class Employee extends Model
         'position',
         'shift_start',
         'shift_end',
+        'day_off',
         'department',
         'employment_type',
         'basic_salary',
@@ -58,6 +59,9 @@ class Employee extends Model
         'philhealth_no',
         'pagibig_no',
         'tin_no',
+        'sss_contribution',
+        'philhealth_contribution',
+        'pagibig_contribution',
         'drivers_license_no',
         'previous_employer',
         'previous_position',
@@ -78,6 +82,9 @@ class Employee extends Model
         'basic_salary' => 'decimal:2',
         'daily_rate' => 'decimal:2',
         'hourly_rate' => 'decimal:2',
+        'sss_contribution' => 'decimal:2',
+        'philhealth_contribution' => 'decimal:2',
+        'pagibig_contribution' => 'decimal:2',
         'previous_salary' => 'decimal:2',
         'divisor_days' => 'integer',
         'rest_days_per_week' => 'integer',
@@ -100,38 +107,27 @@ class Employee extends Model
     }
 
     /**
-     * Estimated Monthly SSS Contribution (Employee Share - 4.5% up to max standard cap ₱1,350)
+     * SSS Contribution (Manual Input from Employee Database)
      */
-    public function getSssContributionAttribute(): float
+    public function getSssContributionAttribute($val): float
     {
-        if (!$this->isGovEligible()) {
-            return 0.00;
-        }
-        $basic = floatval($this->basic_salary);
-        return round(min(1350.00, $basic * 0.045), 2);
+        return $val !== null ? floatval($val) : 0.00;
     }
 
     /**
-     * Estimated Monthly PhilHealth Contribution (Employee Share - 2.5% of monthly salary)
+     * PhilHealth Contribution (Manual Input - Nullable, 0 if not registered)
      */
-    public function getPhilhealthContributionAttribute(): float
+    public function getPhilhealthContributionAttribute($val): float
     {
-        if (!$this->isGovEligible()) {
-            return 0.00;
-        }
-        $basic = floatval($this->basic_salary);
-        return round($basic * 0.025, 2);
+        return $val !== null ? floatval($val) : 0.00;
     }
 
     /**
-     * Estimated Monthly Pag-IBIG Contribution (Employee Share - Standard ₱100 / ₱200)
+     * Pag-IBIG Contribution (Manual Input - Nullable, 0 if not registered)
      */
-    public function getPagibigContributionAttribute(): float
+    public function getPagibigContributionAttribute($val): float
     {
-        if (!$this->isGovEligible()) {
-            return 0.00;
-        }
-        return 100.00;
+        return $val !== null ? floatval($val) : 0.00;
     }
 
     /**
@@ -139,10 +135,30 @@ class Employee extends Model
      */
     public function getTotalGovContributionsAttribute(): float
     {
-        if (!$this->isGovEligible()) {
-            return 0.00;
-        }
         return round($this->sss_contribution + $this->philhealth_contribution + $this->pagibig_contribution, 2);
+    }
+
+    /**
+     * Check if a given date or day of week is a scheduled day off for this employee
+     * 
+     * @param \Carbon\Carbon|string $date
+     * @return bool
+     */
+    public function isDayOff($date): bool
+    {
+        $dayName = $date instanceof \Carbon\Carbon ? $date->format('l') : (string)$date;
+        $configured = !empty($this->day_off) ? $this->day_off : 'Sunday';
+        $days = array_map('trim', explode(',', strtolower($configured)));
+        return in_array(strtolower($dayName), $days);
+    }
+
+    /**
+     * Get array list of configured days off
+     */
+    public function getDayOffListAttribute(): array
+    {
+        $configured = !empty($this->day_off) ? $this->day_off : 'Sunday';
+        return array_map('trim', explode(',', $configured));
     }
 
     public static function generateEmployeeCode(): string

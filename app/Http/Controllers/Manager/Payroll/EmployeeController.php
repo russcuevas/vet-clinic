@@ -57,6 +57,7 @@ class EmployeeController extends Controller
             'position' => 'required|string|max:100',
             'shift_start' => 'nullable|string|max:10',
             'shift_end' => 'nullable|string|max:10',
+            'day_off' => 'nullable',
             'department' => 'nullable|string|max:100',
             'employment_type' => 'required|string|max:50',
             'basic_salary' => 'required|numeric|min:0',
@@ -68,6 +69,9 @@ class EmployeeController extends Controller
             'philhealth_no' => 'nullable|string|max:50',
             'pagibig_no' => 'nullable|string|max:50',
             'tin_no' => 'nullable|string|max:50',
+            'sss_contribution' => 'nullable|numeric|min:0',
+            'philhealth_contribution' => 'nullable|numeric|min:0',
+            'pagibig_contribution' => 'nullable|numeric|min:0',
             'drivers_license_no' => 'nullable|string|max:50',
             'previous_employer' => 'nullable|string|max:150',
             'previous_position' => 'nullable|string|max:100',
@@ -95,6 +99,21 @@ class EmployeeController extends Controller
         $validated['rest_days_per_week'] = $restDays;
         $validated['shift_start'] = $validated['shift_start'] ?? '09:00';
         $validated['shift_end'] = $validated['shift_end'] ?? '18:00';
+
+        // Process Day Off (string or array of days)
+        if ($request->has('day_off')) {
+            $dayOffInput = $request->input('day_off');
+            $validated['day_off'] = is_array($dayOffInput) ? implode(', ', $dayOffInput) : trim($dayOffInput ?? 'Sunday');
+        } else {
+            $validated['day_off'] = 'Sunday';
+        }
+
+        // Manual Government Contributions & Nullable PhilHealth / Pag-IBIG
+        $validated['sss_contribution'] = $request->filled('sss_contribution') ? floatval($request->input('sss_contribution')) : 0.00;
+        $validated['philhealth_contribution'] = $request->filled('philhealth_contribution') ? floatval($request->input('philhealth_contribution')) : 0.00;
+        $validated['pagibig_contribution'] = $request->filled('pagibig_contribution') ? floatval($request->input('pagibig_contribution')) : 0.00;
+        $validated['philhealth_no'] = $request->filled('philhealth_no') ? trim($request->input('philhealth_no')) : null;
+        $validated['pagibig_no'] = $request->filled('pagibig_no') ? trim($request->input('pagibig_no')) : null;
 
         $basic = floatval($validated['basic_salary']);
         if (empty($validated['daily_rate']) || floatval($validated['daily_rate']) == 0) {
@@ -154,6 +173,7 @@ class EmployeeController extends Controller
             'position' => 'required|string|max:100',
             'shift_start' => 'nullable|string|max:10',
             'shift_end' => 'nullable|string|max:10',
+            'day_off' => 'nullable',
             'department' => 'nullable|string|max:100',
             'employment_type' => 'required|string|max:50',
             'basic_salary' => 'required|numeric|min:0',
@@ -165,6 +185,9 @@ class EmployeeController extends Controller
             'philhealth_no' => 'nullable|string|max:50',
             'pagibig_no' => 'nullable|string|max:50',
             'tin_no' => 'nullable|string|max:50',
+            'sss_contribution' => 'nullable|numeric|min:0',
+            'philhealth_contribution' => 'nullable|numeric|min:0',
+            'pagibig_contribution' => 'nullable|numeric|min:0',
             'drivers_license_no' => 'nullable|string|max:50',
             'previous_employer' => 'nullable|string|max:150',
             'previous_position' => 'nullable|string|max:100',
@@ -190,6 +213,21 @@ class EmployeeController extends Controller
         $validated['rest_days_per_week'] = $restDays;
         $validated['shift_start'] = $validated['shift_start'] ?? ($employee->shift_start ?? '09:00');
         $validated['shift_end'] = $validated['shift_end'] ?? ($employee->shift_end ?? '18:00');
+
+        // Process Day Off (string or array of days)
+        if ($request->has('day_off')) {
+            $dayOffInput = $request->input('day_off');
+            $validated['day_off'] = is_array($dayOffInput) ? implode(', ', $dayOffInput) : trim($dayOffInput ?? 'Sunday');
+        } else {
+            $validated['day_off'] = $employee->day_off ?: 'Sunday';
+        }
+
+        // Manual Government Contributions & Nullable PhilHealth / Pag-IBIG
+        $validated['sss_contribution'] = $request->filled('sss_contribution') ? floatval($request->input('sss_contribution')) : 0.00;
+        $validated['philhealth_contribution'] = $request->filled('philhealth_contribution') ? floatval($request->input('philhealth_contribution')) : 0.00;
+        $validated['pagibig_contribution'] = $request->filled('pagibig_contribution') ? floatval($request->input('pagibig_contribution')) : 0.00;
+        $validated['philhealth_no'] = $request->filled('philhealth_no') ? trim($request->input('philhealth_no')) : null;
+        $validated['pagibig_no'] = $request->filled('pagibig_no') ? trim($request->input('pagibig_no')) : null;
 
         $basic = floatval($validated['basic_salary']);
         if (empty($validated['daily_rate']) || floatval($validated['daily_rate']) == 0) {

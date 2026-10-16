@@ -122,6 +122,9 @@
                                     <div style="font-size: 0.72rem; color: var(--gold-light); font-weight: 700; margin-top: 3px;">
                                         ⏰ {{ $emp->shift_start ? \Carbon\Carbon::parse($emp->shift_start)->format('g:i A') : '9:00 AM' }} - {{ $emp->shift_end ? \Carbon\Carbon::parse($emp->shift_end)->format('g:i A') : '6:00 PM' }}
                                     </div>
+                                    <div style="font-size: 0.72rem; color: #38bdf8; font-weight: 700; margin-top: 2px;">
+                                        🗓️ Off: <strong>{{ $emp->day_off ?: 'Sunday' }}</strong>
+                                    </div>
                                     <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1px;">
                                         {{ $emp->department }}
                                     </div>
@@ -154,28 +157,33 @@
                                     </div>
                                 </td>
                                 <td>
-                                    @if($isGov)
-                                        <div style="font-size: 0.72rem; color: #cbd5e1; line-height: 1.45;">
-                                            <div><strong>SSS:</strong> {{ $emp->sss_no ?: 'No ID' }} <span style="color: #10b981;">(₱{{ number_format($emp->sss_contribution, 2) }}/mo)</span></div>
-                                            <div><strong>PhilHealth:</strong> {{ $emp->philhealth_no ?: 'No ID' }} <span style="color: #38bdf8;">(₱{{ number_format($emp->philhealth_contribution, 2) }}/mo)</span></div>
-                                            <div><strong>Pag-IBIG:</strong> {{ $emp->pagibig_no ?: 'No ID' }} <span style="color: #fbbf24;">(₱{{ number_format($emp->pagibig_contribution, 2) }}/mo)</span></div>
-                                            <div style="margin-top: 3px; font-weight: 700; color: var(--gold-light); font-size: 0.7rem;">
-                                                Total Ded: ₱{{ number_format($emp->total_gov_contributions, 2) }}/mo
-                                            </div>
+                                    <div style="font-size: 0.72rem; color: #cbd5e1; line-height: 1.45;">
+                                        <div><strong>SSS:</strong> {{ $emp->sss_no ?: 'No ID' }} <span style="color: #10b981; font-weight: 600;">(₱{{ number_format($emp->sss_contribution, 2) }}/mo)</span></div>
+                                        <div>
+                                            <strong>PhilHealth:</strong> 
+                                            @if($emp->philhealth_no || $emp->philhealth_contribution > 0)
+                                                {{ $emp->philhealth_no ?: 'No ID' }} <span style="color: #38bdf8; font-weight: 600;">(₱{{ number_format($emp->philhealth_contribution, 2) }}/mo)</span>
+                                            @else
+                                                <span style="color: #94a3b8; font-style: italic;">None (Nullable)</span> <span style="color: #64748b;">(₱0.00)</span>
+                                            @endif
                                         </div>
-                                    @else
-                                        <span class="badge badge-navy" style="font-size: 0.7rem; color: #94a3b8; border: 1px dashed rgba(148, 163, 184, 0.4);">
-                                            Non-Eligible ({{ ucfirst($emp->employment_type ?? 'Probationary') }})
-                                        </span>
-                                        <div style="font-size: 0.67rem; color: var(--text-muted); margin-top: 3px;">
-                                            Gov benefits start on Casual/Regular status
+                                        <div>
+                                            <strong>Pag-IBIG:</strong> 
+                                            @if($emp->pagibig_no || $emp->pagibig_contribution > 0)
+                                                {{ $emp->pagibig_no ?: 'No ID' }} <span style="color: #fbbf24; font-weight: 600;">(₱{{ number_format($emp->pagibig_contribution, 2) }}/mo)</span>
+                                            @else
+                                                <span style="color: #94a3b8; font-style: italic;">None (Nullable)</span> <span style="color: #64748b;">(₱0.00)</span>
+                                            @endif
                                         </div>
-                                    @endif
+                                        <div style="margin-top: 3px; font-weight: 700; color: var(--gold-light); font-size: 0.7rem;">
+                                            Total Ded: ₱{{ number_format($emp->total_gov_contributions, 2) }}/mo <span style="font-size: 0.62rem; color: #94a3b8; font-weight: 400;">(Manual)</span>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     @if($docCount > 0)
                                         <span class="badge badge-gold" style="font-size: 0.72rem; cursor: pointer;" data-modal-target="modal-view-emp-{{ $emp->id }}">
-                                            📁 {{ $docCount }} Attached
+                                             {{ $docCount }} Attached
                                         </span>
                                     @else
                                         <span style="font-size: 0.72rem; color: var(--text-muted);">None</span>
@@ -230,6 +238,8 @@
                                                 <div><span style="color: var(--text-muted); display: block;">Gender / Civil Status:</span> <strong>{{ $emp->gender ?: '-' }} / {{ $emp->civil_status ?: '-' }}</strong></div>
                                                 <div><span style="color: var(--text-muted); display: block;">Phone:</span> <strong>{{ $emp->phone ?: 'None' }}</strong></div>
                                                 <div><span style="color: var(--text-muted); display: block;">Email:</span> <strong>{{ $emp->email ?: 'None' }}</strong></div>
+                                                <div><span style="color: var(--text-muted); display: block;">Scheduled Day Off:</span> <strong style="color: #38bdf8;">{{ $emp->day_off ?: 'Sunday' }}</strong></div>
+                                                <div><span style="color: var(--text-muted); display: block;">Shift Hours:</span> <strong>{{ $emp->shift_start ?: '09:00' }} - {{ $emp->shift_end ?: '18:00' }}</strong></div>
                                                 <div><span style="color: var(--text-muted); display: block;">Address:</span> <strong>{{ $emp->address ?: 'Not Specified' }}</strong></div>
                                                 <div><span style="color: var(--text-muted); display: block;">Education:</span> <strong>{{ $emp->education ?: 'Not Specified' }}</strong></div>
                                                 <div><span style="color: var(--text-muted); display: block;">Emergency Contact:</span> <strong>{{ $emp->emergency_contact_name ?: '-' }} ({{ $emp->emergency_contact_phone ?: '-' }})</strong></div>
@@ -251,21 +261,18 @@
 
                                         <!-- Statutory & Benefits Breakdown -->
                                         <div style="background: rgba(11, 25, 44, 0.6); border: 1px solid var(--navy-border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                                            <div style="font-weight: 700; color: var(--gold-light); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase;">
-                                                🏛️ Statutory Government Accounts & Contributions
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                                <div style="font-weight: 700; color: var(--gold-light); font-size: 0.85rem; text-transform: uppercase;">
+                                                    🏛️ Statutory Government Accounts & Contributions (Manual Input)
+                                                </div>
+                                                <span style="font-size: 0.72rem; color: var(--gold); font-weight: 700;">Total: ₱{{ number_format($emp->total_gov_contributions, 2) }}/mo</span>
                                             </div>
-                                            @if($isGov)
-                                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; font-size: 0.8rem;">
-                                                    <div><span style="color: var(--text-muted); display: block;">SSS No:</span> <strong>{{ $emp->sss_no ?: '-' }}</strong> <span style="color: #10b981; display: block; font-size: 0.75rem;">₱{{ number_format($emp->sss_contribution, 2) }}/mo</span></div>
-                                                    <div><span style="color: var(--text-muted); display: block;">PhilHealth No:</span> <strong>{{ $emp->philhealth_no ?: '-' }}</strong> <span style="color: #38bdf8; display: block; font-size: 0.75rem;">₱{{ number_format($emp->philhealth_contribution, 2) }}/mo</span></div>
-                                                    <div><span style="color: var(--text-muted); display: block;">Pag-IBIG No:</span> <strong>{{ $emp->pagibig_no ?: '-' }}</strong> <span style="color: #fbbf24; display: block; font-size: 0.75rem;">₱{{ number_format($emp->pagibig_contribution, 2) }}/mo</span></div>
-                                                    <div><span style="color: var(--text-muted); display: block;">TIN No / DL No:</span> <strong>{{ $emp->tin_no ?: '-' }} / {{ $emp->drivers_license_no ?: '-' }}</strong></div>
-                                                </div>
-                                            @else
-                                                <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; padding: 0.65rem 0.85rem; font-size: 0.78rem; color: #cbd5e1;">
-                                                    <strong>Status is {{ ucfirst($emp->employment_type) }}:</strong> Statutory contributions (SSS, PhilHealth, Pag-IBIG) are not deducted on payslip until staff is transitioned to <strong>Casual</strong> or <strong>Regular</strong> status.
-                                                </div>
-                                            @endif
+                                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; font-size: 0.8rem;">
+                                                <div><span style="color: var(--text-muted); display: block;">SSS No:</span> <strong>{{ $emp->sss_no ?: 'None' }}</strong> <span style="color: #10b981; display: block; font-size: 0.75rem; font-weight: 600;">₱{{ number_format($emp->sss_contribution, 2) }}/mo</span></div>
+                                                <div><span style="color: var(--text-muted); display: block;">PhilHealth No:</span> <strong>{{ $emp->philhealth_no ?: 'None / Blank (Nullable)' }}</strong> <span style="color: #38bdf8; display: block; font-size: 0.75rem; font-weight: 600;">₱{{ number_format($emp->philhealth_contribution, 2) }}/mo</span></div>
+                                                <div><span style="color: var(--text-muted); display: block;">Pag-IBIG No:</span> <strong>{{ $emp->pagibig_no ?: 'None / Blank (Nullable)' }}</strong> <span style="color: #fbbf24; display: block; font-size: 0.75rem; font-weight: 600;">₱{{ number_format($emp->pagibig_contribution, 2) }}/mo</span></div>
+                                                <div><span style="color: var(--text-muted); display: block;">TIN No / DL No:</span> <strong>{{ $emp->tin_no ?: '-' }} / {{ $emp->drivers_license_no ?: '-' }}</strong></div>
+                                            </div>
                                         </div>
 
                                         <!-- Attached Documents Repository -->
@@ -423,10 +430,10 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Shift Assignment -->
+                                                <!-- Shift Assignment & Day Off -->
                                                 <div style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: 6px; padding: 0.75rem 1rem; margin-top: 0.75rem;">
                                                     <div style="font-size: 0.78rem; font-weight: 700; color: var(--gold-light); margin-bottom: 0.5rem;">
-                                                        ⏰ Assigned Work Shift Schedule
+                                                        ⏰ Assigned Work Shift & Scheduled Day Off
                                                     </div>
                                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                                                         <div class="form-group">
@@ -450,6 +457,28 @@
                                                                 <option value="19:00" {{ ($emp->shift_end ?: '18:00') == '19:00' ? 'selected' : '' }}>07:00 PM (Night Close)</option>
                                                                 <option value="20:00" {{ ($emp->shift_end ?: '18:00') == '20:00' ? 'selected' : '' }}>08:00 PM</option>
                                                             </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Scheduled Day Off Selector -->
+                                                    <div style="margin-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.75rem;">
+                                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
+                                                            <label class="form-label" style="margin: 0; font-weight: 700; color: #38bdf8;">
+                                                                🗓️ Scheduled Day(s) Off *
+                                                            </label>
+                                                            <span style="font-size: 0.7rem; color: var(--text-muted);">Set preset rest day(s). Edit anytime here if schedule changes.</span>
+                                                        </div>
+                                                        @php
+                                                            $weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                                                            $currentDaysOff = array_map('trim', explode(',', $emp->day_off ?: 'Sunday'));
+                                                        @endphp
+                                                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                                            @foreach($weekDays as $wDay)
+                                                                <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid {{ in_array($wDay, $currentDaysOff) ? 'var(--gold)' : 'rgba(255,255,255,0.15)' }}; padding: 0.35rem 0.65rem; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: {{ in_array($wDay, $currentDaysOff) ? '#fbbf24' : '#e2e8f0' }};">
+                                                                    <input type="checkbox" name="day_off[]" value="{{ $wDay }}" {{ in_array($wDay, $currentDaysOff) ? 'checked' : '' }} style="accent-color: var(--gold);">
+                                                                    <span>{{ $wDay }}</span>
+                                                                </label>
+                                                            @endforeach
                                                         </div>
                                                     </div>
                                                 </div>
@@ -537,23 +566,35 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Section 4: Statutory IDs & Government Benefits -->
+                                            <!-- Section 4: Statutory IDs & Government Benefits (Manual Input) -->
                                             <div style="margin-bottom: 1.25rem; border-top: 1px solid var(--navy-border); padding-top: 1rem;">
-                                                <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px;">
-                                                    <span>🏛️ Government Statutory Accounts</span>
-                                                </h5>
-                                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 0.75rem;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                                                    <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; gap: 6px;">
+                                                        <span>🏛️ Government Contributions & Statutory IDs (Manual Input)</span>
+                                                    </h5>
+                                                    <span class="badge badge-gold" style="font-size: 0.68rem;">Manual Contribution Entry</span>
+                                                </div>
+
+                                                <div style="font-size: 0.76rem; color: #cbd5e1; background: rgba(0,0,0,0.25); border-left: 3px solid #38bdf8; padding: 0.65rem 0.85rem; border-radius: 4px; margin-bottom: 0.75rem;">
+                                                    📌 <strong>Policy & Rules:</strong> Manual Input ang Govt Contribution dito. Leave it blank lang kung wala pang PhilHealth at Pag-IBIG (nullable — ₱0.00 ang ibabawas sa payroll pag walang nilagay).
+                                                </div>
+
+                                                <!-- Row 1: Account / ID Numbers -->
+                                                <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">
+                                                    ID / Account Numbers:
+                                                </div>
+                                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                                                     <div class="form-group">
                                                         <label class="form-label">SSS No.</label>
                                                         <input type="text" name="sss_no" class="form-control" value="{{ $emp->sss_no }}" placeholder="00-0000000-0">
                                                     </div>
                                                     <div class="form-group">
-                                                        <label class="form-label">PhilHealth</label>
-                                                        <input type="text" name="philhealth_no" class="form-control" value="{{ $emp->philhealth_no }}" placeholder="00-000000000-0">
+                                                        <label class="form-label">PhilHealth No. <span style="font-weight: 400; color: #94a3b8;">(Nullable)</span></label>
+                                                        <input type="text" name="philhealth_no" class="form-control" value="{{ $emp->philhealth_no }}" placeholder="Leave blank if none">
                                                     </div>
                                                     <div class="form-group">
-                                                        <label class="form-label">Pag-IBIG</label>
-                                                        <input type="text" name="pagibig_no" class="form-control" value="{{ $emp->pagibig_no }}" placeholder="0000-0000-0000">
+                                                        <label class="form-label">Pag-IBIG No. <span style="font-weight: 400; color: #94a3b8;">(Nullable)</span></label>
+                                                        <input type="text" name="pagibig_no" class="form-control" value="{{ $emp->pagibig_no }}" placeholder="Leave blank if none">
                                                     </div>
                                                     <div class="form-group">
                                                         <label class="form-label">TIN No.</label>
@@ -562,6 +603,28 @@
                                                     <div class="form-group">
                                                         <label class="form-label">Driver's License #</label>
                                                         <input type="text" name="drivers_license_no" class="form-control" value="{{ $emp->drivers_license_no }}" placeholder="N01-00-000000">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Row 2: Manual Monthly Contribution Amounts -->
+                                                <div style="font-size: 0.72rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; margin-bottom: 0.35rem;">
+                                                    💵 Monthly Contribution Deductions (₱/Month - Manual Input):
+                                                </div>
+                                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: 6px; padding: 0.75rem;">
+                                                    <div class="form-group" style="margin: 0;">
+                                                        <label class="form-label" style="color: #10b981; font-weight: 700;">SSS Monthly Contribution (₱)</label>
+                                                        <input type="number" step="0.01" min="0" name="sss_contribution" class="form-control" value="{{ $emp->sss_contribution }}" placeholder="e.g. 500.00">
+                                                        <span style="font-size: 0.68rem; color: var(--text-muted); display: block; margin-top: 3px;">Manual monthly deduction</span>
+                                                    </div>
+                                                    <div class="form-group" style="margin: 0;">
+                                                        <label class="form-label" style="color: #38bdf8; font-weight: 700;">PhilHealth Monthly Contribution (₱)</label>
+                                                        <input type="number" step="0.01" min="0" name="philhealth_contribution" class="form-control" value="{{ $emp->philhealth_contribution }}" placeholder="0.00 (Nullable - leave blank if none)">
+                                                        <span style="font-size: 0.68rem; color: #94a3b8; display: block; margin-top: 3px;">Nullable: leave blank / 0 if none yet</span>
+                                                    </div>
+                                                    <div class="form-group" style="margin: 0;">
+                                                        <label class="form-label" style="color: #fbbf24; font-weight: 700;">Pag-IBIG Monthly Contribution (₱)</label>
+                                                        <input type="number" step="0.01" min="0" name="pagibig_contribution" class="form-control" value="{{ $emp->pagibig_contribution }}" placeholder="0.00 (Nullable - leave blank if none)">
+                                                        <span style="font-size: 0.68rem; color: #94a3b8; display: block; margin-top: 3px;">Nullable: leave blank / 0 if none yet</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -769,10 +832,10 @@
                             </div>
                         </div>
 
-                        <!-- Shift Assignment -->
+                        <!-- Shift Assignment & Day Off -->
                         <div style="background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: 6px; padding: 0.75rem 1rem; margin-top: 0.75rem;">
                             <div style="font-size: 0.78rem; font-weight: 700; color: var(--gold-light); margin-bottom: 0.5rem;">
-                                ⏰ Assigned Work Shift Schedule
+                                ⏰ Assigned Work Shift & Scheduled Day Off
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                                 <div class="form-group">
@@ -796,6 +859,27 @@
                                         <option value="19:00">07:00 PM (Night Close)</option>
                                         <option value="20:00">08:00 PM</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <!-- Scheduled Day Off Selector -->
+                            <div style="margin-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
+                                    <label class="form-label" style="margin: 0; font-weight: 700; color: #38bdf8;">
+                                        🗓️ Scheduled Day(s) Off *
+                                    </label>
+                                    <span style="font-size: 0.7rem; color: var(--text-muted);">Set preset rest day(s). You can edit this anytime if schedule changes.</span>
+                                </div>
+                                @php
+                                    $weekDaysList = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                                @endphp
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    @foreach($weekDaysList as $wDay)
+                                        <label style="display: inline-flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid {{ $wDay === 'Sunday' ? 'var(--gold)' : 'rgba(255,255,255,0.15)' }}; padding: 0.35rem 0.65rem; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: {{ $wDay === 'Sunday' ? '#fbbf24' : '#e2e8f0' }};">
+                                            <input type="checkbox" name="day_off[]" value="{{ $wDay }}" {{ $wDay === 'Sunday' ? 'checked' : '' }} style="accent-color: var(--gold);">
+                                            <span>{{ $wDay }}</span>
+                                        </label>
+                                    @endforeach
                                 </div>
                             </div>
                         </div>
@@ -883,26 +967,35 @@
                         </div>
                     </div>
 
-                    <!-- Section 4: Statutory Government Identifications -->
+                    <!-- Section 4: Statutory Government Contributions & IDs (Manual Input) -->
                     <div style="margin-bottom: 1.25rem; border-top: 1px solid var(--navy-border); padding-top: 1rem;">
-                        <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px;">
-                            <span>🏛️ Statutory Government Identifications</span>
-                        </h5>
-                        <div style="font-size: 0.76rem; color: #cbd5e1; background: rgba(0,0,0,0.25); border-left: 3px solid #38bdf8; padding: 0.5rem 0.75rem; border-radius: 4px; margin-bottom: 0.75rem;">
-                            📌 <strong>Policy Rule:</strong> SSS, PhilHealth, and Pag-IBIG contributions will only be computed & displayed in payroll for <strong>Casual</strong> or <strong>Regular</strong> employees.
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; gap: 6px;">
+                                <span>🏛️ Statutory Government Contributions & IDs (Manual Input)</span>
+                            </h5>
+                            <span class="badge badge-gold" style="font-size: 0.68rem;">Manual Contribution Entry</span>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 0.75rem;">
+
+                        <div style="font-size: 0.76rem; color: #cbd5e1; background: rgba(0,0,0,0.25); border-left: 3px solid #38bdf8; padding: 0.65rem 0.85rem; border-radius: 4px; margin-bottom: 0.75rem;">
+                            📌 <strong>Policy & Rules:</strong> Manual Input ang Govt Contribution dito. Leave it blank lang kung wala pang PhilHealth at Pag-IBIG (nullable — ₱0.00 ang ibabawas sa payroll pag walang nilagay).
+                        </div>
+
+                        <!-- Row 1: Account / ID Numbers -->
+                        <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">
+                            ID / Account Numbers:
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                             <div class="form-group">
                                 <label class="form-label">SSS No.</label>
                                 <input type="text" name="sss_no" class="form-control" placeholder="00-0000000-0">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">PhilHealth</label>
-                                <input type="text" name="philhealth_no" class="form-control" placeholder="00-000000000-0">
+                                <label class="form-label">PhilHealth No. <span style="font-weight: 400; color: #94a3b8;">(Nullable)</span></label>
+                                <input type="text" name="philhealth_no" class="form-control" placeholder="Leave blank if none">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Pag-IBIG</label>
-                                <input type="text" name="pagibig_no" class="form-control" placeholder="0000-0000-0000">
+                                <label class="form-label">Pag-IBIG No. <span style="font-weight: 400; color: #94a3b8;">(Nullable)</span></label>
+                                <input type="text" name="pagibig_no" class="form-control" placeholder="Leave blank if none">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">TIN No.</label>
@@ -911,6 +1004,28 @@
                             <div class="form-group">
                                 <label class="form-label">Driver's License #</label>
                                 <input type="text" name="drivers_license_no" class="form-control" placeholder="N01-00-000000">
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Manual Monthly Contribution Amounts -->
+                        <div style="font-size: 0.72rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; margin-bottom: 0.35rem;">
+                            💵 Monthly Contribution Deductions (₱/Month - Manual Input):
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; background: rgba(11, 25, 44, 0.4); border: 1px solid var(--navy-border); border-radius: 6px; padding: 0.75rem;">
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="color: #10b981; font-weight: 700;">SSS Monthly Contribution (₱)</label>
+                                <input type="number" step="0.01" min="0" name="sss_contribution" class="form-control" placeholder="e.g. 500.00">
+                                <span style="font-size: 0.68rem; color: var(--text-muted); display: block; margin-top: 3px;">Manual monthly deduction</span>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="color: #38bdf8; font-weight: 700;">PhilHealth Monthly Contribution (₱)</label>
+                                <input type="number" step="0.01" min="0" name="philhealth_contribution" class="form-control" placeholder="0.00 (Nullable - leave blank if none)">
+                                <span style="font-size: 0.68rem; color: #94a3b8; display: block; margin-top: 3px;">Nullable: leave blank / 0 if none yet</span>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" style="color: #fbbf24; font-weight: 700;">Pag-IBIG Monthly Contribution (₱)</label>
+                                <input type="number" step="0.01" min="0" name="pagibig_contribution" class="form-control" placeholder="0.00 (Nullable - leave blank if none)">
+                                <span style="font-size: 0.68rem; color: #94a3b8; display: block; margin-top: 3px;">Nullable: leave blank / 0 if none yet</span>
                             </div>
                         </div>
                     </div>
