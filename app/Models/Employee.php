@@ -223,4 +223,9 @@ class Employee extends Model
     {
         return $this->hasMany(Appointment::class, 'assigned_employee_id');
     }
+
+    public function thirteenthMonthPays()
+    {
+        return $this->hasMany(ThirteenthMonthPay::class);
+    }
 }

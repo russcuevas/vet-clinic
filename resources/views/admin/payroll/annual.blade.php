@@ -18,6 +18,7 @@
                     <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>Year {{ $y }}</option>
                 @endfor
             </select>
+            <a href="{{ route('admin.payroll.thirteenth_month.index', ['year' => $year]) }}" class="btn btn-gold btn-sm">🎁 13th Month & SL</a>
             <a href="{{ route('admin.payroll.periods.index') }}" class="btn btn-navy btn-sm">Cycles</a>
         </form>
     </div>
