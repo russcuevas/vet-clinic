@@ -177,6 +177,7 @@ class DtrController extends Controller
                     'time_in' => $timeInStr,
                     'time_out' => $currentTimeStr,
                     'regular_hours' => $regularHours,
+                    'late_minutes' => $existing ? (int) $existing->late_minutes : 0,
                     'undertime_minutes' => $undertimeMinutes,
                     'ot_hours' => 0.00, // Zero by default at reception; Manager/Admin approval required for credit
                     'status' => $status,

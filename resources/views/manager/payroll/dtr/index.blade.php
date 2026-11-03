@@ -609,6 +609,11 @@
                                                 </div>
                                             @endif
                                         @endif
+                                        @if ($dtr->late_minutes > 0 && $dtr->undertime_minutes > 0)
+                                            <div style="font-size: 0.70rem; color: #ef4444; font-weight: 700; border-top: 1px dashed rgba(239, 68, 68, 0.4); margin-top: 3px; padding-top: 2px;">
+                                                Σ Total: {{ $dtr->formatted_total_lost_time }}
+                                            </div>
+                                        @endif
                                         @if ($dtr->late_minutes == 0 && $dtr->undertime_minutes == 0)
                                             <span style="color: #10b981; font-size: 0.75rem;">✓ On Time</span>
                                         @endif

@@ -48,7 +48,7 @@ class DtrController extends Controller
                         ]
                     );
                 }
-            } elseif ($emp->isDayOff($selectedDate)) {
+            } elseif (method_exists($emp, 'isDayOff') ? $emp->isDayOff($selectedDate) : in_array(strtolower($selectedDate instanceof \Carbon\Carbon ? $selectedDate->format('l') : (string)$selectedDate), array_map('trim', explode(',', strtolower(!empty($emp->day_off) ? $emp->day_off : 'Sunday'))))) {
                 // Today is employee's preset day off -> AUTOMATIC REST DAY (not absent)
                 if (!$existingRecord) {
                     DtrRecord::create([
@@ -374,7 +374,9 @@ class DtrController extends Controller
             $dateStr = $curr->toDateString();
             $rec = $existingRecords->get($dateStr);
 
-            $isEmpDayOff = $employee->isDayOff($curr);
+            $isEmpDayOff = method_exists($employee, 'isDayOff')
+                ? $employee->isDayOff($curr)
+                : in_array(strtolower($curr->format('l')), array_map('trim', explode(',', strtolower(!empty($employee->day_off) ? $employee->day_off : 'Sunday'))));
 
             $dayLog = [
                 'date' => $curr->copy(),
@@ -421,10 +423,13 @@ class DtrController extends Controller
             $curr->addDay();
         }
 
+        $totalLostMinutes = $totalLateMinutes + $totalUndertimeMinutes;
+
         $summaryTotals = [
             'total_regular_hours' => $totalRegularHours,
             'total_late_minutes' => $totalLateMinutes,
             'total_undertime_minutes' => $totalUndertimeMinutes,
+            'total_lost_minutes' => $totalLostMinutes,
             'total_ot_hours' => $totalOtHours,
             'days_present' => $daysPresent,
             'days_absent' => $daysAbsent,
@@ -432,6 +437,7 @@ class DtrController extends Controller
             'days_holiday' => $daysHoliday,
             'formatted_late' => DtrRecord::formatMinutesToHuman($totalLateMinutes),
             'formatted_undertime' => DtrRecord::formatMinutesToHuman($totalUndertimeMinutes),
+            'formatted_lost_time' => DtrRecord::formatMinutesToHuman($totalLostMinutes),
         ];
 
         return view('admin.payroll.dtr.report', compact(

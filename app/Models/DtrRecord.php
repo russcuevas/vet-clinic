@@ -62,6 +62,16 @@ class DtrRecord extends Model
         return self::formatMinutesToHuman($this->undertime_minutes ?? 0);
     }
 
+    public function getTotalLostMinutesAttribute(): int
+    {
+        return (int) (($this->late_minutes ?? 0) + ($this->undertime_minutes ?? 0));
+    }
+
+    public function getFormattedTotalLostTimeAttribute(): string
+    {
+        return self::formatMinutesToHuman($this->total_lost_minutes);
+    }
+
     public function employee()
     {
         return $this->belongsTo(Employee::class);

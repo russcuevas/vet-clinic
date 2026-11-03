@@ -355,7 +355,12 @@
                 </div>
                 <div class="att-card">
                     <div class="att-lbl">Late / Undertime</div>
-                    <div class="att-val">{{ $lateMins ?? 0 }} <span style="font-size: 0.72rem; font-weight: 600; color: #64748b;">mins</span></div>
+                    <div class="att-val">{{ $totalLateUndertimeMins ?? (($lateMins ?? 0) + ($undertimeMins ?? 0)) }} <span style="font-size: 0.72rem; font-weight: 600; color: #64748b;">mins</span></div>
+                    @if(($lateMins ?? 0) > 0 || ($undertimeMins ?? 0) > 0)
+                        <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">
+                            Late: {{ $lateMins ?? 0 }}m | UT: {{ $undertimeMins ?? 0 }}m
+                        </div>
+                    @endif
                 </div>
                 <div class="att-card">
                     <div class="att-lbl">Overtime (OT)</div>

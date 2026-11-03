@@ -192,7 +192,7 @@
             padding: 3px 6px;
             margin-bottom: 4px;
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 4px;
             text-align: center;
         }
@@ -588,6 +588,10 @@
             <div>
                 <div class="kpi-label">Total Undertime</div>
                 <div class="kpi-val">{{ $summaryTotals['formatted_undertime'] }}</div>
+            </div>
+            <div>
+                <div class="kpi-label" style="color: #b91c1c;">Total Late & UT</div>
+                <div class="kpi-val" style="color: #b91c1c;">{{ $summaryTotals['formatted_lost_time'] }}</div>
             </div>
             <div>
                 <div class="kpi-label">Total Overtime</div>

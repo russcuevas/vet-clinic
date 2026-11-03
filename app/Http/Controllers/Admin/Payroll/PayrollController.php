@@ -114,7 +114,11 @@ class PayrollController extends Controller
                 $pagibig = round(floatval($emp->pagibig_contribution ?? 0) * $factor, 2);
                 $tax = 0.00;
 
-                if ($emp->isGovEligible() && $monthlySalary > 20833) {
+                $isGovEligible = method_exists($emp, 'isGovEligible')
+                    ? $emp->isGovEligible()
+                    : in_array(strtolower($emp->employment_type ?? ''), ['regular', 'casual', 'full_time']);
+
+                if ($isGovEligible && $monthlySalary > 20833) {
                     $tax = round(($monthlySalary - 20833) * 0.15 * $factor, 2);
                 }
 
@@ -347,7 +351,9 @@ class PayrollController extends Controller
 
         $presentDays = $dtrs->whereIn('status', ['present', 'late'])->count();
         $absentDays = $dtrs->where('status', 'absent')->count();
-        $lateMins = $dtrs->sum('late_minutes');
+        $lateMins = (int) $dtrs->sum('late_minutes');
+        $undertimeMins = (int) $dtrs->sum('undertime_minutes');
+        $totalLateUndertimeMins = $lateMins + $undertimeMins;
         $onLeaveDays = $dtrs->where('status', 'on_leave')->count();
         $holidayDays = $dtrs->whereIn('status', ['holiday', 'regular_holiday'])->count();
         $specialHolidayDays = $dtrs->where('status', 'special_holiday')->count();
@@ -368,6 +374,8 @@ class PayrollController extends Controller
             'presentDays',
             'absentDays',
             'lateMins',
+            'undertimeMins',
+            'totalLateUndertimeMins',
             'onLeaveDays',
             'holidayDays',
             'specialHolidayDays',
